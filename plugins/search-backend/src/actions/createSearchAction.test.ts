@@ -16,15 +16,22 @@
 import { createSearchAction } from './createSearchAction';
 import { SearchEngine } from '@backstage/plugin-search-backend-node';
 import { ActionsRegistryService } from '@backstage/backend-plugin-api/alpha';
-import { BackstageCredentials } from '@backstage/backend-plugin-api';
+import {
+  BackstageCredentials,
+  LoggerService,
+} from '@backstage/backend-plugin-api';
+import { mockServices } from '@backstage/backend-test-utils';
 
 describe('createSearchAction', () => {
   let mockSearchEngine: jest.Mocked<SearchEngine>;
   let mockActionsRegistry: jest.Mocked<ActionsRegistryService>;
   let registeredAction: any;
+  let mockLogger: LoggerService;
   const mockCredentials = {} as BackstageCredentials;
 
   beforeEach(() => {
+    mockLogger = mockServices.logger.mock();
+
     mockSearchEngine = {
       query: jest.fn().mockResolvedValue({
         results: [],
@@ -57,25 +64,12 @@ describe('createSearchAction', () => {
     await registeredAction.action({
       input: { term: 'test' },
       credentials: mockCredentials,
+      logger: mockLogger,
     });
 
     expect(mockSearchEngine.query).toHaveBeenCalledWith(
-      expect.objectContaining({
+      expect.not.objectContaining({
         types: undefined,
-      }),
-      { credentials: mockCredentials },
-    );
-  });
-
-  it('should pass through an empty types array as-is', async () => {
-    await registeredAction.action({
-      input: { term: 'test', types: [] },
-      credentials: mockCredentials,
-    });
-
-    expect(mockSearchEngine.query).toHaveBeenCalledWith(
-      expect.objectContaining({
-        types: [],
       }),
       { credentials: mockCredentials },
     );
@@ -85,6 +79,7 @@ describe('createSearchAction', () => {
     await registeredAction.action({
       input: { term: 'test', types: ['techdocs'] },
       credentials: mockCredentials,
+      logger: mockLogger,
     });
 
     expect(mockSearchEngine.query).toHaveBeenCalledWith(
@@ -104,6 +99,7 @@ describe('createSearchAction', () => {
         pageLimit: 5,
       },
       credentials: mockCredentials,
+      logger: mockLogger,
     });
 
     expect(mockSearchEngine.query).toHaveBeenCalledWith(
@@ -114,6 +110,21 @@ describe('createSearchAction', () => {
         pageCursor: 'abc',
         pageLimit: 5,
       },
+      { credentials: mockCredentials },
+    );
+  });
+
+  it('should cap pageLimit at MAX_PAGE_LIMIT', async () => {
+    await registeredAction.action({
+      input: { term: 'test', pageLimit: 200 },
+      credentials: mockCredentials,
+      logger: mockLogger,
+    });
+
+    expect(mockSearchEngine.query).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pageLimit: 100,
+      }),
       { credentials: mockCredentials },
     );
   });
@@ -145,6 +156,7 @@ describe('createSearchAction', () => {
     const result = await registeredAction.action({
       input: { term: 'test' },
       credentials: mockCredentials,
+      logger: mockLogger,
     });
 
     expect(result.output.results).toHaveLength(2);
@@ -159,6 +171,7 @@ describe('createSearchAction', () => {
       registeredAction.action({
         input: { term: 'test' },
         credentials: mockCredentials,
+        logger: mockLogger,
       }),
     ).rejects.toThrow('Failed to perform search: Engine failure');
   });

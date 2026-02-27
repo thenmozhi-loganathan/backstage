@@ -10,7 +10,7 @@ The search-backend plugin registers a `search` action with the [Actions Registry
 
 - **term**: Search term to query
 - **filters**: Optional filters to apply
-- **types**: Document types to search (e.g., `software-catalog`, `techdocs`, `adr`)
+- **types**: Document types to search (e.g., `software-catalog`, `techdocs`)
 - **pageCursor/pageLimit**: Pagination support
 
 This action is marked as `readOnly` and `idempotent`, making it safe for automated workflows.
