@@ -14,27 +14,41 @@
  * limitations under the License.
  */
 
-import { useStyles } from '../../../hooks/useStyles';
+import { useDefinition } from '../../../hooks/useDefinition';
 import { TableDefinition } from '../definition';
 import { Table as ReactAriaTable } from 'react-aria-components';
-import styles from '../Table.module.css';
-import clsx from 'clsx';
 import { TableRootProps } from '../types';
+import { BUIRoutingProvider } from '../../../navigation/BUIRoutingProvider';
 
-/** @public */
+/**
+ * The low-level table root element for building custom table layouts from atomic components.
+ * For most use cases, prefer the `Table` convenience wrapper.
+ *
+ * @public
+ */
 export const TableRoot = (props: TableRootProps) => {
-  const { classNames, dataAttributes, cleanedProps } = useStyles(
+  const { ownProps, restProps, dataAttributes } = useDefinition(
     TableDefinition,
-    props,
+    // Merge deprecated `loading` into `isPending` so data attributes and
+    // internal logic only need to check a single prop.
+    {
+      ...props,
+      isPending:
+        props.isPending || props.loading
+          ? true
+          : props.isPending ?? props.loading,
+    },
   );
 
   return (
-    <ReactAriaTable
-      className={clsx(classNames.table, styles[classNames.table])}
-      aria-label="Data table"
-      aria-busy={props.stale}
-      {...dataAttributes}
-      {...cleanedProps}
-    />
+    <BUIRoutingProvider>
+      <ReactAriaTable
+        className={ownProps.classes.root}
+        aria-label="Data table"
+        aria-busy={ownProps.stale || ownProps.isPending}
+        {...dataAttributes}
+        {...restProps}
+      />
+    </BUIRoutingProvider>
   );
 };

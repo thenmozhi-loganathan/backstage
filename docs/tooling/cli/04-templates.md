@@ -4,9 +4,35 @@ title: CLI Templates
 description: Overview of the new CLI Declarative Templates
 ---
 
-The behavior of the `backstage-cli new` command is configurable through your root `package.json`, and you can also create and add custom CLI templates to suit your needs.
+The `backstage-cli new` command (typically run as `yarn new` in a Backstage workspace) scaffolds new plugins, modules, and library packages. It presents a list of available templates and walks you through a short set of prompts before generating the package, wiring up dependencies, and registering it in the workspace.
 
-## Basic Configuration
+## Built-in templates
+
+The following templates are included out of the box:
+
+| Template                            | Description                                                                                 |
+| :---------------------------------- | :------------------------------------------------------------------------------------------ |
+| `frontend-plugin`                   | A new frontend plugin                                                                       |
+| `frontend-plugin-module`            | A new frontend module that extends an existing frontend plugin                              |
+| `legacy-frontend-plugin`            | A new frontend plugin (legacy system)                                                       |
+| `backend-plugin`                    | A new backend plugin                                                                        |
+| `backend-plugin-module`             | A new backend module that extends an existing backend plugin                                |
+| `plugin-web-library`                | A new web library plugin package                                                            |
+| `plugin-node-library`               | A new Node.js library plugin package                                                        |
+| `plugin-common-library`             | A new isomorphic common plugin package                                                      |
+| `web-library`                       | A library package, exporting shared functionality for web environments                      |
+| `node-library`                      | A library package, exporting shared functionality for Node.js environments                  |
+| `cli-module`                        | A CLI module that adds commands to the Backstage CLI                                        |
+| `catalog-processor-module`          | A Processor module for the Software Catalog                                                 |
+| `catalog-provider-module`           | An Entity Provider module for the Software Catalog                                          |
+| `scaffolder-backend-module`         | A module exporting custom actions for @backstage/plugin-scaffolder-backend                  |
+| `scaffolder-field-extension-module` | A custom field extension for the Backstage Scaffolder                                       |
+| `permission-policy-module`          | A backend module that provides a custom permission policy for the permission-backend plugin |
+| `search-collator-module`            | A Search Collator module for Backstage Search                                               |
+
+## Configuration
+
+The behavior of `yarn new` is configurable through your root `package.json`:
 
 ```json
 {
@@ -73,7 +99,7 @@ Custom templates can be installed from local directories. To install a template 
 
 Each entry in the `templates` array should be a relative path that points to a directory containing a `portable-template.yaml` file. If the path starts with `./` it will be used as is, otherwise it will be resolved as a module within `node_modules`.
 
-When defining the `templates` array it will override the default set of templates. If you want to keep using one of the build-in templates in the Backstage CLI you can reference them directly within the CLI package. This following is the full list of built-in templates:
+When defining the `templates` array it will override the default set of templates. If you want to keep using one of the built-in templates in the Backstage CLI you can reference them directly within the `@backstage/cli-module-new` package. The following is the full list of built-in templates:
 
 ```json
 {
@@ -82,22 +108,33 @@ When defining the `templates` array it will override the default set of template
     "cli": {
       "new": {
         "templates": [
-          "@backstage/cli/templates/frontend-plugin",
-          "@backstage/cli/templates/backend-plugin",
-          "@backstage/cli/templates/backend-plugin-module",
-          "@backstage/cli/templates/plugin-web-library",
-          "@backstage/cli/templates/plugin-node-library",
-          "@backstage/cli/templates/plugin-common-library",
-          "@backstage/cli/templates/web-library",
-          "@backstage/cli/templates/node-library",
-          "@backstage/cli/templates/catalog-provider-module",
-          "@backstage/cli/templates/scaffolder-backend-module"
+          "@backstage/cli-module-new/templates/frontend-plugin",
+          "@backstage/cli-module-new/templates/frontend-plugin-module",
+          "@backstage/cli-module-new/templates/legacy-frontend-plugin",
+          "@backstage/cli-module-new/templates/backend-plugin",
+          "@backstage/cli-module-new/templates/backend-plugin-module",
+          "@backstage/cli-module-new/templates/plugin-web-library",
+          "@backstage/cli-module-new/templates/plugin-node-library",
+          "@backstage/cli-module-new/templates/plugin-common-library",
+          "@backstage/cli-module-new/templates/web-library",
+          "@backstage/cli-module-new/templates/node-library",
+          "@backstage/cli-module-new/templates/cli-module",
+          "@backstage/cli-module-new/templates/catalog-processor-module",
+          "@backstage/cli-module-new/templates/catalog-provider-module",
+          "@backstage/cli-module-new/templates/scaffolder-backend-module",
+          "@backstage/cli-module-new/templates/scaffolder-field-extension-module",
+          "@backstage/cli-module-new/templates/permission-policy-module",
+          "@backstage/cli-module-new/templates/search-collator-module"
         ]
       }
     }
   }
 }
 ```
+
+:::note
+The old `@backstage/cli/templates/*` paths are still supported for backwards compatibility and will be automatically rewritten to `@backstage/cli-module-new/templates/*`.
+:::
 
 ## Creating your own CLI templates
 
@@ -128,7 +165,7 @@ export function getPluginId() {
 }
 ```
 
-If you'd like to see more examples, you can find all the default templates and their yaml files [here](https://github.com/backstage/backstage/tree/master/packages/cli/templates).
+If you'd like to see more examples, you can find all the default templates and their yaml files [here](https://github.com/backstage/backstage/tree/master/packages/cli-module-new/templates).
 
 Once your template is ready, [add it to your config](#installing-custom-templates), and you should now be able to select it when running `yarn new`.
 

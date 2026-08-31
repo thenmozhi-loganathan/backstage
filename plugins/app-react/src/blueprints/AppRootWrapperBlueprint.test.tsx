@@ -23,6 +23,7 @@ import {
   createFrontendModule,
 } from '@backstage/frontend-plugin-api';
 import { renderTestApp } from '@backstage/frontend-test-utils';
+import { z } from 'zod/v4';
 
 describe('AppRootWrapperBlueprint', () => {
   it('should return an extension with sensible defaults', () => {
@@ -43,6 +44,7 @@ describe('AppRootWrapperBlueprint', () => {
         "configSchema": undefined,
         "disabled": false,
         "factory": [Function],
+        "if": undefined,
         "inputs": {},
         "kind": "app-root-wrapper",
         "name": undefined,
@@ -75,10 +77,8 @@ describe('AppRootWrapperBlueprint', () => {
 
   it('should render the complex component wrapper', async () => {
     const extension = AppRootWrapperBlueprint.makeWithOverrides({
-      config: {
-        schema: {
-          name: z => z.string(),
-        },
+      configSchema: {
+        name: z.string(),
       },
       inputs: {
         children: createExtensionInput([coreExtensionData.reactElement]),

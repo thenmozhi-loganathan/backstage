@@ -1,5 +1,320 @@
 # @backstage/plugin-catalog-backend-module-github
 
+## 0.13.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/integration@2.1.0
+  - @backstage/plugin-catalog-node@2.2.4
+  - @backstage/plugin-events-node@0.4.25
+
+## 0.13.5-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.1.0-next.0
+
+## 0.13.5-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0-next.0
+  - @backstage/plugin-catalog-node@2.2.4-next.0
+  - @backstage/plugin-events-node@0.4.25-next.0
+
+## 0.13.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3
+  - @backstage/plugin-catalog-node@2.2.3
+  - @backstage/plugin-events-node@0.4.24
+
+## 0.13.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3-next.0
+  - @backstage/plugin-catalog-node@2.2.3-next.0
+  - @backstage/plugin-events-node@0.4.24-next.0
+
+## 0.13.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.3
+  - @backstage/backend-plugin-api@1.9.2
+  - @backstage/plugin-catalog-node@2.2.2
+  - @backstage/plugin-events-node@0.4.23
+
+## 0.13.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.3-next.0
+  - @backstage/plugin-catalog-node@2.2.2-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+  - @backstage/plugin-events-node@0.4.23-next.0
+
+## 0.13.2
+
+### Patch Changes
+
+- d745f1c: Added experimental support for checking suspended users via the GitHub REST API instead of the GraphQL `suspendedAt` field. Enable by setting both `excludeSuspendedUsers: true` and `experimental_checkForSuspendedUsersWithRest: true` in the provider config. When enabled, responses are cached using conditional HTTP requests to minimize REST API rate limit usage.
+- e9b78e9: Removed the `uuid` dependency and replaced usage with the built-in `crypto.randomUUID()`.
+- aa313f0: The `GithubMultiOrgEntityProvider` now emits entities in a stable order during full mutations. Entities are sorted by entity ref, with the location annotation as a tiebreaker for entities that share the same ref. This prevents entity data from flickering between different GitHub orgs across refresh cycles when `alwaysUseDefaultNamespace` is enabled and teams with identical slugs exist in multiple orgs.
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/errors@1.3.1
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/plugin-catalog-node@2.2.1
+  - @backstage/integration@2.0.2
+  - @backstage/config@1.3.8
+  - @backstage/plugin-catalog-common@1.1.10
+  - @backstage/plugin-events-node@0.4.22
+
+## 0.13.2-next.1
+
+### Patch Changes
+
+- e9b78e9: Removed the `uuid` dependency and replaced usage with the built-in `crypto.randomUUID()`.
+- Updated dependencies
+  - @backstage/catalog-model@1.8.1-next.1
+  - @backstage/plugin-catalog-node@2.2.1-next.1
+
+## 0.13.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/integration@2.0.2-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/plugin-catalog-node@2.2.1-next.0
+  - @backstage/plugin-events-node@0.4.22-next.0
+  - @backstage/types@1.2.2
+  - @backstage/plugin-catalog-common@1.1.10-next.0
+
+## 0.13.1
+
+### Patch Changes
+
+- b11e338: Fixed a bug where `GithubEntityProvider` with `validateLocationsExist: true` and `filters.branch` configured would always check for the catalog file on the repository's default branch (`HEAD`) instead of the configured branch. This caused repositories to be filtered out when the catalog file only existed on the non-default branch.
+- edf465f: Removed the `type-fest` dev dependency, replacing its `PartialDeep` import with a local helper type in tests.
+- cca9fc2: Added automatic retry on temporary errors (like 5XX) to the shared GitHub GraphQL client used by `GithubOrgEntityProvider` and replaced the GraphQL client in `GithubEntityProvider` by this one as well, improving resilience against intermittent GitHub API failures.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/errors@1.3.0
+  - @backstage/catalog-model@1.8.0
+  - @backstage/plugin-catalog-node@2.2.0
+  - @backstage/integration@2.0.1
+  - @backstage/config@1.3.7
+  - @backstage/plugin-catalog-common@1.1.9
+  - @backstage/plugin-events-node@0.4.21
+
+## 0.13.1-next.2
+
+### Patch Changes
+
+- cca9fc2: Added automatic retry on temporary errors (like 5XX) to the shared GitHub GraphQL client used by `GithubOrgEntityProvider` and replaced the GraphQL client in `GithubEntityProvider` by this one as well, improving resilience against intermittent GitHub API failures.
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/plugin-catalog-node@2.2.0-next.2
+  - @backstage/integration@2.0.1-next.0
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/catalog-model@1.7.8-next.0
+  - @backstage/config@1.3.7-next.0
+  - @backstage/plugin-events-node@0.4.21-next.2
+  - @backstage/plugin-catalog-common@1.1.9-next.0
+
+## 0.13.1-next.1
+
+### Patch Changes
+
+- b11e338: Fixed a bug where `GithubEntityProvider` with `validateLocationsExist: true` and `filters.branch` configured would always check for the catalog file on the repository's default branch (`HEAD`) instead of the configured branch. This caused repositories to be filtered out when the catalog file only existed on the non-default branch.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/plugin-catalog-node@2.1.1-next.1
+  - @backstage/plugin-events-node@0.4.21-next.1
+
+## 0.13.1-next.0
+
+### Patch Changes
+
+- edf465f: Removed the `type-fest` dev dependency, replacing its `PartialDeep` import with a local helper type in tests.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/plugin-catalog-node@2.1.1-next.0
+  - @backstage/plugin-events-node@0.4.21-next.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/integration@2.0.0
+  - @backstage/types@1.2.2
+  - @backstage/plugin-catalog-common@1.1.8
+
+## 0.13.0
+
+### Minor Changes
+
+- b11c2cd: The default user transformer now prefers organization verified domain emails over the user's public GitHub email when populating the user entity profile. It also strips plus-addressed routing tags that GitHub adds to these emails.
+
+  If you want to retain the old behavior, you can do so with a custom user transformer using the `githubOrgEntityProviderTransformsExtensionPoint`:
+
+  ```ts
+  import { createBackendModule } from '@backstage/backend-plugin-api';
+  import { githubOrgEntityProviderTransformsExtensionPoint } from '@backstage/plugin-catalog-backend-module-github-org';
+  import { defaultUserTransformer } from '@backstage/plugin-catalog-backend-module-github';
+
+  export default createBackendModule({
+    pluginId: 'catalog',
+    moduleId: 'github-org-custom-transforms',
+    register(env) {
+      env.registerInit({
+        deps: {
+          transforms: githubOrgEntityProviderTransformsExtensionPoint,
+        },
+        async init({ transforms }) {
+          transforms.setUserTransformer(async (item, ctx) => {
+            const entity = await defaultUserTransformer(item, ctx);
+            if (entity && item.email) {
+              entity.spec.profile!.email = item.email;
+            }
+            return entity;
+          });
+        },
+      });
+    },
+  });
+  ```
+
+### Patch Changes
+
+- 6738cf0: build(deps): bump `minimatch` from 9.0.5 to 10.2.1
+- 106d1b2: Added a `defaultUserTransformer.useVerifiedEmails` config option for the `githubOrg` provider. When set to `true`, the default user transformer prefers organization verified domain emails over the user's public GitHub email. Defaults to `false`, which uses only the public GitHub email.
+
+  This option has no effect when a custom user transformer is set via the `githubOrgEntityProviderTransformsExtensionPoint`.
+
+  ```yaml
+  catalog:
+    providers:
+      githubOrg:
+        production:
+          githubUrl: https://github.com
+          orgs:
+            - my-org
+          defaultUserTransformer:
+            useVerifiedEmails: true
+  ```
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/integration@2.0.0
+  - @backstage/plugin-catalog-node@2.1.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/plugin-events-node@0.4.20
+
+## 0.13.0-next.2
+
+### Patch Changes
+
+- 106d1b2: Added a `defaultUserTransformer.useVerifiedEmails` config option for the `githubOrg` provider. When set to `true`, the default user transformer prefers organization verified domain emails over the user's public GitHub email. Defaults to `false`, which uses only the public GitHub email.
+
+  This option has no effect when a custom user transformer is set via the `githubOrgEntityProviderTransformsExtensionPoint`.
+
+  ```yaml
+  catalog:
+    providers:
+      githubOrg:
+        production:
+          githubUrl: https://github.com
+          orgs:
+            - my-org
+          defaultUserTransformer:
+            useVerifiedEmails: true
+  ```
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/integration@2.0.0-next.2
+  - @backstage/plugin-catalog-node@2.1.0-next.2
+  - @backstage/plugin-events-node@0.4.20-next.1
+
+## 0.13.0-next.1
+
+### Minor Changes
+
+- b11c2cd: The default user transformer now prefers organization verified domain emails over the user's public GitHub email when populating the user entity profile. It also strips plus-addressed routing tags that GitHub adds to these emails.
+
+  If you want to retain the old behavior, you can do so with a custom user transformer using the `githubOrgEntityProviderTransformsExtensionPoint`:
+
+  ```ts
+  import { createBackendModule } from '@backstage/backend-plugin-api';
+  import { githubOrgEntityProviderTransformsExtensionPoint } from '@backstage/plugin-catalog-backend-module-github-org';
+  import { defaultUserTransformer } from '@backstage/plugin-catalog-backend-module-github';
+
+  export default createBackendModule({
+    pluginId: 'catalog',
+    moduleId: 'github-org-custom-transforms',
+    register(env) {
+      env.registerInit({
+        deps: {
+          transforms: githubOrgEntityProviderTransformsExtensionPoint,
+        },
+        async init({ transforms }) {
+          transforms.setUserTransformer(async (item, ctx) => {
+            const entity = await defaultUserTransformer(item, ctx);
+            if (entity && item.email) {
+              entity.spec.profile!.email = item.email;
+            }
+            return entity;
+          });
+        },
+      });
+    },
+  });
+  ```
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.0-next.1
+  - @backstage/plugin-catalog-node@2.1.0-next.1
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-catalog-common@1.1.8
+  - @backstage/plugin-events-node@0.4.20-next.0
+
+## 0.12.3-next.0
+
+### Patch Changes
+
+- 6738cf0: build(deps): bump `minimatch` from 9.0.5 to 10.2.1
+- Updated dependencies
+  - @backstage/integration@1.21.0-next.0
+  - @backstage/plugin-catalog-node@2.1.0-next.0
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-catalog-common@1.1.8
+  - @backstage/plugin-events-node@0.4.20-next.0
+
 ## 0.12.2
 
 ### Patch Changes

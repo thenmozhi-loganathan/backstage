@@ -24,10 +24,10 @@ import {
   stringifyLocationRef,
 } from '@backstage/catalog-model';
 import {
-  assertError,
   ConflictError,
   InputError,
   NotAllowedError,
+  toError,
 } from '@backstage/errors';
 import { JsonValue } from '@backstage/types';
 import { ScmIntegrationRegistry } from '@backstage/integration';
@@ -94,6 +94,7 @@ export class DefaultCatalogProcessingOrchestrator
     parser: CatalogProcessorParser;
     policy: EntityPolicy;
     rulesEnforcer: CatalogRulesEnforcer;
+    allowedLocationTypes?: string[];
   };
 
   constructor(options: {
@@ -103,6 +104,7 @@ export class DefaultCatalogProcessingOrchestrator
     parser: CatalogProcessorParser;
     policy: EntityPolicy;
     rulesEnforcer: CatalogRulesEnforcer;
+    allowedLocationTypes?: string[];
   }) {
     this.options = options;
   }
@@ -192,10 +194,10 @@ export class DefaultCatalogProcessingOrchestrator
         ok: collectorResults.errors.length === 0,
       };
     } catch (error) {
-      assertError(error);
+      const err = toError(error);
       return {
         ok: false,
-        errors: collector.results().errors.concat(error),
+        errors: collector.results().errors.concat(err),
       };
     }
   }
@@ -350,6 +352,24 @@ export class DefaultCatalogProcessingOrchestrator
       );
       const { type = context.location.type, presence = 'required' } =
         entity.spec;
+
+      const { allowedLocationTypes } = this.options;
+      if (
+        allowedLocationTypes &&
+        type !== context.location.type &&
+        !allowedLocationTypes.includes(type)
+      ) {
+        context.collector.generic()(
+          processingResult.inputError(
+            context.location,
+            `Registered locations must be of an allowed type ${JSON.stringify(
+              allowedLocationTypes,
+            )}`,
+          ),
+        );
+        return;
+      }
+
       const targets = new Array<string>();
       if (entity.spec.target) {
         targets.push(entity.spec.target);

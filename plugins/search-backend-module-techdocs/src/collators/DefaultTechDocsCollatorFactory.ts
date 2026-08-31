@@ -16,9 +16,8 @@
 
 import {
   CATALOG_FILTER_EXISTS,
-  CatalogApi,
-  CatalogClient,
   EntityFilterQuery,
+  QueryEntitiesInitialRequest,
 } from '@backstage/catalog-client';
 import {
   Entity,
@@ -45,6 +44,7 @@ import {
   DiscoveryService,
   LoggerService,
 } from '@backstage/backend-plugin-api';
+import { CatalogService } from '@backstage/plugin-catalog-node';
 
 /**
  * Options to configure the TechDocs collator factory
@@ -56,7 +56,7 @@ export type TechDocsCollatorFactoryOptions = {
   logger: LoggerService;
   auth: AuthService;
   locationTemplate?: string;
-  catalogClient?: CatalogApi;
+  catalog: CatalogService;
   parallelismLimit?: number;
   legacyPathCasing?: boolean;
   entityTransformer?: TechDocsCollatorEntityTransformer;
@@ -86,7 +86,7 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
   private locationTemplate: string;
   private readonly logger: LoggerService;
   private readonly auth: AuthService;
-  private readonly catalogClient: CatalogApi;
+  private readonly catalog: CatalogService;
   private readonly parallelismLimit: number;
   private readonly legacyPathCasing: boolean;
   private entityTransformer: TechDocsCollatorEntityTransformer;
@@ -99,9 +99,7 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
     this.locationTemplate =
       options.locationTemplate || '/docs/:namespace/:kind/:name/:path';
     this.logger = options.logger.child({ documentType: this.type });
-    this.catalogClient =
-      options.catalogClient ||
-      new CatalogClient({ discoveryApi: options.discovery });
+    this.catalog = options.catalog;
     this.parallelismLimit = options.parallelismLimit ?? 10;
     this.legacyPathCasing = options.legacyPathCasing ?? false;
     this.entityTransformer = options.entityTransformer ?? (() => ({}));
@@ -138,38 +136,27 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
     const limit = pLimit(this.parallelismLimit);
     const techDocsBaseUrl = await this.discovery.getBaseUrl('techdocs');
 
-    let entitiesRetrieved = 0;
-    let moreEntitiesToGet = true;
+    let cursor: string | undefined;
 
-    // Offset/limit pagination is used on the Catalog Client in order to
-    // limit (and allow some control over) memory used by the search backend
-    // at index-time. The batchSize is calculated as a factor of the given
-    // parallelism limit to simplify configuration.
+    // The batchSize is calculated as a factor of the given parallelism limit
+    // to simplify configuration while bounding index-time memory use.
     const batchSize = this.parallelismLimit * 50;
-    while (moreEntitiesToGet) {
-      const { token: catalogToken } = await this.auth.getPluginRequestToken({
-        onBehalfOf: await this.auth.getOwnServiceCredentials(),
-        targetPluginId: 'catalog',
-      });
+    const initialRequest: QueryEntitiesInitialRequest = {
+      filter: {
+        'metadata.annotations.backstage.io/techdocs-ref': CATALOG_FILTER_EXISTS,
+        ...this.customCatalogApiFilters,
+      },
+      limit: batchSize,
+      totalItems: 'exclude',
+    };
 
-      const entities = (
-        await this.catalogClient.getEntities(
-          {
-            filter: {
-              'metadata.annotations.backstage.io/techdocs-ref':
-                CATALOG_FILTER_EXISTS,
-              ...this.customCatalogApiFilters,
-            },
-            limit: batchSize,
-            offset: entitiesRetrieved,
-          },
-          { token: catalogToken },
-        )
-      ).items;
-
-      // Control looping through entity batches.
-      moreEntitiesToGet = entities.length === batchSize;
-      entitiesRetrieved += entities.length;
+    do {
+      const response = await this.catalog.queryEntities(
+        cursor ? { cursor, limit: batchSize } : initialRequest,
+        { credentials: await this.auth.getOwnServiceCredentials() },
+      );
+      cursor = response.pageInfo.nextCursor;
+      const entities = response.items;
 
       const filteredEntities = this.entityFilterFunction
         ? this.entityFilterFunction(entities)
@@ -237,7 +224,7 @@ export class DefaultTechDocsCollatorFactory implements DocumentCollatorFactory {
         }),
       );
       yield* (await Promise.all(docPromises)).flat();
-    }
+    } while (cursor);
   }
 
   private applyArgsToFormat(

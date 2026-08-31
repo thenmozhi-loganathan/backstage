@@ -1,5 +1,122 @@
 # @backstage/plugin-app-react
 
+## 0.2.6
+
+### Patch Changes
+
+- a8b5ba6: Updated dependencies.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/frontend-plugin-api@0.18.0
+
+## 0.2.6-next.0
+
+### Patch Changes
+
+- a8b5ba6: Updated dependencies.
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+  - @backstage/core-plugin-api@1.12.9-next.0
+
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/core-plugin-api@1.12.8
+
+## 0.2.5-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.2
+  - @backstage/core-plugin-api@1.12.7
+
+## 0.2.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+  - @backstage/core-plugin-api@1.12.7-next.0
+
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.0
+  - @backstage/core-plugin-api@1.12.6
+
+## 0.2.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/core-plugin-api@1.12.5
+
+## 0.2.2-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.16.0-next.1
+  - @backstage/core-plugin-api@1.12.5-next.1
+
+## 0.2.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.15.2-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+
+## 0.2.1
+
+### Patch Changes
+
+- 5f3f5d2: `NavContentBlueprint` nav item collections now keep previously collected `rest()` results in sync when additional items are taken later in the same render, making it easier to place items across multiple sidebar sections.
+- 2c383b5: Added `AnalyticsImplementationBlueprint` and `AnalyticsImplementationFactory`, migrated from `@backstage/frontend-plugin-api`.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/frontend-plugin-api@0.15.0
+
+## 0.2.1-next.1
+
+### Patch Changes
+
+- 2c383b5: Added `AnalyticsImplementationBlueprint` and `AnalyticsImplementationFactory`, migrated from `@backstage/frontend-plugin-api`.
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.15.0-next.1
+  - @backstage/core-plugin-api@1.12.4-next.1
+
+## 0.2.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+
 ## 0.2.0
 
 ### Minor Changes

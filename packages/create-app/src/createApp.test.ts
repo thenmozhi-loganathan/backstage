@@ -19,11 +19,16 @@ import path from 'node:path';
 import { Command } from 'commander';
 import * as tasks from './lib/tasks';
 import createApp from './createApp';
-import { findPaths } from '@backstage/cli-common';
+import { findOwnPaths, targetPaths } from '@backstage/cli-common';
 import { tmpdir } from 'node:os';
 import { createMockDirectory } from '@backstage/backend-test-utils';
+import { overrideTargetPaths } from '@backstage/cli-common/testUtils';
 
 jest.mock('./lib/tasks');
+
+const MOCK_TARGET_DIR = '/mock/target-dir';
+const MOCK_TARGET_ROOT = '/mock/target-root';
+overrideTargetPaths({ dir: MOCK_TARGET_DIR, rootDir: MOCK_TARGET_ROOT });
 
 // By mocking this the filesystem mocks won't mess with reading all of the package.jsons
 jest.mock('./lib/versions', () => ({
@@ -38,6 +43,7 @@ const tryInitGitRepositoryMock = jest.spyOn(tasks, 'tryInitGitRepository');
 const readGitConfig = jest.spyOn(tasks, 'readGitConfig');
 const moveAppMock = jest.spyOn(tasks, 'moveAppTask');
 const buildAppMock = jest.spyOn(tasks, 'buildAppTask');
+const tryCommandForVersionMock = jest.spyOn(tasks, 'tryCommandForVersion');
 
 describe('command entrypoint', () => {
   const mockDir = createMockDirectory({ mockOsTmpDir: true });
@@ -49,6 +55,10 @@ describe('command entrypoint', () => {
     });
     readGitConfig.mockResolvedValue({
       defaultBranch: 'git-default-branch',
+    });
+    tryCommandForVersionMock.mockResolvedValue({
+      version: '1.2.3',
+      error: undefined,
     });
   });
 
@@ -64,12 +74,7 @@ describe('command entrypoint', () => {
     expect(tryInitGitRepositoryMock).toHaveBeenCalled();
     expect(templatingMock).toHaveBeenCalled();
     expect(templatingMock.mock.lastCall?.[0]).toEqual(
-      findPaths(__dirname).resolveTarget(
-        'packages',
-        'create-app',
-        'templates',
-        'default-app',
-      ),
+      findOwnPaths(__dirname).resolve('templates/default-app'),
     );
     expect(templatingMock.mock.lastCall?.[1]).toContain(
       path.join(tmpdir(), 'MyApp'),
@@ -85,30 +90,20 @@ describe('command entrypoint', () => {
     expect(tryInitGitRepositoryMock).toHaveBeenCalled();
     expect(templatingMock).toHaveBeenCalled();
     expect(templatingMock.mock.lastCall?.[0]).toEqual(
-      findPaths(__dirname).resolveTarget(
-        'packages',
-        'create-app',
-        'templates',
-        'default-app',
-      ),
+      findOwnPaths(__dirname).resolve('templates/default-app'),
     );
     expect(templatingMock.mock.lastCall?.[1]).toEqual('myDirectory');
     expect(buildAppMock).toHaveBeenCalled();
   });
 
-  it('should call expected tasks when `--next` is supplied', async () => {
-    const cmd = { next: true } as unknown as Command;
+  it('should call expected tasks when `--legacy` is supplied', async () => {
+    const cmd = { legacy: true } as unknown as Command;
     await createApp(cmd);
     expect(checkAppExistsMock).toHaveBeenCalled();
     expect(tryInitGitRepositoryMock).toHaveBeenCalled();
     expect(templatingMock).toHaveBeenCalled();
     expect(templatingMock.mock.lastCall?.[0]).toEqual(
-      findPaths(__dirname).resolveTarget(
-        'packages',
-        'create-app',
-        'templates',
-        'next-app',
-      ),
+      findOwnPaths(__dirname).resolve('templates/legacy-app'),
     );
     expect(templatingMock.mock.lastCall?.[1]).toContain(
       path.join(tmpdir(), 'MyApp'),
@@ -127,7 +122,7 @@ describe('command entrypoint', () => {
     expect(tryInitGitRepositoryMock).toHaveBeenCalled();
     expect(templatingMock).toHaveBeenCalled();
     expect(templatingMock.mock.lastCall?.[0]).toEqual(
-      findPaths(__dirname).resolveTarget('templateDirectory'),
+      targetPaths.resolve('templateDirectory'),
     );
     expect(templatingMock.mock.lastCall?.[1]).toEqual('myDirectory');
     expect(buildAppMock).toHaveBeenCalled();
@@ -160,5 +155,111 @@ describe('command entrypoint', () => {
     readGitConfig.mockResolvedValue(undefined);
     await createApp(cmd);
     expect(tryInitGitRepositoryMock).not.toHaveBeenCalled();
+  });
+
+  it('should exit when yarn is not available', async () => {
+    tryCommandForVersionMock.mockImplementation(async (command: string) => {
+      if (command === 'yarn -v') {
+        return { version: 'N/A', error: 'Command not found: yarn' };
+      }
+      return { version: '3.12.4', error: undefined };
+    });
+    jest.spyOn(tasks.Task, 'exit').mockImplementation(() => {
+      throw new Error('exit');
+    });
+    const cmd = {} as unknown as Command;
+    await expect(createApp(cmd)).rejects.toThrow('exit');
+    expect(templatingMock).not.toHaveBeenCalled();
+  });
+
+  it('should continue when python is not available', async () => {
+    tryCommandForVersionMock.mockImplementation(async (command: string) => {
+      if (command.startsWith('python')) {
+        return { version: 'N/A', error: 'Command not found: python' };
+      }
+      return { version: '4.6.0', error: undefined };
+    });
+    const cmd = {} as unknown as Command;
+    await createApp(cmd);
+    expect(templatingMock).toHaveBeenCalled();
+  });
+
+  it('should fall back to python when python3 is not available', async () => {
+    tryCommandForVersionMock.mockImplementation(async (command: string) => {
+      if (command === 'python3 --version') {
+        return { version: 'N/A', error: 'Command not found: python3' };
+      }
+      if (command === 'python --version') {
+        return { version: 'Python 3.12.4', error: undefined };
+      }
+      return { version: '4.6.0', error: undefined };
+    });
+    const cmd = {} as unknown as Command;
+    await createApp(cmd);
+    expect(tryCommandForVersionMock).toHaveBeenCalledWith('python --version');
+    expect(templatingMock).toHaveBeenCalled();
+  });
+
+  it('should exit when Node version is an odd number', async () => {
+    const originalVersion = process.versions.node;
+    Object.defineProperty(process.versions, 'node', {
+      value: '23.1.0',
+      configurable: true,
+    });
+    try {
+      jest.spyOn(tasks.Task, 'exit').mockImplementation(() => {
+        throw new Error('exit');
+      });
+      const cmd = {} as unknown as Command;
+      await expect(createApp(cmd)).rejects.toThrow('exit');
+      expect(templatingMock).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(process.versions, 'node', {
+        value: originalVersion,
+        configurable: true,
+      });
+    }
+  });
+
+  it('should exit when Node version is too old', async () => {
+    const originalVersion = process.versions.node;
+    Object.defineProperty(process.versions, 'node', {
+      value: '18.0.0',
+      configurable: true,
+    });
+    try {
+      jest.spyOn(tasks.Task, 'exit').mockImplementation(() => {
+        throw new Error('exit');
+      });
+      const cmd = {} as unknown as Command;
+      await expect(createApp(cmd)).rejects.toThrow('exit');
+      expect(templatingMock).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(process.versions, 'node', {
+        value: originalVersion,
+        configurable: true,
+      });
+    }
+  });
+
+  it('should exit when Node version is too new', async () => {
+    const originalVersion = process.versions.node;
+    Object.defineProperty(process.versions, 'node', {
+      value: '26.0.0',
+      configurable: true,
+    });
+    try {
+      jest.spyOn(tasks.Task, 'exit').mockImplementation(() => {
+        throw new Error('exit');
+      });
+      const cmd = {} as unknown as Command;
+      await expect(createApp(cmd)).rejects.toThrow('exit');
+      expect(templatingMock).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(process.versions, 'node', {
+        value: originalVersion,
+        configurable: true,
+      });
+    }
   });
 });

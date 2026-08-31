@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { CatalogApi, CatalogClient } from '@backstage/catalog-client';
 import { stringifyEntityRef } from '@backstage/catalog-model';
 import { Config, readDurationFromConfig } from '@backstage/config';
 import { NotFoundError } from '@backstage/errors';
@@ -41,7 +40,9 @@ import {
   HttpAuthService,
   LoggerService,
 } from '@backstage/backend-plugin-api';
+import { CatalogService } from '@backstage/plugin-catalog-node';
 import { durationToMilliseconds } from '@backstage/types';
+import path from 'node:path';
 
 /**
  * Required dependencies for running TechDocs in the "out-of-the-box"
@@ -60,7 +61,7 @@ export type OutOfTheBoxDeploymentOptions = {
   cache: CacheService;
   docsBuildStrategy?: DocsBuildStrategy;
   buildLogTransport?: winston.transport;
-  catalogClient?: CatalogApi;
+  catalog: CatalogService;
   httpAuth: HttpAuthService;
   auth: AuthService;
 };
@@ -79,7 +80,7 @@ export type RecommendedDeploymentOptions = {
   cache: CacheService;
   docsBuildStrategy?: DocsBuildStrategy;
   buildLogTransport?: winston.transport;
-  catalogClient?: CatalogApi;
+  catalog: CatalogService;
   httpAuth: HttpAuthService;
   auth: AuthService;
 };
@@ -114,10 +115,9 @@ export async function createRouter(
   options: RouterOptions,
 ): Promise<express.Router> {
   const router = Router();
-  const { publisher, config, logger, discovery, httpAuth, auth } = options;
+  const { publisher, config, logger, discovery, httpAuth, auth, catalog } =
+    options;
 
-  const catalogClient =
-    options.catalogClient ?? new CatalogClient({ discoveryApi: discovery });
   const docsBuildStrategy =
     options.docsBuildStrategy ?? DefaultDocsBuildStrategy.fromConfig(config);
   const buildLogTransport = options.buildLogTransport;
@@ -125,8 +125,7 @@ export async function createRouter(
   // Entities are cached to optimize the /static/docs request path, which can be called many times
   // when loading a single techdocs page.
   const entityLoader = new CachedEntityLoader({
-    auth,
-    catalog: catalogClient,
+    catalog,
     cache: options.cache,
   });
 
@@ -163,13 +162,8 @@ export async function createRouter(
 
     const credentials = await httpAuth.credentials(req);
 
-    const { token } = await auth.getPluginRequestToken({
-      onBehalfOf: credentials,
-      targetPluginId: 'catalog',
-    });
-
     // Verify that the related entity exists and the current user has permission to view it.
-    const entity = await entityLoader.load(credentials, entityName, token);
+    const entity = await entityLoader.load(credentials, entityName);
 
     if (!entity) {
       throw new NotFoundError(
@@ -202,12 +196,7 @@ export async function createRouter(
 
     const credentials = await httpAuth.credentials(req);
 
-    const { token } = await auth.getPluginRequestToken({
-      onBehalfOf: credentials,
-      targetPluginId: 'catalog',
-    });
-
-    const entity = await entityLoader.load(credentials, entityName, token);
+    const entity = await entityLoader.load(credentials, entityName);
 
     if (!entity) {
       throw new NotFoundError(
@@ -240,16 +229,11 @@ export async function createRouter(
 
     const credentials = await httpAuth.credentials(req);
 
-    const { token } = await auth.getPluginRequestToken({
-      onBehalfOf: credentials,
-      targetPluginId: 'catalog',
+    const entity = await entityLoader.load(credentials, {
+      kind,
+      namespace,
+      name,
     });
-
-    const entity = await entityLoader.load(
-      credentials,
-      { kind, namespace, name },
-      token,
-    );
 
     if (!entity?.metadata?.uid) {
       throw new NotFoundError('Entity metadata UID missing');
@@ -311,16 +295,25 @@ export async function createRouter(
         const { kind, namespace, name } = req.params;
         const entityName = { kind, namespace, name };
 
+        const entityRoot = '/entity';
+        const decodedPath = decodeURI(req.path);
+        const contentPath = path.posix.resolve(entityRoot, `.${decodedPath}`);
+        const relativePath = path.posix.relative(entityRoot, contentPath);
+        if (
+          decodedPath.includes('\\') ||
+          relativePath === '..' ||
+          relativePath.startsWith('../')
+        ) {
+          throw new NotFoundError(
+            `Content not found for ${stringifyEntityRef(entityName)}`,
+          );
+        }
+
         const credentials = await httpAuth.credentials(req, {
           allowLimitedAccess: true,
         });
 
-        const { token } = await auth.getPluginRequestToken({
-          onBehalfOf: credentials,
-          targetPluginId: 'catalog',
-        });
-
-        const entity = await entityLoader.load(credentials, entityName, token);
+        const entity = await entityLoader.load(credentials, entityName);
 
         if (!entity) {
           throw new NotFoundError(

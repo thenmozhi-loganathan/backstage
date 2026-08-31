@@ -1,5 +1,251 @@
 # @backstage/repo-tools
 
+## 0.19.0
+
+### Minor Changes
+
+- 0804116: **BREAKING**: Renamed the `repo schema openapi verify` command to `repo schema openapi validate`. Added a new `package schema openapi validate` command to validate that an OpenAPI spec is a valid OpenAPI 3.x document.
+
+### Patch Changes
+
+- 226817d: chore(deps): bump `js-yaml` from 4.2.0 to 4.3.0
+- 78bf918: chore(deps): bump `tar` from 7.5.15 to 7.5.21
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/config-loader@1.11.2
+  - @backstage/backend-plugin-api@1.10.0
+
+## 0.18.1-next.1
+
+### Patch Changes
+
+- 78bf918: chore(deps): bump `tar` from 7.5.15 to 7.5.21
+- Updated dependencies
+  - @backstage/config-loader@1.11.2-next.0
+  - @backstage/backend-plugin-api@1.10.0-next.1
+
+## 0.18.1-next.0
+
+### Patch Changes
+
+- 226817d: chore(deps): bump `js-yaml` from 4.2.0 to 4.3.0
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0-next.0
+
+## 0.18.0
+
+### Minor Changes
+
+- 84171b3: **BREAKING**: Replaced `@useoptic/optic` and `@useoptic/openapi-utilities` with `oasdiff` for OpenAPI breaking change detection.
+
+  To migrate, remove `@useoptic/optic` from your root `package.json` and install the `oasdiff` CLI on your system — see https://github.com/oasdiff/oasdiff#installation for instructions.
+
+  The `package schema openapi diff` command now uses `oasdiff` under the hood. The `--since`, `--json`, and `--ignore` flags continue to work, but the JSON and text output formats have changed to match `oasdiff`'s native output.
+
+  The `repo schema openapi diff` command now automatically detects all packages with a changed `src/schema/openapi.yaml` and runs `oasdiff` against them directly. Packages no longer need a `"diff"` script in their `package.json` to be included in the check.
+
+  Removed the `package schema openapi init` and `repo schema openapi test` commands, which depended on the Optic `capture` workflow and have no equivalent with `oasdiff`. Runtime validation of your API against its OpenAPI spec is still available via `wrapServer` from `@backstage/backend-openapi-utils/testUtils`.
+
+### Patch Changes
+
+- 120e7c3: chore(deps): bump `js-yaml` from 4.1.1 to 4.2.0
+- Updated dependencies
+  - @backstage/config-loader@1.11.0
+  - @backstage/cli-common@0.3.0
+  - @backstage/backend-plugin-api@1.9.3
+  - @backstage/cli-node@0.3.4
+
+## 0.18.0-next.1
+
+### Minor Changes
+
+- 84171b3: **BREAKING**: Replaced `@useoptic/optic` and `@useoptic/openapi-utilities` with `oasdiff` for OpenAPI breaking change detection.
+
+  To migrate, remove `@useoptic/optic` from your root `package.json` and install the `oasdiff` CLI on your system — see https://github.com/oasdiff/oasdiff#installation for instructions.
+
+  The `package schema openapi diff` command now uses `oasdiff` under the hood. The `--since`, `--json`, and `--ignore` flags continue to work, but the JSON and text output formats have changed to match `oasdiff`'s native output.
+
+  The `repo schema openapi diff` command now automatically detects all packages with a changed `src/schema/openapi.yaml` and runs `oasdiff` against them directly. Packages no longer need a `"diff"` script in their `package.json` to be included in the check.
+
+  Removed the `package schema openapi init` and `repo schema openapi test` commands, which depended on the Optic `capture` workflow and have no equivalent with `oasdiff`. Runtime validation of your API against its OpenAPI spec is still available via `wrapServer` from `@backstage/backend-openapi-utils/testUtils`.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/cli-common@0.3.0-next.0
+  - @backstage/backend-plugin-api@1.9.3-next.1
+  - @backstage/cli-node@0.3.4-next.0
+  - @backstage/config-loader@1.11.0-next.2
+
+## 0.17.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config-loader@1.11.0-next.0
+  - @backstage/backend-plugin-api@1.9.3-next.0
+
+## 0.17.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/cli-node@0.3.3
+  - @backstage/backend-plugin-api@1.9.2
+  - @backstage/config-loader@1.10.12
+
+## 0.17.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.17.2
+
+### Patch Changes
+
+- 927c003: Replaced internal error utilities with shared ones from `@backstage/cli-common`.
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/errors@1.3.1
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/cli-node@0.3.2
+  - @backstage/cli-common@0.2.2
+  - @backstage/config-loader@1.10.11
+
+## 0.17.2-next.0
+
+### Patch Changes
+
+- 927c003: Replaced internal error utilities with shared ones from `@backstage/cli-common`.
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/cli-common@0.2.2-next.0
+  - @backstage/cli-node@0.3.2-next.0
+  - @backstage/config-loader@1.10.11-next.0
+
+## 0.17.1
+
+### Patch Changes
+
+- 2e5c5f8: Bumped `glob` dependency from v7/v8/v11 to v13 to address security vulnerabilities in older versions. Bumped `rollup` from v4.27 to v4.59+ to fix a high severity path traversal vulnerability (GHSA-mw96-cpmx-2vgc).
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- 377de36: Fixed the `peer-deps` command to only require peer dependencies that are actually referenced by each package, rather than requiring all tracked peer dependencies for every package with any React dependency.
+- 8e9679b: Parallelized CLI report generation, reducing wall-clock time by ~4x.
+- ca2dc15: Internal code cleanup.
+- 270efef: Added support for packages that only support React 18+ in the `peer-deps` command.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/errors@1.3.0
+  - @backstage/catalog-model@1.8.0
+  - @backstage/cli-common@0.2.1
+  - @backstage/cli-node@0.3.1
+  - @backstage/config-loader@1.10.10
+
+## 0.17.1-next.2
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/cli-common@0.2.1-next.1
+  - @backstage/cli-node@0.3.1-next.1
+  - @backstage/config-loader@1.10.10-next.1
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/catalog-model@1.7.8-next.0
+
+## 0.17.1-next.1
+
+### Patch Changes
+
+- 2e5c5f8: Bumped `glob` dependency from v7/v8/v11 to v13 to address security vulnerabilities in older versions. Bumped `rollup` from v4.27 to v4.59+ to fix a high severity path traversal vulnerability (GHSA-mw96-cpmx-2vgc).
+- 8e9679b: Parallelized CLI report generation, reducing wall-clock time by ~4x.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+
+## 0.17.1-next.0
+
+### Patch Changes
+
+- 270efef: Added support for packages that only support React 18+ in the `peer-deps` command.
+- Updated dependencies
+  - @backstage/cli-common@0.2.1-next.0
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/cli-node@0.3.1-next.0
+  - @backstage/config-loader@1.10.10-next.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/errors@1.2.7
+
+## 0.17.0
+
+### Minor Changes
+
+- 0fbcf23: Added support for OpenAPI 3.1 to all `schema openapi` commands. The commands now auto-detect the OpenAPI version from the spec file and use the appropriate generator, supporting both OpenAPI 3.0.x and 3.1.x specifications.
+
+### Patch Changes
+
+- 426edbe: Fixed `generate-catalog-info` command failing with "too many arguments" when invoked by lint-staged via the pre-commit hook.
+- d5779e5: Updated the CLI report parser to support cleye-style help output, and strip ANSI escape codes from captured output.
+- 6738cf0: build(deps): bump `minimatch` from 9.0.5 to 10.2.1
+- 2a51546: Fixed prettier existence checks in OpenAPI commands to use `fs.pathExists` instead of checking the resolved path string, which was always truthy.
+- 70fc178: Migrated from deprecated `findPaths` to `targetPaths` and `findOwnPaths` from `@backstage/cli-common`.
+- de62a9d: Upgraded `commander` dependency from `^12.0.0` to `^14.0.3` across all CLI packages.
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- 18a946c: Updated `@microsoft/api-extractor` to `7.57.3` and added tests for `getTsDocConfig`
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/cli-node@0.3.0
+  - @backstage/cli-common@0.2.0
+  - @backstage/config-loader@1.10.9
+  - @backstage/catalog-model@1.7.7
+
+## 0.17.0-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/cli-common@0.2.0-next.2
+
+## 0.17.0-next.1
+
+### Minor Changes
+
+- 0fbcf23: Added support for OpenAPI 3.1 to all `schema openapi` commands. The commands now auto-detect the OpenAPI version from the spec file and use the appropriate generator, supporting both OpenAPI 3.0.x and 3.1.x specifications.
+
+### Patch Changes
+
+- 426edbe: Fixed `generate-catalog-info` command failing with "too many arguments" when invoked by lint-staged via the pre-commit hook.
+- d5779e5: Updated the CLI report parser to support cleye-style help output, and strip ANSI escape codes from captured output.
+- Updated dependencies
+  - @backstage/cli-common@0.2.0-next.1
+  - @backstage/cli-node@0.2.19-next.1
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config-loader@1.10.9-next.0
+  - @backstage/errors@1.2.7
+
+## 0.16.6-next.0
+
+### Patch Changes
+
+- 6738cf0: build(deps): bump `minimatch` from 9.0.5 to 10.2.1
+- 2a51546: Fixed prettier existence checks in OpenAPI commands to use `fs.pathExists` instead of checking the resolved path string, which was always truthy.
+- 70fc178: Migrated from deprecated `findPaths` to `targetPaths` and `findOwnPaths` from `@backstage/cli-common`.
+- de62a9d: Upgraded `commander` dependency from `^12.0.0` to `^14.0.3` across all CLI packages.
+- 18a946c: Updated `@microsoft/api-extractor` to `7.57.3` and added tests for `getTsDocConfig`
+- Updated dependencies
+  - @backstage/cli-common@0.2.0-next.0
+  - @backstage/cli-node@0.2.19-next.0
+  - @backstage/config-loader@1.10.9-next.0
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/errors@1.2.7
+
 ## 0.16.4
 
 ### Patch Changes

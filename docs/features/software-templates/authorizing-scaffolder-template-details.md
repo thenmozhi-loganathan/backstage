@@ -6,7 +6,60 @@ description: How to authorize parts of a template and authorize scaffolder task 
 
 The scaffolder plugin integrates with the Backstage [permission framework](../../permissions/overview.md), which allows you to control access to certain parameters and steps in your templates based on the user executing the template. It also allows you to control access to scaffolder tasks.
 
-### Authorizing parameters and steps
+:::tip
+
+To better understand the following examples make sure to review the [Writing a permission policy](../../permissions/writing-a-policy.md)) documentation before moving forward.
+
+:::
+
+## Authorizing inline template dry runs
+
+The `templateDryRunPermission` permission controls who can submit inline
+Software Template dry runs. It applies to both the `/v2/dry-run` endpoint and
+the `scaffolder:dry-run-template` backend action.
+
+Use this permission when only selected users or services should be able to
+submit inline templates. Direct dry-run requests also require
+`taskCreatePermission`, and the backend action calls the same endpoint with the
+caller's credentials. The `actionExecutePermission` permission still
+authorizes each action that a dry run executes.
+
+For example, the following policy allows only the user `alice` to submit
+inline template dry runs:
+
+```ts title="packages/backend/src/plugins/permission.ts"
+import { templateDryRunPermission } from '@backstage/plugin-scaffolder-common/alpha';
+import {
+  AuthorizeResult,
+  isPermission,
+  PolicyDecision,
+} from '@backstage/plugin-permission-common';
+import {
+  PermissionPolicy,
+  PolicyQuery,
+  PolicyQueryUser,
+} from '@backstage/plugin-permission-node';
+
+class ExamplePermissionPolicy implements PermissionPolicy {
+  async handle(
+    request: PolicyQuery,
+    user?: PolicyQueryUser,
+  ): Promise<PolicyDecision> {
+    if (isPermission(request.permission, templateDryRunPermission)) {
+      return {
+        result:
+          user?.info.userEntityRef === 'user:default/alice'
+            ? AuthorizeResult.ALLOW
+            : AuthorizeResult.DENY,
+      };
+    }
+
+    return { result: AuthorizeResult.ALLOW };
+  }
+}
+```
+
+## Authorizing parameters and steps
 
 To mark specific parameters or steps as requiring permission, add the `backstage:permissions` property to the parameter or step with one or more tags. For example:
 
@@ -288,62 +341,3 @@ All other users are granted permissions to perform/access the following actions/
 - Read scaffolder tasks and their associated events/logs for tasks created by the user.
 
 Although the rules exported by the scaffolder are simple, combining them can help you achieve more complex use cases.
-
-### Authorizing in the New Backend System
-
-Instead of the changes in `permission.ts` noted in the above example you will make them in your `index.ts`. You will need to create a module where your permission policy will get added. Here is a very simplified example of how to do that:
-
-```ts title="packages/backend/src/index.ts"
-import { createBackendModule } from '@backstage/backend-plugin-api';
-import {
-  PolicyDecision,
-  AuthorizeResult,
-} from '@backstage/plugin-permission-common';
-import {
-  PermissionPolicy,
-  PolicyQuery,
-  PolicyQueryUser,
-} from '@backstage/plugin-permission-node';
-import { policyExtensionPoint } from '@backstage/plugin-permission-node/alpha';
-
-class ExamplePermissionPolicy implements PermissionPolicy {
-  async handle(
-    request: PolicyQuery,
-    user?: PolicyQueryUser,
-  ): Promise<PolicyDecision> {
-    // Various scaffolder permission checks ...
-
-    return {
-      result: AuthorizeResult.ALLOW,
-    };
-  }
-}
-
-const customPermissionBackendModule = createBackendModule({
-  pluginId: 'permission',
-  moduleId: 'allow-all-policy',
-  register(reg) {
-    reg.registerInit({
-      deps: { policy: policyExtensionPoint },
-      async init({ policy }) {
-        policy.setPolicy(new ExamplePermissionPolicy());
-      },
-    });
-  },
-});
-
-const backend = createBackend();
-
-// Other plugins...
-
-/* highlight-add-start */
-backend.add(import('@backstage/plugin-permission-backend'));
-backend.add(customPermissionBackendModule);
-/* highlight-add-end */
-```
-
-:::note Note
-
-The `ExamplePermissionPolicy` here could be the one from the [Authorizing parameters and steps](#authorizing-parameters-and-steps) example or from the [Authorizing actions](#authorizing-actions) example. It would work the same way for both of them.
-
-:::

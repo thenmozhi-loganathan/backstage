@@ -42,6 +42,26 @@ export type ComponentParts = {
 };
 
 // @alpha
+export interface HomePageDefaultConfigItem {
+  // (undocumented)
+  column: number;
+  // (undocumented)
+  component: string;
+  // (undocumented)
+  deletable?: boolean;
+  // (undocumented)
+  height: number;
+  // (undocumented)
+  movable?: boolean;
+  // (undocumented)
+  resizable?: boolean;
+  // (undocumented)
+  row: number;
+  // (undocumented)
+  width: number;
+}
+
+// @alpha
 export const HomePageLayoutBlueprint: ExtensionBlueprint<{
   kind: 'home-page-layout';
   params: HomePageLayoutBlueprintParams;
@@ -76,6 +96,7 @@ export const homePageLayoutComponentDataRef: ConfigurableExtensionDataRef<
 
 // @alpha
 export interface HomePageLayoutProps {
+  defaultConfig?: Array<HomePageDefaultConfigItem>;
   widgets: Array<HomePageWidgetData>;
 }
 
@@ -125,7 +146,7 @@ export const homePageWidgetDataRef: ConfigurableExtensionDataRef<
   {}
 >;
 
-// @alpha
+// @alpha @deprecated (undocumented)
 export const homeReactTranslationRef: TranslationRef<
   'home-react',
   {
@@ -134,4 +155,6 @@ export const homeReactTranslationRef: TranslationRef<
     readonly 'cardExtension.settingsButtonTitle': 'Settings';
   }
 >;
+
+// (No @packageDocumentation comment for this package)
 ```

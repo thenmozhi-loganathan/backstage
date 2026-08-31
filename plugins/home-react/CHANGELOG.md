@@ -1,5 +1,179 @@
 # @backstage/plugin-home-react
 
+## 0.1.42-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.14-next.0
+  - @backstage/core-compat-api@0.5.15-next.0
+
+## 0.1.41
+
+### Patch Changes
+
+- a178067: Added `HomePageDefaultConfigItem` type and optional `defaultConfig` prop to `HomePageLayoutProps`.
+- Updated dependencies
+  - @backstage/core-components@0.18.13
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/frontend-plugin-api@0.18.0
+  - @backstage/core-compat-api@0.5.14
+
+## 0.1.41-next.2
+
+### Patch Changes
+
+- a178067: Added `HomePageDefaultConfigItem` type and optional `defaultConfig` prop to `HomePageLayoutProps`.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9-next.1
+
+## 0.1.41-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+  - @backstage/core-compat-api@0.5.14-next.1
+  - @backstage/core-plugin-api@1.12.9-next.0
+  - @backstage/core-components@0.18.13-next.2
+
+## 0.1.41-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.13-next.0
+  - @backstage/core-compat-api@0.5.14-next.0
+
+## 0.1.40
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/core-components@0.18.12
+  - @backstage/core-compat-api@0.5.13
+  - @backstage/core-plugin-api@1.12.8
+
+## 0.1.40-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-compat-api@0.5.13-next.0
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+  - @backstage/core-components@0.18.12-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+
+## 0.1.39
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.11
+  - @backstage/frontend-plugin-api@0.17.2
+  - @backstage/core-compat-api@0.5.12
+  - @backstage/core-plugin-api@1.12.7
+
+## 0.1.39-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+  - @backstage/core-components@0.18.11-next.1
+  - @backstage/core-compat-api@0.5.12-next.1
+  - @backstage/core-plugin-api@1.12.7-next.0
+
+## 0.1.39-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.11-next.0
+  - @backstage/core-compat-api@0.5.12-next.0
+
+## 0.1.38
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.10
+  - @backstage/frontend-plugin-api@0.17.0
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/core-compat-api@0.5.11
+
+## 0.1.38-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.10-next.0
+  - @backstage/core-compat-api@0.5.11-next.0
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+
+## 0.1.37
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/core-components@0.18.9
+  - @backstage/core-compat-api@0.5.10
+  - @backstage/core-plugin-api@1.12.5
+
+## 0.1.37-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.16.0-next.1
+  - @backstage/core-compat-api@0.5.10-next.1
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/core-plugin-api@1.12.5-next.1
+
+## 0.1.37-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/frontend-plugin-api@0.15.2-next.0
+  - @backstage/core-compat-api@0.5.10-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+
+## 0.1.36
+
+### Patch Changes
+
+- 0be2541: Promoted the plugin's translation ref to the stable package entry point. It was previously only available through the alpha entry point.
+- Updated dependencies
+  - @backstage/core-compat-api@0.5.9
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/core-components@0.18.8
+  - @backstage/frontend-plugin-api@0.15.0
+
+## 0.1.36-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-compat-api@0.5.9-next.2
+  - @backstage/frontend-plugin-api@0.15.0-next.1
+  - @backstage/core-plugin-api@1.12.4-next.1
+  - @backstage/core-components@0.18.8-next.1
+
+## 0.1.36-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/core-compat-api@0.5.9-next.0
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+
 ## 0.1.35
 
 ### Patch Changes

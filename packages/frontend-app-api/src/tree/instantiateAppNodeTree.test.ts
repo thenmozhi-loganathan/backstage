@@ -17,18 +17,17 @@
 import {
   AppNode,
   Extension,
+  ExtensionDataContainer,
   ExtensionDataRef,
   ExtensionDefinition,
-  ExtensionFactoryMiddleware,
-  ExtensionInput,
   PortableSchema,
-  ResolvedExtensionInput,
   createExtension,
   createExtensionBlueprint,
   createExtensionDataRef,
   createExtensionInput,
   createFrontendPlugin,
 } from '@backstage/frontend-plugin-api';
+import { ExtensionFactoryMiddleware } from '../wiring/types';
 import {
   createAppNodeInstance,
   instantiateAppNodeTree,
@@ -41,9 +40,10 @@ import {
   resolveExtensionDefinition,
 } from '../../../frontend-plugin-api/src/wiring/resolveExtensionDefinition';
 // eslint-disable-next-line @backstage/no-relative-monorepo-imports
-import { createSchemaFromZod } from '../../../frontend-plugin-api/src/schema/createSchemaFromZod';
+import { createConfigSchema } from '../../../frontend-plugin-api/src/schema/createPortableSchema';
 import { TestApiRegistry, withLogCollector } from '@backstage/test-utils';
 import { createErrorCollector } from '../wiring/createErrorCollector';
+import { z } from 'zod/v4';
 
 const testApis = TestApiRegistry.from();
 const testDataRef = createExtensionDataRef<string>().with({ id: 'test' });
@@ -146,8 +146,8 @@ function mirrorInputs(ctx: {
   inputs: {
     [name in string]:
       | undefined
-      | ResolvedExtensionInput<ExtensionInput>
-      | Array<ResolvedExtensionInput<ExtensionInput>>;
+      | ({ node: AppNode } & ExtensionDataContainer<ExtensionDataRef>)
+      | Array<{ node: AppNode } & ExtensionDataContainer<ExtensionDataRef>>;
   };
 }) {
   return [
@@ -182,12 +182,10 @@ describe('instantiateAppNodeTree', () => {
         test: testDataRef,
         other: otherDataRef.optional(),
       },
-      configSchema: createSchemaFromZod(z =>
-        z.object({
-          output: z.string().default('test'),
-          other: z.number().optional(),
-        }),
-      ),
+      configSchema: createConfigSchema({
+        output: z.string().default('test'),
+        other: z.number().optional(),
+      }),
       factory({ config }) {
         return { test: config.output, other: config.other };
       },
@@ -497,7 +495,7 @@ describe('instantiateAppNodeTree', () => {
           {
             code: 'EXTENSION_CONFIGURATION_INVALID',
             message:
-              "Invalid configuration for extension 'app/test'; caused by Error: Expected number, received string at 'other'",
+              "Invalid configuration for extension 'app/test'; caused by Error: Invalid input: expected number, received string at 'other'",
             context: { node },
           },
         ]);
@@ -851,11 +849,9 @@ describe('instantiateAppNodeTree', () => {
         name: 'test',
         attachTo: { id: 'ignored', input: 'ignored' },
         output: [testDataRef, otherDataRef.optional()],
-        config: {
-          schema: {
-            output: z => z.string().default('test'),
-            other: z => z.number().optional(),
-          },
+        configSchema: {
+          output: z.string().default('test'),
+          other: z.number().optional(),
         },
         factory({ config }) {
           return [
@@ -1123,7 +1119,7 @@ describe('instantiateAppNodeTree', () => {
           {
             code: 'EXTENSION_CONFIGURATION_INVALID',
             message:
-              "Invalid configuration for extension 'app/test'; caused by Error: Expected number, received string at 'other'",
+              "Invalid configuration for extension 'app/test'; caused by Error: Invalid input: expected number, received string at 'other'",
             context: { node },
           },
         ]);
@@ -1781,6 +1777,98 @@ describe('instantiateAppNodeTree', () => {
           ]);
         });
       });
+    });
+  });
+
+  describe('if predicate', () => {
+    function makeNodeWithEnabled(
+      enabled: AppNodeSpec['if'],
+      disabled = false,
+    ): AppNode {
+      const ext = resolveExtensionDefinition(
+        createExtension({
+          attachTo: { id: 'ignored', input: 'ignored' },
+          output: [testDataRef],
+          factory: () => [testDataRef('value')],
+        }),
+        { namespace: 'test-ext' },
+      );
+      return {
+        spec: {
+          id: ext.id,
+          attachTo: ext.attachTo,
+          disabled,
+          if: enabled,
+          extension: ext as Extension<unknown, unknown>,
+          plugin: createFrontendPlugin({ pluginId: 'app' }),
+        },
+        edges: { attachments: new Map() },
+      };
+    }
+
+    it('should skip a node when the predicate is not satisfied', () => {
+      const node = makeNodeWithEnabled({
+        featureFlags: { $contains: 'the-flag' },
+      });
+      const tree = resolveAppTree('test-ext', [node.spec], collector);
+      instantiateAppNodeTree(tree.root, testApis, collector, undefined, {
+        featureFlags: [],
+      });
+      expect(tree.root.instance).toBeUndefined();
+    });
+
+    it('should instantiate a node when the predicate is satisfied', () => {
+      const node = makeNodeWithEnabled({
+        featureFlags: { $contains: 'the-flag' },
+      });
+      const tree = resolveAppTree('test-ext', [node.spec], collector);
+      instantiateAppNodeTree(tree.root, testApis, collector, undefined, {
+        featureFlags: ['the-flag'],
+      });
+      expect(tree.root.instance).toBeDefined();
+      expect(tree.root.instance?.getData(testDataRef)).toBe('value');
+    });
+
+    it('should support $all operator across multiple flags', () => {
+      const node = makeNodeWithEnabled({
+        $all: [
+          { featureFlags: { $contains: 'flag-a' } },
+          { featureFlags: { $contains: 'flag-b' } },
+        ],
+      });
+      const tree = resolveAppTree('test-ext', [node.spec], collector);
+
+      // Only one flag active — should not instantiate
+      instantiateAppNodeTree(tree.root, testApis, collector, undefined, {
+        featureFlags: ['flag-a'],
+      });
+      expect(tree.root.instance).toBeUndefined();
+
+      // Both flags active — should instantiate
+      const tree2 = resolveAppTree('test-ext', [node.spec], collector);
+      instantiateAppNodeTree(tree2.root, testApis, collector, undefined, {
+        featureFlags: ['flag-a', 'flag-b'],
+      });
+      expect(tree2.root.instance).toBeDefined();
+    });
+
+    it('should instantiate nodes without an enabled field regardless of predicateContext', () => {
+      const node = makeNodeWithEnabled(undefined);
+      const tree = resolveAppTree('test-ext', [node.spec], collector);
+      instantiateAppNodeTree(tree.root, testApis, collector, undefined, {
+        featureFlags: [],
+      });
+      expect(tree.root.instance).toBeDefined();
+    });
+
+    it('should instantiate nodes with enabled predicate when predicateContext is not provided', () => {
+      const node = makeNodeWithEnabled({
+        featureFlags: { $contains: 'the-flag' },
+      });
+      const tree = resolveAppTree('test-ext', [node.spec], collector);
+      // No predicateContext passed — predicate evaluation is skipped
+      instantiateAppNodeTree(tree.root, testApis, collector);
+      expect(tree.root.instance).toBeDefined();
     });
   });
 });

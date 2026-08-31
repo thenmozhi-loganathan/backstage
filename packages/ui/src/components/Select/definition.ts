@@ -14,29 +14,180 @@
  * limitations under the License.
  */
 
-import type { ComponentDefinition } from '../../types';
+import { defineComponent } from '../../hooks/useDefinition';
+import type {
+  SelectOwnProps,
+  SelectTriggerOwnProps,
+  SelectContentOwnProps,
+  SelectListBoxOwnProps,
+  SelectListBoxItemOwnProps,
+  SelectItemOwnProps,
+  SelectItemProfileOwnProps,
+  SelectItemTextOwnProps,
+  SelectSectionOwnProps,
+} from './types';
+import styles from './Select.module.css';
 
-/**
- * Component definition for Select
- * @public
- */
-export const SelectDefinition = {
+/** @public */
+export const SelectDefinition = defineComponent<SelectOwnProps>()({
+  styles,
   classNames: {
     root: 'bui-Select',
     popover: 'bui-SelectPopover',
-    trigger: 'bui-SelectTrigger',
-    chevron: 'bui-SelectTriggerChevron',
-    value: 'bui-SelectValue',
-    list: 'bui-SelectList',
-    item: 'bui-SelectItem',
-    itemIndicator: 'bui-SelectItemIndicator',
-    itemLabel: 'bui-SelectItemLabel',
-    searchWrapper: 'bui-SelectSearchWrapper',
-    search: 'bui-SelectSearch',
-    searchClear: 'bui-SelectSearchClear',
-    noResults: 'bui-SelectNoResults',
   },
-  dataAttributes: {
-    size: ['small', 'medium'] as const,
+  propDefs: {
+    icon: {},
+    size: { dataAttribute: true, default: 'small' },
+    options: {},
+    items: {},
+    children: {},
+    dependencies: {},
+    search: {},
+    loading: {},
+    searchable: {},
+    searchPlaceholder: {},
+    label: {},
+    secondaryLabel: {},
+    description: {},
+    isRequired: {},
+    className: {},
   },
-} as const satisfies ComponentDefinition;
+});
+
+/** @public */
+export const SelectTriggerDefinition = defineComponent<SelectTriggerOwnProps>()(
+  {
+    styles,
+    classNames: {
+      root: 'bui-SelectTrigger',
+      chevron: 'bui-SelectTriggerChevron',
+      value: 'bui-SelectValue',
+    },
+    bg: 'consumer',
+    propDefs: {
+      icon: {},
+    },
+  },
+);
+
+/** @public */
+export const SelectContentDefinition = defineComponent<SelectContentOwnProps>()(
+  {
+    styles,
+    classNames: {
+      root: 'bui-SelectContent',
+      searchWrapper: 'bui-SelectSearchWrapper',
+      results: 'bui-SelectResults',
+      search: 'bui-SelectSearch',
+      searchClear: 'bui-SelectSearchClear',
+    },
+    propDefs: {
+      search: {},
+      options: {},
+      items: {},
+      children: {},
+      dependencies: {},
+      loading: {},
+      isStale: {},
+      visibleIds: {},
+      retainedOptions: {},
+    },
+  },
+);
+
+/** @public */
+export const SelectListBoxDefinition = defineComponent<SelectListBoxOwnProps>()(
+  {
+    styles,
+    classNames: {
+      root: 'bui-SelectList',
+      noResults: 'bui-SelectNoResults',
+      loading: 'bui-SelectLoading',
+      loadingRow: 'bui-SelectLoadingRow',
+    },
+    propDefs: {
+      options: {},
+      items: {},
+      children: {},
+      dependencies: {},
+      loading: {},
+      isStale: {},
+      retainedOptions: {},
+    },
+  },
+);
+
+/** @public */
+export const SelectListBoxItemDefinition =
+  defineComponent<SelectListBoxItemOwnProps>()({
+    styles,
+    classNames: {
+      label: 'bui-SelectItemLabel',
+    },
+    propDefs: {},
+  });
+
+/** @public */
+export const SelectItemDefinition = defineComponent<SelectItemOwnProps>()({
+  styles,
+  classNames: {
+    root: 'bui-SelectItem',
+    indicator: 'bui-SelectItemIndicator',
+    content: 'bui-SelectItemContent',
+  },
+  navigation: { type: 'anchor' },
+  propDefs: {
+    children: {},
+    showSelectionIndicator: {},
+    className: {},
+  },
+});
+
+/** @public */
+export const SelectItemTextDefinition =
+  defineComponent<SelectItemTextOwnProps>()({
+    styles,
+    classNames: {
+      root: 'bui-SelectItemText',
+      content: 'bui-SelectItemContent',
+      leadingIcon: 'bui-SelectItemLeadingIcon',
+      text: 'bui-SelectItemTextContent',
+      title: 'bui-SelectItemTitle',
+      description: 'bui-SelectItemDescription',
+    },
+    propDefs: {
+      title: {},
+      description: {},
+      leadingIcon: {},
+      className: {},
+    },
+  });
+
+/** @public */
+export const SelectItemProfileDefinition =
+  defineComponent<SelectItemProfileOwnProps>()({
+    styles,
+    classNames: {
+      root: 'bui-SelectItemProfile',
+      content: 'bui-SelectItemContent',
+      avatar: 'bui-SelectItemAvatar',
+      name: 'bui-SelectItemTitle',
+    },
+    propDefs: {
+      name: {},
+      src: {},
+      className: {},
+    },
+  });
+
+/** @public */
+export const SelectSectionDefinition = defineComponent<SelectSectionOwnProps>()(
+  {
+    styles,
+    classNames: {
+      root: 'bui-SelectSection',
+      header: 'bui-SelectSectionHeader',
+    },
+    propDefs: {},
+  },
+);

@@ -33,9 +33,9 @@ export const ButtonIconDefinition = defineComponent<ButtonIconOwnProps>()({
   propDefs: {
     size: { dataAttribute: true, default: 'small' },
     variant: { dataAttribute: true, default: 'primary' },
+    isPending: { dataAttribute: true },
     loading: { dataAttribute: true },
     icon: {},
     className: {},
-    style: {},
   },
 });

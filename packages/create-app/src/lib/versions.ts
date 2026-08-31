@@ -38,6 +38,7 @@ import { version as backendDefaults } from '../../../backend-defaults/package.js
 import { version as catalogClient } from '../../../catalog-client/package.json';
 import { version as catalogModel } from '../../../catalog-model/package.json';
 import { version as cli } from '../../../cli/package.json';
+import { version as cliDefaults } from '../../../cli-defaults/package.json';
 import { version as config } from '../../../config/package.json';
 import { version as coreAppApi } from '../../../core-app-api/package.json';
 import { version as coreCompatApi } from '../../../core-compat-api/package.json';
@@ -55,11 +56,15 @@ import { version as ui } from '../../../ui/package.json';
 import { version as pluginApiDocs } from '../../../../plugins/api-docs/package.json';
 import { version as pluginAppVisualizer } from '../../../../plugins/app-visualizer/package.json';
 import { version as pluginAppBackend } from '../../../../plugins/app-backend/package.json';
+import { version as pluginAppModuleUserSettings } from '../../../../plugins/app-module-user-settings/package.json';
 import { version as pluginAppReact } from '../../../../plugins/app-react/package.json';
+import { version as pluginAuth } from '../../../../plugins/auth/package.json';
 import { version as pluginAuthBackend } from '../../../../plugins/auth-backend/package.json';
 import { version as pluginAuthBackendModuleGithubProvider } from '../../../../plugins/auth-backend-module-github-provider/package.json';
 import { version as pluginAuthBackendModuleGuestProvider } from '../../../../plugins/auth-backend-module-guest-provider/package.json';
 import { version as pluginAuthNode } from '../../../../plugins/auth-node/package.json';
+import { version as pluginHome } from '../../../../plugins/home/package.json';
+import { version as pluginHomeReact } from '../../../../plugins/home-react/package.json';
 import { version as pluginCatalog } from '../../../../plugins/catalog/package.json';
 import { version as pluginCatalogCommon } from '../../../../plugins/catalog-common/package.json';
 import { version as pluginCatalogReact } from '../../../../plugins/catalog-react/package.json';
@@ -70,6 +75,7 @@ import { version as pluginCatalogGraph } from '../../../../plugins/catalog-graph
 import { version as pluginCatalogImport } from '../../../../plugins/catalog-import/package.json';
 import { version as pluginKubernetes } from '../../../../plugins/kubernetes/package.json';
 import { version as pluginKubernetesBackend } from '../../../../plugins/kubernetes-backend/package.json';
+import { version as pluginMcpActionsBackend } from '../../../../plugins/mcp-actions-backend/package.json';
 import { version as pluginNotifications } from '../../../../plugins/notifications/package.json';
 import { version as pluginNotificationsBackend } from '../../../../plugins/notifications-backend/package.json';
 import { version as pluginOrg } from '../../../../plugins/org/package.json';
@@ -92,11 +98,13 @@ import { version as pluginSearchBackendModuleTechdocs } from '../../../../plugin
 import { version as pluginSearchBackendNode } from '../../../../plugins/search-backend-node/package.json';
 import { version as pluginSignals } from '../../../../plugins/signals/package.json';
 import { version as pluginSignalsBackend } from '../../../../plugins/signals-backend/package.json';
+import { version as pluginSignalsReact } from '../../../../plugins/signals-react/package.json';
 import { version as pluginTechdocs } from '../../../../plugins/techdocs/package.json';
 import { version as pluginTechdocsReact } from '../../../../plugins/techdocs-react/package.json';
 import { version as pluginTechdocsModuleAddonsContrib } from '../../../../plugins/techdocs-module-addons-contrib/package.json';
 import { version as pluginTechdocsBackend } from '../../../../plugins/techdocs-backend/package.json';
 import { version as pluginUserSettings } from '../../../../plugins/user-settings/package.json';
+import { version as pluginUserSettingsBackend } from '../../../../plugins/user-settings-backend/package.json';
 
 export const packageVersions = {
   root,
@@ -107,6 +115,7 @@ export const packageVersions = {
   '@backstage/catalog-client': catalogClient,
   '@backstage/catalog-model': catalogModel,
   '@backstage/cli': cli,
+  '@backstage/cli-defaults': cliDefaults,
   '@backstage/config': config,
   '@backstage/core-app-api': coreAppApi,
   '@backstage/core-compat-api': coreCompatApi,
@@ -119,14 +128,18 @@ export const packageVersions = {
   '@backstage/repo-tools': repoTools,
   '@backstage/plugin-api-docs': pluginApiDocs,
   '@backstage/plugin-app-backend': pluginAppBackend,
+  '@backstage/plugin-app-module-user-settings': pluginAppModuleUserSettings,
   '@backstage/plugin-app-react': pluginAppReact,
   '@backstage/plugin-app-visualizer': pluginAppVisualizer,
+  '@backstage/plugin-auth': pluginAuth,
   '@backstage/plugin-auth-backend': pluginAuthBackend,
   '@backstage/plugin-auth-backend-module-github-provider':
     pluginAuthBackendModuleGithubProvider,
   '@backstage/plugin-auth-backend-module-guest-provider':
     pluginAuthBackendModuleGuestProvider,
   '@backstage/plugin-auth-node': pluginAuthNode,
+  '@backstage/plugin-home': pluginHome,
+  '@backstage/plugin-home-react': pluginHomeReact,
   '@backstage/plugin-catalog': pluginCatalog,
   '@backstage/plugin-catalog-common': pluginCatalogCommon,
   '@backstage/plugin-catalog-react': pluginCatalogReact,
@@ -139,6 +152,7 @@ export const packageVersions = {
   '@backstage/plugin-catalog-import': pluginCatalogImport,
   '@backstage/plugin-kubernetes': pluginKubernetes,
   '@backstage/plugin-kubernetes-backend': pluginKubernetesBackend,
+  '@backstage/plugin-mcp-actions-backend': pluginMcpActionsBackend,
   '@backstage/plugin-notifications': pluginNotifications,
   '@backstage/plugin-notifications-backend': pluginNotificationsBackend,
   '@backstage/plugin-org': pluginOrg,
@@ -166,12 +180,14 @@ export const packageVersions = {
   '@backstage/plugin-search-backend-node': pluginSearchBackendNode,
   '@backstage/plugin-signals': pluginSignals,
   '@backstage/plugin-signals-backend': pluginSignalsBackend,
+  '@backstage/plugin-signals-react': pluginSignalsReact,
   '@backstage/plugin-techdocs': pluginTechdocs,
   '@backstage/plugin-techdocs-react': pluginTechdocsReact,
   '@backstage/plugin-techdocs-module-addons-contrib':
     pluginTechdocsModuleAddonsContrib,
   '@backstage/plugin-techdocs-backend': pluginTechdocsBackend,
   '@backstage/plugin-user-settings': pluginUserSettings,
+  '@backstage/plugin-user-settings-backend': pluginUserSettingsBackend,
   '@backstage/test-utils': testUtils,
   '@backstage/theme': theme,
   '@backstage/ui': ui,

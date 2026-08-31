@@ -19,17 +19,22 @@ import {
   DocsBuildStrategy,
   GeneratorBuilder,
   PreparerBuilder,
+  Publisher,
   PublisherBase,
 } from '@backstage/plugin-techdocs-node';
 import express, { Response } from 'express';
 import request from 'supertest';
+import { once } from 'node:events';
+import { request as httpRequest } from 'node:http';
+import { AddressInfo } from 'node:net';
+import { Readable } from 'node:stream';
 import { DocsSynchronizer, DocsSynchronizerSyncOpts } from './DocsSynchronizer';
 import { CachedEntityLoader } from './CachedEntityLoader';
 import { createEventStream, createRouter, RouterOptions } from './router';
 import { TechDocsCache } from '../cache';
 import { mockErrorHandler, mockServices } from '@backstage/backend-test-utils';
+import { catalogServiceMock } from '@backstage/plugin-catalog-node/testUtils';
 
-jest.mock('@backstage/catalog-client');
 jest.mock('./CachedEntityLoader');
 jest.mock('./DocsSynchronizer');
 jest.mock('../cache/TechDocsCache');
@@ -70,6 +75,27 @@ const createApp = async (options: RouterOptions) => {
   return app;
 };
 
+const requestRawPath = async (app: express.Express, path: string) => {
+  const server = app.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+
+  try {
+    const { port } = server.address() as AddressInfo;
+    return await new Promise<number>((resolve, reject) => {
+      const req = httpRequest({ host: '127.0.0.1', port, path }, res => {
+        res.resume();
+        res.on('end', () => resolve(res.statusCode ?? 0));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      server.close(error => (error ? reject(error) : resolve()));
+    });
+  }
+};
+
 describe('createRouter', () => {
   const entity = {
     apiVersion: 'backstage.io/v1alpha1',
@@ -107,6 +133,7 @@ describe('createRouter', () => {
   const docsBuildStrategy: jest.Mocked<DocsBuildStrategy> = {
     shouldBuild: jest.fn(),
   };
+  const mockCatalogService = catalogServiceMock();
   const outOfTheBoxOptions = {
     preparers,
     generators,
@@ -124,6 +151,7 @@ describe('createRouter', () => {
     docsBuildStrategy,
     auth: mockServices.auth(),
     httpAuth: mockServices.httpAuth(),
+    catalog: mockCatalogService,
   };
   const recommendedOptions = {
     publisher,
@@ -134,6 +162,7 @@ describe('createRouter', () => {
     docsBuildStrategy,
     auth: mockServices.auth(),
     httpAuth: mockServices.httpAuth(),
+    catalog: mockCatalogService,
   };
 
   beforeEach(() => {
@@ -364,6 +393,153 @@ data: {"updated":true}
         .send();
 
       expect(response.status).toBe(404);
+    });
+
+    it('should only serve paths contained within the permission-checked entity', async () => {
+      const docsRouter = jest.fn((_req, res) => res.sendStatus(200));
+      publisher.docsRouter.mockReturnValue(docsRouter);
+
+      const app = await createApp({
+        ...outOfTheBoxOptions,
+        config: new ConfigReader({
+          permission: {
+            enabled: true,
+          },
+        }),
+      });
+
+      MockCachedEntityLoader.prototype.load.mockResolvedValue(entity);
+
+      const containedStatus = await requestRawPath(
+        app,
+        '/static/docs/default/component/entity-a/dir/%2e%2e/index.html',
+      );
+
+      expect(containedStatus).toBe(200);
+      expect(docsRouter).toHaveBeenCalledTimes(1);
+
+      docsRouter.mockClear();
+
+      const traversingStatus = await requestRawPath(
+        app,
+        '/static/docs/default/component/entity-a/%2e%2e/entity-b/index.html',
+      );
+
+      expect(traversingStatus).toBe(404);
+      expect(docsRouter).not.toHaveBeenCalled();
+    });
+
+    it('should reject paths outside the authorized entity', async () => {
+      const docsRouter = jest.fn((_req, res) => res.sendStatus(200));
+      publisher.docsRouter.mockReturnValue(docsRouter);
+
+      const app = await createApp({
+        ...outOfTheBoxOptions,
+        config: new ConfigReader({
+          permission: {
+            enabled: true,
+          },
+        }),
+      });
+
+      MockCachedEntityLoader.prototype.load.mockResolvedValue(entity);
+
+      const status = await requestRawPath(
+        app,
+        '/static/docs/default/component/test/../private/index.html',
+      );
+
+      expect(status).toBe(404);
+    });
+
+    it('should reject encoded Windows path separators outside the authorized entity', async () => {
+      const config = new ConfigReader({
+        permission: {
+          enabled: true,
+        },
+        techdocs: {
+          publisher: {
+            type: 'azureBlobStorage',
+            azureBlobStorage: {
+              credentials: {
+                accountName: 'example',
+                accountKey: 'YWNjb3VudEtleQ==',
+              },
+              containerName: 'techdocs',
+            },
+          },
+        },
+      });
+      const azurePublisher = await Publisher.fromConfig(config, {
+        logger: outOfTheBoxOptions.logger,
+        discovery,
+      });
+      const storageClient = Reflect.get(azurePublisher, 'storageClient') as {
+        getContainerClient(name: string): {
+          getBlockBlobClient(name: string): {
+            readonly url: string;
+            download(): Promise<{ readableStreamBody?: Readable }>;
+          };
+        };
+      };
+      const containerClient = storageClient.getContainerClient('techdocs');
+      const getBlockBlobClient =
+        containerClient.getBlockBlobClient.bind(containerClient);
+      jest
+        .spyOn(storageClient, 'getContainerClient')
+        .mockReturnValue(containerClient);
+      jest
+        .spyOn(containerClient, 'getBlockBlobClient')
+        .mockImplementation(name => {
+          const blobClient = getBlockBlobClient(name);
+          jest.spyOn(blobClient, 'download').mockImplementation(async () => {
+            if (
+              blobClient.url !==
+              'https://example.blob.core.windows.net/techdocs/default/component/private/index.html'
+            ) {
+              throw new Error('File Not Found');
+            }
+            return { readableStreamBody: Readable.from('private content') };
+          });
+          return blobClient;
+        });
+
+      const app = await createApp({
+        ...outOfTheBoxOptions,
+        config,
+        publisher: azurePublisher,
+      });
+
+      MockCachedEntityLoader.prototype.load.mockResolvedValue(entity);
+
+      const status = await requestRawPath(
+        app,
+        '/static/docs/default/component/test/..%5Cprivate/index.html',
+      );
+
+      expect(status).toBe(404);
+    });
+
+    it('should allow nested paths within the authorized entity', async () => {
+      const docsRouter = jest.fn((_req, res) => res.sendStatus(200));
+      publisher.docsRouter.mockReturnValue(docsRouter);
+
+      const app = await createApp({
+        ...outOfTheBoxOptions,
+        config: new ConfigReader({
+          permission: {
+            enabled: true,
+          },
+        }),
+      });
+
+      MockCachedEntityLoader.prototype.load.mockResolvedValue(entity);
+
+      const response = await request(app)
+        .get('/static/docs/default/component/test/assets/main.css')
+        .send();
+
+      expect(response.status).toBe(200);
     });
   });
 });

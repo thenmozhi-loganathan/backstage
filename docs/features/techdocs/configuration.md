@@ -86,7 +86,7 @@ techdocs:
 
 (Optional and not recommended) Configures the techdocs generator to attempt to ensure an index.md exists falling back to using `<docs-dir>/README.md` or `README.md` in case a default `<docs-dir>/index.md` is not provided.
 
-**Note:** https://www.mkdocs.org/user-guide/configuration/#edit_uri behavior will be broken in these scenarios.
+**Note:** <https://www.mkdocs.org/user-guide/configuration/#edit_uri> behavior will be broken in these scenarios.
 
 **Example:**
 
@@ -96,6 +96,33 @@ techdocs:
     mkdocs:
       legacyCopyReadmeMdToIndexMd: false
 ```
+
+#### Disable external fonts
+
+`techdocs.generator.mkdocs.disableExternalFonts`
+
+(Optional) Use this when the generator cannot reach the internet (for example air-gapped or restricted networks). MkDocs Material otherwise tries to download the Roboto font from Google during generation.
+
+When `true`, TechDocs patches each `mkdocs.yml` during generation: if no `theme` section exists it adds `name: material` and `font: false`; if a `theme` exists but `font` is omitted, it sets `font: false`; if `font` is already set in the file, your value is left unchanged.
+
+**Example:**
+
+```yaml
+techdocs:
+  generator:
+    mkdocs:
+      disableExternalFonts: true
+```
+
+Alternatively, configure `mkdocs.yml` manually:
+
+```yaml
+theme:
+  name: material
+  font: false
+```
+
+**Note:** When using `theme.font` in `mkdocs.yml`, `theme.name: material` is required. If `font` is already set in the file, app-config patching does not override it; it only adds `font: false` when `font` was not configured.
 
 #### Default Plugins
 
@@ -234,7 +261,7 @@ techdocs:
 `techdocs.publisher.googleGcs.credentials`
 
 (Optional) An API key required to write to a storage bucket.
-If missing `GOOGLE_APPLICATION_CREDENTIALS` environment variable will be used. https://cloud.google.com/docs/authentication/production
+If missing `GOOGLE_APPLICATION_CREDENTIALS` environment variable will be used. <https://cloud.google.com/docs/authentication/production>
 
 **Example:**
 
@@ -297,8 +324,8 @@ The AWS account ID where the storage bucket is located. Credentials for the acco
 
 If account ID is not set and no credentials are set, environment variables or AWS config file will be used to authenticate.
 
-https://www.npmjs.com/package/@aws-sdk/credential-provider-node
-https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html
+<https://www.npmjs.com/package/@aws-sdk/credential-provider-node>
+<https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html>
 
 **Example:**
 
@@ -319,8 +346,8 @@ techdocs:
 
 If credentials are not set and no account ID is set, environment variables or AWS config file will be used to authenticate.
 
-https://www.npmjs.com/package/@aws-sdk/credential-provider-node
-https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html
+<https://www.npmjs.com/package/@aws-sdk/credential-provider-node>
+<https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html>
 
 **Example:**
 
@@ -342,7 +369,7 @@ techdocs:
 (Optional) The AWS Region of the bucket.
 If not set, `AWS_REGION` environment variable or AWS config file will be used.
 
-https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-region.html
+<https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-region.html>
 
 **Example:**
 
@@ -362,7 +389,7 @@ techdocs:
 (Optional) The Endpoint URI to send requests to.
 If not set, the default endpoint is built from the configured region.
 
-https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/interfaces/s3clientconfig.html#endpoint
+<https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/interfaces/s3clientconfig.html#endpoint>
 
 **Example:**
 
@@ -415,7 +442,7 @@ techdocs:
 
 (Optional) AWS Server Side Encryption. Defaults to undefined. If not set, encrypted buckets will fail to publish.
 
-https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-s3-encryption.html
+<https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-s3-encryption.html>
 
 **Options:** `'aws:kms'` or `'AES256'`
 
@@ -475,11 +502,11 @@ techdocs:
 
 (Required) An account name to write to a storage blob container.
 
-https://docs.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key
+<https://docs.microsoft.com/en-us/rest/api/storageservices/authorize-with-shared-key>
 
 (Optional) An account key is required to write to a storage container. If missing, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` environment variables will be used.
 
-https://docs.microsoft.com/en-us/azure/storage/common/storage-auth?toc=/azure/storage/blobs/toc.json
+<https://docs.microsoft.com/en-us/azure/storage/common/storage-auth?toc=/azure/storage/blobs/toc.json>
 
 **Example:**
 

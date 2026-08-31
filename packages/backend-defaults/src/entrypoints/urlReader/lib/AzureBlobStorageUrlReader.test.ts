@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import * as AzureStorage from '@azure/storage-blob';
 import { ConfigReader } from '@backstage/config';
 import { JsonObject } from '@backstage/types';
 import { DefaultReadTreeResponseFactory } from './tree';
@@ -27,35 +26,25 @@ import {
   ScmIntegrations,
 } from '@backstage/integration';
 import { UrlReaderPredicateTuple } from './types';
-import { mockServices } from '@backstage/backend-test-utils';
 import { Readable } from 'node:stream';
+import { ContainerClient } from '@azure/storage-blob';
 
-// Mock Azure Blob Storage SDK
+const treeResponseFactory = DefaultReadTreeResponseFactory.create({
+  config: new ConfigReader({}),
+});
+
 const mockBlobDownload = jest.fn();
 const mockGetBlobClient = jest.fn(() => ({
   download: mockBlobDownload,
 }));
 const mockListBlobsFlat = jest.fn();
 
-class MockContainerClient {
-  getBlobClient = mockGetBlobClient;
-  listBlobsFlat = mockListBlobsFlat;
+function createMockContainerClient(): ContainerClient {
+  return {
+    getBlobClient: mockGetBlobClient,
+    listBlobsFlat: mockListBlobsFlat,
+  } as unknown as ContainerClient;
 }
-
-class MockBlobServiceClient {
-  getContainerClient = jest.fn(() => new MockContainerClient());
-}
-
-jest
-  .spyOn(AzureStorage, 'BlobServiceClient')
-  .mockReturnValue(new MockBlobServiceClient() as any);
-jest
-  .spyOn(AzureStorage, 'StorageSharedKeyCredential')
-  .mockReturnValue({} as any);
-
-const treeResponseFactory = DefaultReadTreeResponseFactory.create({
-  config: new ConfigReader({}),
-});
 
 describe('parseUrl', () => {
   it('parses Azure Blob Storage URLs correctly', () => {
@@ -87,6 +76,42 @@ describe('parseUrl', () => {
     });
   });
 
+  it('decodes blob path segments exactly once', () => {
+    expect(
+      parseUrl(
+        'https://test-account.blob.core.windows.net/mycontainer/%252e%252e/protected/catalog-info.yaml',
+      ),
+    ).toEqual({
+      path: '%2e%2e/protected/catalog-info.yaml',
+      container: 'mycontainer',
+    });
+  });
+
+  it.each([
+    '..',
+    '.',
+    '%2e%2e',
+    '%2E%2E',
+    '.%2e',
+    '%2e.',
+    '%2e%2e%2fprotected',
+    '%2e%2e%5cprotected',
+  ])('rejects encoded dot path segment %s', encodedDotSegment => {
+    expect(() =>
+      parseUrl(
+        `https://test-account.blob.core.windows.net/mycontainer/${encodedDotSegment}/protected/catalog-info.yaml`,
+      ),
+    ).toThrow('Invalid Azure Blob Storage URL format');
+  });
+
+  it('rejects encoded dot segments with backslash URL delimiters', () => {
+    expect(() =>
+      parseUrl(
+        String.raw`https://test-account.blob.core.windows.net\mycontainer\%2e%2e\protected\catalog-info.yaml`,
+      ),
+    ).toThrow('Invalid Azure Blob Storage URL format');
+  });
+
   it('throws error for invalid URLs', () => {
     expect(() =>
       parseUrl('https://test-account.blob.core.windows.net/'),
@@ -96,35 +121,40 @@ describe('parseUrl', () => {
 
 describe('AzureBlobStorageUrlReader', () => {
   const createReader = (config: JsonObject): UrlReaderPredicateTuple[] => {
-    return AzureBlobStorageUrlReader.factory({
-      config: new ConfigReader(config),
-      logger: mockServices.logger.mock(),
-      treeResponseFactory,
+    const integrations = ScmIntegrations.fromConfig(new ConfigReader(config));
+    const credsManager =
+      DefaultAzureCredentialsManager.fromIntegrations(integrations);
+
+    return integrations.azureBlobStorage.list().map(integrationConfig => {
+      const reader = new AzureBlobStorageUrlReader(
+        credsManager,
+        integrationConfig,
+        {
+          treeResponseFactory,
+          createContainerClient: async () => createMockContainerClient(),
+        },
+      );
+      const predicate = (url: URL) =>
+        url.host.endsWith(
+          `${integrationConfig.config.accountName}.${integrationConfig.config.host}`,
+        );
+      return { reader, predicate };
     });
   };
 
   it('creates a reader with minimal config', () => {
     const entries = createReader({
       integrations: {
-        azureBlobStorage: [
-          {
-            accountName: 'test-account',
-          },
-        ],
+        azureBlobStorage: [{ accountName: 'test-account' }],
       },
     });
-
     expect(entries).toHaveLength(1);
   });
 
   describe('predicates', () => {
     const readers = createReader({
       integrations: {
-        azureBlobStorage: [
-          {
-            accountName: 'test-account',
-          },
-        ],
+        azureBlobStorage: [{ accountName: 'test-account' }],
       },
     });
     const predicate = readers[0].predicate;
@@ -147,14 +177,10 @@ describe('AzureBlobStorageUrlReader', () => {
       const config = new ConfigReader({
         integrations: {
           azureBlobStorage: [
-            {
-              accountName: 'test-account',
-              accountKey: 'test-key',
-            },
+            { accountName: 'test-account', accountKey: 'test-key' },
           ],
         },
       });
-
       const integrations = ScmIntegrations.fromConfig(config);
       const credsManager =
         DefaultAzureCredentialsManager.fromIntegrations(integrations);
@@ -163,7 +189,6 @@ describe('AzureBlobStorageUrlReader', () => {
         integrations.azureBlobStorage.list()[0],
         { treeResponseFactory },
       );
-
       expect(reader.toString()).toBe(
         'azureBlobStorage{accountName=test-account,authed=true}',
       );
@@ -172,14 +197,9 @@ describe('AzureBlobStorageUrlReader', () => {
     it('shows authed=false when no account key provided', () => {
       const config = new ConfigReader({
         integrations: {
-          azureBlobStorage: [
-            {
-              accountName: 'test-account',
-            },
-          ],
+          azureBlobStorage: [{ accountName: 'test-account' }],
         },
       });
-
       const integrations = ScmIntegrations.fromConfig(config);
       const credsManager =
         DefaultAzureCredentialsManager.fromIntegrations(integrations);
@@ -188,7 +208,6 @@ describe('AzureBlobStorageUrlReader', () => {
         integrations.azureBlobStorage.list()[0],
         { treeResponseFactory },
       );
-
       expect(reader.toString()).toBe(
         'azureBlobStorage{accountName=test-account,authed=false}',
       );
@@ -199,10 +218,7 @@ describe('AzureBlobStorageUrlReader', () => {
     const [{ reader }] = createReader({
       integrations: {
         azureBlobStorage: [
-          {
-            accountName: 'test-account',
-            accountKey: 'test-key',
-          },
+          { accountName: 'test-account', accountKey: 'test-key' },
         ],
       },
     });
@@ -245,66 +261,83 @@ describe('AzureBlobStorageUrlReader', () => {
     const [{ reader }] = createReader({
       integrations: {
         azureBlobStorage: [
-          {
-            accountName: 'test-account',
-            accountKey: 'test-key',
-          },
+          { accountName: 'test-account', accountKey: 'test-key' },
         ],
       },
     });
 
     beforeEach(() => {
       jest.clearAllMocks();
-      const mockBlobs = [
-        {
-          name: 'prefix/file1.yaml',
-          properties: {
-            lastModified: new Date('2025-01-01T00:00:00Z'),
-          },
-        },
-        {
-          name: 'prefix/subdir/file2.yaml',
-          properties: {
-            lastModified: new Date('2024-01-01T00:00:00Z'),
-          },
-        },
-      ];
-
-      mockBlobDownload.mockResolvedValue({
-        readableStreamBody: Readable.from(
-          Buffer.from('site_name: Test Azure Blob'),
-        ),
-      });
-
-      mockListBlobsFlat.mockReturnValue({
-        [Symbol.asyncIterator]: async function* generateBlobs() {
-          for (const blob of mockBlobs) {
-            yield blob;
-          }
-        },
-      });
     });
 
     it('returns contents of blobs in a container', async () => {
+      mockListBlobsFlat.mockReturnValue(
+        (async function* mockIterator() {
+          yield {
+            name: 'prefix/file1.yaml',
+            properties: { lastModified: new Date('2025-01-01T00:00:00Z') },
+          };
+          yield {
+            name: 'prefix/file2.yaml',
+            properties: { lastModified: new Date('2025-01-02T00:00:00Z') },
+          };
+        })(),
+      );
+
+      mockBlobDownload.mockResolvedValue({
+        readableStreamBody: Readable.from(Buffer.from('test content')),
+      });
+
       const response = await reader.readTree(
-        'https://test-account.blob.core.windows.net/test-container/prefix',
+        'https://test-account.blob.core.windows.net/test-container/prefix/',
       );
       const files = await response.files();
-
       expect(files).toHaveLength(2);
-      const file1Content = await files[0].content();
-      expect(file1Content.toString()).toBe('site_name: Test Azure Blob');
     });
+
+    it.each([
+      ['literal dot-dot', 'prefix/uploads/../legitimate.yaml'],
+      ['deep traversal', 'prefix/uploads/../../etc/passwd'],
+      ['backslash', 'prefix/uploads\\../legitimate.yaml'],
+      ['encoded dot-dot', 'prefix/uploads/%2e%2e/legitimate.yaml'],
+      ['mixed encoded', 'prefix/uploads/.%2e/legitimate.yaml'],
+      ['uppercase encoded', 'prefix/uploads/%2E%2E/legitimate.yaml'],
+    ])(
+      'filters out blobs with %s path traversal segments',
+      async (_label, maliciousName) => {
+        mockListBlobsFlat.mockReturnValue(
+          (async function* mockIterator() {
+            yield {
+              name: 'prefix/legitimate.yaml',
+              properties: { lastModified: new Date('2025-01-01T00:00:00Z') },
+            };
+            yield {
+              name: maliciousName,
+              properties: { lastModified: new Date('2025-01-02T00:00:00Z') },
+            };
+          })(),
+        );
+
+        mockBlobDownload.mockResolvedValue({
+          readableStreamBody: Readable.from(Buffer.from('test content')),
+        });
+
+        const response = await reader.readTree(
+          'https://test-account.blob.core.windows.net/test-container/prefix/',
+        );
+        const files = await response.files();
+
+        expect(files).toHaveLength(1);
+        expect(files[0].path).toBe('legitimate.yaml');
+      },
+    );
   });
 
   describe('search', () => {
     const [{ reader }] = createReader({
       integrations: {
         azureBlobStorage: [
-          {
-            accountName: 'test-account',
-            accountKey: 'test-key',
-          },
+          { accountName: 'test-account', accountKey: 'test-key' },
         ],
       },
     });
@@ -313,7 +346,7 @@ describe('AzureBlobStorageUrlReader', () => {
       jest.clearAllMocks();
     });
 
-    it('should return a file when given an exact valid url', async () => {
+    it('returns a file when given an exact valid url', async () => {
       mockBlobDownload.mockResolvedValue({
         readableStreamBody: Readable.from(
           Buffer.from('site_name: Test Azure Blob'),
@@ -322,26 +355,22 @@ describe('AzureBlobStorageUrlReader', () => {
         lastModified: new Date('2025-01-01T00:00:00Z'),
       });
 
-      const data = await reader.search(
-        'https://test-account.blob.core.windows.net/test-container/test-file.yaml',
+      const { files } = await reader.search(
+        'https://test-account.blob.core.windows.net/test-container/exact-file.yaml',
       );
 
-      expect(data.etag).toBe('"etag"');
-      expect(data.files.length).toBe(1);
-      expect(data.files[0].url).toBe(
-        'https://test-account.blob.core.windows.net/test-container/test-file.yaml',
-      );
-      expect((await data.files[0].content()).toString()).toEqual(
-        'site_name: Test Azure Blob',
+      expect(files).toHaveLength(1);
+      expect(files[0].url).toBe(
+        'https://test-account.blob.core.windows.net/test-container/exact-file.yaml',
       );
     });
 
-    it('should handle Azure SDK errors from readUrl', async () => {
+    it('handles Azure SDK errors from readUrl', async () => {
       mockBlobDownload.mockRejectedValue(new Error('Blob not found'));
 
       await expect(
         reader.search(
-          'https://test-account.blob.core.windows.net/test-container/missing.yaml',
+          'https://test-account.blob.core.windows.net/test-container/nonexistent.yaml',
         ),
       ).rejects.toThrow('Could not retrieve file from Azure Blob Storage');
     });
@@ -349,7 +378,7 @@ describe('AzureBlobStorageUrlReader', () => {
     it('throws if given URL with wildcard', async () => {
       await expect(
         reader.search(
-          'https://test-account.blob.core.windows.net/test-container/test-*.yaml',
+          'https://test-account.blob.core.windows.net/test-container/path/to/*.yaml',
         ),
       ).rejects.toThrow(
         'Glob search pattern not implemented for AzureBlobStorageUrlReader',

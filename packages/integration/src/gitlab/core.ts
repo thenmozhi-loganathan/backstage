@@ -75,7 +75,7 @@ export function getGitLabRequestOptions(
 // Converts
 // from: https://gitlab.com/groupA/teams/teamA/subgroupA/repoA/-/blob/branch/filepath
 // to:   https://gitlab.com/api/v4/projects/groupA%2Fteams%2FteamA%2FsubgroupA%2FrepoA/repository/files/filepath/raw?ref=branch
-export function buildProjectUrl(
+function buildProjectUrl(
   target: string,
   projectPathOrID: string | Number,
   config: GitLabIntegrationConfig,
@@ -131,9 +131,14 @@ export function extractProjectPath(
   // Get gitlab relative path
   const relativePath = getGitLabIntegrationRelativePath(config);
 
-  // Check relative path exist and replace it if it's the case.
+  // Check relative path exists and remove it if it's the case.
   if (relativePath) {
-    repo = repo.replace(relativePath, '');
+    if (!repo.startsWith(`${relativePath}/`)) {
+      throw new Error(
+        `Failed extracting project path from ${url.pathname}. Url path must start with ${relativePath}/.`,
+      );
+    }
+    repo = repo.slice(relativePath.length);
   }
 
   // Remove leading slash

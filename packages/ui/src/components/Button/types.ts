@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { ReactElement, ReactNode, CSSProperties } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import type { ButtonProps as RAButtonProps } from 'react-aria-components';
 import type { Responsive } from '../../types';
 
@@ -25,10 +25,11 @@ export type ButtonOwnProps = {
   destructive?: boolean;
   iconStart?: ReactElement;
   iconEnd?: ReactElement;
+  isPending?: boolean;
+  /** @deprecated Use `isPending` instead. */
   loading?: boolean;
   children?: ReactNode;
   className?: string;
-  style?: CSSProperties;
 };
 
 /**
@@ -37,5 +38,5 @@ export type ButtonOwnProps = {
  * @public
  */
 export interface ButtonProps
-  extends Omit<RAButtonProps, 'children' | 'className' | 'style'>,
+  extends Omit<RAButtonProps, keyof ButtonOwnProps>,
     ButtonOwnProps {}

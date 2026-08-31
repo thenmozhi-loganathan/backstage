@@ -15,8 +15,37 @@
  */
 
 import { Entity } from '@backstage/catalog-model';
-import { createExtensionDataRef } from '@backstage/frontend-plugin-api';
-import { ReactElement } from 'react';
+import {
+  createExtensionDataRef,
+  type IconElement,
+} from '@backstage/frontend-plugin-api';
+import { ReactElement, type ReactNode } from 'react';
+
+/** @alpha */
+export type UseProps = () =>
+  | {
+      title: ReactNode;
+      href: string;
+      onClick?: () => void | Promise<void>;
+      disabled?: boolean;
+    }
+  | {
+      title: ReactNode;
+      onClick: () => void | Promise<void>;
+      disabled?: boolean;
+    };
+
+/** @alpha */
+export type EntityContextMenuItemData = {
+  icon: IconElement;
+  useProps: UseProps;
+};
+
+/** @internal */
+export const entityContextMenuItemDataRef =
+  createExtensionDataRef<EntityContextMenuItemData>().with({
+    id: 'catalog.entity-context-menu-item-data',
+  });
 
 /** @internal */
 export const entityContentTitleDataRef = createExtensionDataRef<string>().with({
@@ -47,6 +76,10 @@ export type EntityContentGroupDefinitions = Record<
   {
     title: string;
     icon?: string | ReactElement;
+    /** Other group IDs that should be treated as aliases for this group. */
+    aliases?: string[];
+    /** How to sort the content items within this group. Overrides the page-level default. */
+    contentOrder?: 'title' | 'natural';
   }
 >;
 

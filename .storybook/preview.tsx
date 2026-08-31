@@ -3,10 +3,10 @@ import addonDocs from '@storybook/addon-docs';
 import addonThemes from '@storybook/addon-themes';
 import addonLinks from '@storybook/addon-links';
 import { definePreview } from '@storybook/react-vite';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { TestApiProvider } from '@backstage/test-utils';
 import { AlertDisplay } from '@backstage/core-components';
-import { apis } from './support/apis';
+import { apis, appThemeApi } from './support/apis';
 import { useGlobals } from 'storybook/preview-api';
 import { UnifiedThemeProvider, themes } from '@backstage/theme';
 import { allModes } from './modes';
@@ -19,6 +19,7 @@ import './storybook.css';
 
 // Custom themes
 import './themes/spotify.css';
+import { Box } from '../packages/ui/src/components/Box';
 
 export default definePreview({
   tags: ['manifest'],
@@ -30,8 +31,8 @@ export default definePreview({
       toolbar: {
         icon: 'circlehollow',
         items: [
-          { value: 'light', icon: 'circlehollow', title: 'Light' },
-          { value: 'dark', icon: 'circle', title: 'Dark' },
+          { value: 'light', icon: 'sun', title: 'Light' },
+          { value: 'dark', icon: 'moon', title: 'Dark' },
         ],
         dynamicTitle: true,
       },
@@ -70,7 +71,14 @@ export default definePreview({
 
     options: {
       storySort: {
-        order: ['Backstage UI', 'Plugins', 'Layout', 'Navigation'],
+        order: [
+          'Backstage UI',
+          'Recipes',
+          'Guidelines',
+          'Plugins',
+          'Layout',
+          'Navigation',
+        ],
       },
     },
 
@@ -98,9 +106,8 @@ export default definePreview({
     chromatic: {
       modes: {
         'light backstage': allModes['light backstage'],
-        // TODO: Enable these modes when we have more Chromatic snapshots.
+        'light spotify': allModes['light spotify'],
         // 'dark backstage': allModes['dark backstage'],
-        // 'light spotify': allModes['light spotify'],
         // 'dark spotify': allModes['dark spotify'],
       },
     },
@@ -114,12 +121,13 @@ export default definePreview({
   },
 
   decorators: [
-    Story => {
+    (Story, context) => {
       const [globals] = useGlobals();
       const selectedTheme =
         globals.themeMode === 'light' ? themes.light : themes.dark;
       const selectedThemeMode = globals.themeMode || 'light';
       const selectedThemeName = globals.themeName || 'backstage';
+      const isFullscreen = context.parameters.layout === 'fullscreen';
 
       useEffect(() => {
         document.body.removeAttribute('data-theme-mode');
@@ -130,7 +138,11 @@ export default definePreview({
           document.body.removeAttribute('data-theme-mode');
           document.body.removeAttribute('data-theme-name');
         };
-      }, [selectedTheme, selectedThemeName]);
+      }, [selectedThemeMode, selectedThemeName]);
+
+      useEffect(() => {
+        appThemeApi.setActiveThemeId(selectedThemeMode);
+      }, [selectedThemeMode]);
 
       document.body.style.backgroundColor = 'var(--bui-bg-app)';
       const docsStoryElements = document.getElementsByClassName('docs-story');
@@ -143,7 +155,24 @@ export default definePreview({
           {/* @ts-ignore */}
           <TestApiProvider apis={apis}>
             <AlertDisplay />
-            <Story />
+            {selectedThemeName === 'spotify' ? (
+              <Box
+                bg="neutral"
+                m={isFullscreen ? '4' : undefined}
+                style={{
+                  borderRadius: 'var(--bui-radius-3)',
+                  height: isFullscreen
+                    ? 'calc(100vh - (var(--bui-space-4) * 2))'
+                    : undefined,
+                  overflow: isFullscreen ? 'auto' : undefined,
+                  overscrollBehavior: isFullscreen ? 'none' : undefined,
+                }}
+              >
+                <Story />
+              </Box>
+            ) : (
+              <Story />
+            )}
           </TestApiProvider>
         </UnifiedThemeProvider>
       );

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { assertError, ForwardedError } from '@backstage/errors';
-import { paths } from '../paths';
+import { ForwardedError, toError } from '@backstage/errors';
+import { targetPaths } from '@backstage/cli-common';
 import { runOutput } from '@backstage/cli-common';
 
 /**
@@ -24,17 +24,14 @@ import { runOutput } from '@backstage/cli-common';
 export async function runGit(...args: string[]) {
   try {
     const stdout = await runOutput(['git', ...args], {
-      cwd: paths.targetRoot,
+      cwd: targetPaths.rootDir,
     });
     return stdout.trim().split(/\r\n|\r|\n/);
   } catch (error) {
-    assertError(error);
-    if (
-      'code' in error &&
-      typeof (error as { code?: number }).code === 'number'
-    ) {
-      const code = (error as { code?: number }).code;
-      const stderr = (error as { stderr?: string }).stderr;
+    const err = toError(error);
+    if ('code' in err && typeof (err as { code?: number }).code === 'number') {
+      const code = (err as { code?: number }).code;
+      const stderr = (err as { stderr?: string }).stderr;
       const msg = stderr?.trim() ?? `with exit code ${code}`;
       throw new Error(`git ${args[0]} failed, ${msg}`);
     }
@@ -88,7 +85,7 @@ export class GitUtils {
     }
 
     const stdout = await runOutput(['git', 'show', `${showRef}:${path}`], {
-      cwd: paths.targetRoot,
+      cwd: targetPaths.rootDir,
     });
     return stdout;
   }

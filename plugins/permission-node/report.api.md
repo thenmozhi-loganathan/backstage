@@ -10,7 +10,6 @@ import { AuthorizePermissionResponse } from '@backstage/plugin-permission-common
 import { AuthorizeResult } from '@backstage/plugin-permission-common';
 import { AuthService } from '@backstage/backend-plugin-api';
 import { BackstageCredentials } from '@backstage/backend-plugin-api';
-import { BackstageUserIdentity } from '@backstage/plugin-auth-node';
 import { BackstageUserInfo } from '@backstage/backend-plugin-api';
 import { ConditionalPolicyDecision } from '@backstage/plugin-permission-common';
 import { Config } from '@backstage/config';
@@ -30,7 +29,9 @@ import { PermissionsServiceRequestOptions } from '@backstage/backend-plugin-api'
 import { PolicyDecision } from '@backstage/plugin-permission-common';
 import { QueryPermissionRequest } from '@backstage/plugin-permission-common';
 import { ResourcePermission } from '@backstage/plugin-permission-common';
-import { z } from 'zod';
+import type { StandardJSONSchemaV1 } from '@standard-schema/spec';
+import type { StandardSchemaV1 } from '@standard-schema/spec';
+import { z } from 'zod/v3';
 
 // @public
 export type ApplyConditionsRequest = {
@@ -216,6 +217,24 @@ export function createPermissionRule<
   TParams
 >;
 
+// @public @deprecated (undocumented)
+export function createPermissionRule<
+  TRef extends PermissionResourceRef,
+  TParams extends PermissionRuleParams = undefined,
+>(rule: {
+  name: string;
+  description: string;
+  resourceRef: TRef;
+  paramsSchema: z.ZodSchema<TParams>;
+  apply(resource: TRef['TResource'], params: NoInfer_2<TParams>): boolean;
+  toQuery(params: NoInfer_2<TParams>): PermissionCriteria<TRef['TQuery']>;
+}): PermissionRule<
+  TRef['TResource'],
+  TRef['TQuery'],
+  TRef['resourceType'],
+  TParams
+>;
+
 // @public @deprecated
 export function createPermissionRule<
   TResource,
@@ -235,7 +254,7 @@ export type CreatePermissionRuleOptions<
       name: string;
       description: string;
       resourceRef: TRef;
-      paramsSchema?: z.ZodSchema<TParams>;
+      paramsSchema?: StandardSchemaV1<TParams> & StandardJSONSchemaV1<TParams>;
       apply(resource: IResource, params: NoInfer_2<TParams>): boolean;
       toQuery(params: NoInfer_2<TParams>): PermissionCriteria<IQuery>;
     }
@@ -344,10 +363,16 @@ export type PermissionRule<
   name: string;
   description: string;
   resourceType: TResourceType;
-  paramsSchema?: z.ZodSchema<TParams>;
   apply(resource: TResource, params: NoInfer_2<TParams>): boolean;
   toQuery(params: NoInfer_2<TParams>): PermissionCriteria<TQuery>;
-};
+} & (
+  | {
+      paramsSchema?: StandardSchemaV1<TParams> & StandardJSONSchemaV1<TParams>;
+    }
+  | {
+      paramsSchema: z.ZodSchema<TParams>;
+    }
+);
 
 // @public
 export type PermissionRuleset<
@@ -365,9 +390,6 @@ export type PolicyQuery = {
 
 // @public
 export type PolicyQueryUser = {
-  token: string;
-  expiresInSeconds?: number;
-  identity: BackstageUserIdentity;
   credentials: BackstageCredentials;
   info: BackstageUserInfo;
 };

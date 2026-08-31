@@ -20,7 +20,7 @@ import * as loginPopup from '../loginPopup';
 import { UrlPatternDiscovery } from '../../apis';
 import { registerMswTestHooks } from '@backstage/test-utils';
 import { setupServer } from 'msw/node';
-import { rest } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { ConfigReader } from '@backstage/config';
 import { ConfigApi } from '@backstage/core-plugin-api';
 
@@ -61,16 +61,15 @@ describe('DefaultAuthConnector', () => {
 
   it('should refresh a session with scope', async () => {
     server.use(
-      rest.get('*', (req, res, ctx) =>
-        res(
-          ctx.json({
-            idToken: 'mock-id-token',
-            accessToken: 'mock-access-token',
-            scopes: req.url.searchParams.get('scope') || 'default-scope',
-            expiresInSeconds: '60',
-          }),
-        ),
-      ),
+      http.get('*', ({ request }) => {
+        const url = new URL(request.url);
+        return HttpResponse.json({
+          idToken: 'mock-id-token',
+          accessToken: 'mock-access-token',
+          scopes: url.searchParams.get('scope') || 'default-scope',
+          expiresInSeconds: '60',
+        });
+      }),
     );
 
     const connector = new DefaultAuthConnector<any>(defaultOptions);
@@ -86,8 +85,13 @@ describe('DefaultAuthConnector', () => {
 
   it('should handle failure to refresh session', async () => {
     server.use(
-      rest.get('*', (_req, res, ctx) =>
-        res(ctx.status(500, 'Error: Network NOPE')),
+      http.get(
+        '*',
+        () =>
+          new HttpResponse('', {
+            status: 500,
+            statusText: 'Error: Network NOPE',
+          }),
       ),
     );
 
@@ -98,7 +102,11 @@ describe('DefaultAuthConnector', () => {
   });
 
   it('should handle failure response when refreshing session', async () => {
-    server.use(rest.get('*', (_req, res, ctx) => res(ctx.status(401, 'NOPE'))));
+    server.use(
+      http.get('*', () =>
+        HttpResponse.text('', { status: 401, statusText: 'NOPE' }),
+      ),
+    );
 
     const connector = new DefaultAuthConnector(defaultOptions);
     await expect(connector.refreshSession()).rejects.toThrow(
@@ -261,5 +269,52 @@ describe('DefaultAuthConnector', () => {
     expect(popupSpy.mock.calls[0][0]).toMatchObject({
       url: 'http://my-host/api/auth/my-provider/start?scope=-ab-&origin=http%3A%2F%2Flocalhost&flow=popup&env=production',
     });
+  });
+
+  it('should not resolve when provider returns a logoutUrl', async () => {
+    const logoutUrl =
+      'https://test.auth0.com/v2/logout?federated&client_id=abc&returnTo=http%3A%2F%2Flocalhost';
+
+    server.use(http.post('*', () => HttpResponse.json({ logoutUrl })));
+
+    const connector = new DefaultAuthConnector(defaultOptions);
+
+    // When a logoutUrl is returned, removeSession redirects the browser and
+    // returns a never-resolving promise. Race against a short delay to verify
+    // that it does not resolve.
+    const result = await Promise.race([
+      connector.removeSession().then(() => 'resolved'),
+      new Promise<'timeout'>(r => setTimeout(() => r('timeout'), 50)),
+    ]);
+
+    expect(result).toBe('timeout');
+  });
+
+  it('should complete normally when provider returns empty logout response', async () => {
+    server.use(http.post('*', () => new HttpResponse(null, { status: 200 })));
+
+    const connector = new DefaultAuthConnector(defaultOptions);
+    await connector.removeSession();
+    // No redirect, no error — the original behavior
+  });
+
+  it('should complete normally when response is not JSON', async () => {
+    server.use(http.post('*', () => HttpResponse.text('OK', { status: 200 })));
+
+    const connector = new DefaultAuthConnector(defaultOptions);
+    await connector.removeSession();
+    // Should complete without error — non-JSON responses are ignored
+  });
+
+  it('should ignore logoutUrl with non-HTTPS protocol', async () => {
+    server.use(
+      http.post('*', () =>
+        HttpResponse.json({ logoutUrl: 'http://evil.com/steal' }),
+      ),
+    );
+
+    const connector = new DefaultAuthConnector(defaultOptions);
+    await connector.removeSession();
+    // Should complete normally without redirecting - http:// is rejected
   });
 });

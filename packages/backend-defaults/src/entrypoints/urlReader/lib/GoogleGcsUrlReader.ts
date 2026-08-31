@@ -34,8 +34,9 @@ import {
 import { Readable } from 'node:stream';
 import { ReadUrlResponseFactory } from './ReadUrlResponseFactory';
 import packageinfo from '../../../../package.json';
-import { assertError } from '@backstage/errors';
+import { toError } from '@backstage/errors';
 import { relative } from 'node:path/posix';
+import { hasDotPathSegments } from './util';
 
 const GOOGLE_GCS_HOST = 'storage.cloud.google.com';
 
@@ -150,13 +151,15 @@ export class GoogleGcsUrlReader implements UrlReaderService {
       prefix: key,
     });
 
-    const responses = files.map(file => ({
-      data: file.createReadStream(),
-      path: relative(key, file.name),
-      lastModifiedAt: file.metadata.updated
-        ? new Date(file.metadata.updated as string)
-        : undefined,
-    }));
+    const responses = files
+      .filter(file => !hasDotPathSegments(file.name))
+      .map(file => ({
+        data: file.createReadStream(),
+        path: relative(key, file.name),
+        lastModifiedAt: file.metadata.updated
+          ? new Date(file.metadata.updated as string)
+          : undefined,
+      }));
 
     return this.deps.treeResponseFactory.fromReadableArray(responses);
   }
@@ -182,8 +185,8 @@ export class GoogleGcsUrlReader implements UrlReaderService {
           ],
           etag: data.etag ?? '',
         };
-      } catch (error) {
-        assertError(error);
+      } catch (e) {
+        const error = toError(e);
         if (error.name === 'NotFoundError') {
           return {
             files: [],

@@ -213,7 +213,6 @@ const getDefaultBranch = async (opts: {
   apiBaseUrl: string;
 }) => {
   const { project, repo, authorization, apiBaseUrl } = opts;
-  let response: Response;
 
   const options: RequestInit = {
     method: 'GET',
@@ -223,14 +222,10 @@ const getDefaultBranch = async (opts: {
     },
   };
 
-  try {
-    response = await fetch(
-      `${apiBaseUrl}/projects/${project}/repos/${repo}/default-branch`,
-      options,
-    );
-  } catch (error) {
-    throw error;
-  }
+  const response = await fetch(
+    `${apiBaseUrl}/projects/${project}/repos/${repo}/default-branch`,
+    options,
+  );
 
   const { displayId } = await response.json();
   const defaultBranch = displayId;
@@ -345,7 +340,18 @@ export function createPublishBitbucketServerPullRequestAction(options: {
         );
       }
 
-      const token = ctx.input.token ?? integrationConfig.config.token;
+      const requireScmUserCredentials = config.getOptionalBoolean(
+        'scaffolder.requireScmUserCredentials',
+      );
+      if (requireScmUserCredentials && !ctx.input.token) {
+        throw new InputError(
+          `No user credentials provided for host ${host}, but scaffolder.requireScmUserCredentials is enabled`,
+        );
+      }
+
+      const token = requireScmUserCredentials
+        ? ctx.input.token
+        : ctx.input.token ?? integrationConfig.config.token;
 
       const authConfig = {
         ...integrationConfig.config,
@@ -444,8 +450,7 @@ export function createPublishBitbucketServerPullRequestAction(options: {
         });
 
         // copy files
-        fs.cpSync(sourceDir, tempDir, {
-          recursive: true,
+        fs.copySync(sourceDir, tempDir, {
           filter: isNotGitDirectoryOrContents,
         });
 

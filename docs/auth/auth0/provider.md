@@ -5,13 +5,6 @@ sidebar_label: Auth0
 description: Adding Auth0 as an authentication provider in Backstage
 ---
 
-:::info
-This documentation is written for [the new backend system](../../backend-system/index.md) which is the default since Backstage
-[version 1.24](../../releases/v1.24.0.md). If you are still on the old backend
-system, you may want to read [its own article](https://github.com/backstage/backstage/blob/v1.37.0/docs/auth/auth0/provider--old.md)
-instead, and [consider migrating](../../backend-system/building-backends/08-migrating.md)!
-:::
-
 The Backstage `core-plugin-api` package comes with an Auth0 authentication
 provider that can authenticate users using OAuth.
 
@@ -45,6 +38,8 @@ auth:
         connection: ${AUTH_AUTH0_CONNECTION}
         connectionScope: ${AUTH_AUTH0_CONNECTION_SCOPE}
         organization: ${AUTH_AUTH0_ORGANIZATION_ID}
+        ## uncomment to let Auth0 determine whether to prompt the user
+        # prompt: auto
         ## uncomment to set lifespan of user session
         # sessionDuration: { hours: 24 } # supports `ms` library format (e.g. '24h', '2 days'), ISO duration, "human duration" as used in code
   session:
@@ -69,6 +64,9 @@ Auth0 requires a session, so you need to give the session a secret key.
 - `audience`: The intended recipients of the token.
 - `connection`: Social identity provider name. To check the available social connections, please visit [Auth0 Social Connections](https://marketplace.auth0.com/features/social-connections).
 - `connectionScope`: Additional scopes in the interactive token request. It should always be used in combination with the `connection` parameter.
+- `prompt`: Controls the prompt sent to Auth0. Set this to `auto` to omit the
+  parameter and let Auth0 determine whether to prompt the user. Other values
+  are passed through to Auth0. Defaults to `consent`.
 - `sessionDuration`: Lifespan of the user session.
 - `organization`: Specify a specific organization ID to be targeted as part of the login flow.
 
@@ -79,7 +77,7 @@ This provider includes several resolvers out of the box that you can use:
 - `emailMatchingUserEntityProfileEmail`: Matches the email address from the auth provider with the User entity that has a matching `spec.profile.email`. If no match is found, it will throw a `NotFoundError`.
 - `emailLocalPartMatchingUserEntityName`: Matches the [local part](https://en.wikipedia.org/wiki/Email_address#Local-part) of the email address from the auth provider with the User entity that has a matching `name`. If no match is found, it will throw a `NotFoundError`.
 
-:::note Note
+:::note
 
 The resolvers will be tried in order, but will only be skipped if they throw a `NotFoundError`.
 

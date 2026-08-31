@@ -15,13 +15,15 @@
  */
 
 import { Entity } from '@backstage/catalog-model';
+import { CATALOG_FILTER_EXISTS } from '@backstage/catalog-client';
 import { ConfigReader } from '@backstage/config';
 import { TestPipeline } from '@backstage/plugin-search-backend-node';
 import {
   mockServices,
   registerMswTestHooks,
 } from '@backstage/backend-test-utils';
-import { rest } from 'msw';
+import { catalogServiceMock } from '@backstage/plugin-catalog-node/testUtils';
+import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { Readable } from 'node:stream';
 import { DefaultTechDocsCollatorFactory } from './DefaultTechDocsCollatorFactory';
@@ -85,10 +87,12 @@ describe('DefaultTechDocsCollatorFactory', () => {
   const mockDiscoveryApi = mockServices.discovery.mock({
     getBaseUrl: async () => 'http://test-backend',
   });
+  const mockCatalog = catalogServiceMock({ entities: expectedEntities });
   const options = {
     logger,
     discovery: mockDiscoveryApi,
     auth: mockServices.auth(),
+    catalog: mockCatalog,
   };
 
   it('has expected type', () => {
@@ -108,35 +112,10 @@ describe('DefaultTechDocsCollatorFactory', () => {
       collator = await factory.getCollator();
 
       worker.use(
-        rest.get(
+        http.get(
           'http://test-backend/static/docs/default/Component/test-entity-with-docs/search/search_index.json',
-          (_, res, ctx) => res(ctx.status(200), ctx.json(mockSearchDocIndex)),
+          () => HttpResponse.json(mockSearchDocIndex),
         ),
-        rest.get('http://test-backend/entities', (req, res, ctx) => {
-          // Imitate offset/limit pagination.
-          const offset = parseInt(
-            req.url.searchParams.get('offset') || '0',
-            10,
-          );
-          const limit = parseInt(
-            req.url.searchParams.get('limit') || '500',
-            10,
-          );
-
-          // Limit 50 corresponds to a case testing pagination.
-          if (limit === 50) {
-            // Return 50 copies of invalid entities on the first request.
-            if (offset === 0) {
-              return res(ctx.status(200), ctx.json(Array(50).fill({})));
-            }
-            // Then just the regular 2 on the second.
-            return res(ctx.status(200), ctx.json(expectedEntities));
-          }
-          return res(
-            ctx.status(200),
-            ctx.json(expectedEntities.slice(offset, limit + offset)),
-          );
-        }),
       );
     });
 
@@ -147,7 +126,6 @@ describe('DefaultTechDocsCollatorFactory', () => {
     it('fetches from the configured catalog and tech docs services', async () => {
       const pipeline = TestPipeline.fromCollator(collator);
       const { documents } = await pipeline.execute();
-      expect(mockDiscoveryApi.getBaseUrl).toHaveBeenCalledWith('catalog');
       expect(mockDiscoveryApi.getBaseUrl).toHaveBeenCalledWith('techdocs');
       expect(documents).toHaveLength(mockSearchDocIndex.docs.length);
     });
@@ -184,6 +162,7 @@ describe('DefaultTechDocsCollatorFactory', () => {
         discovery: mockDiscoveryApi,
         logger,
         auth: mockServices.auth(),
+        catalog: mockCatalog,
       });
       collator = await factory.getCollator();
 
@@ -207,10 +186,15 @@ describe('DefaultTechDocsCollatorFactory', () => {
       expect(documents).toHaveLength(0);
     });
 
-    it('paginates through catalog entities using batchSize', async () => {
-      // A parallelismLimit of 1 is a catalog limit of 50 per request. Code
-      // above in the /entities handler ensures valid entities are only
-      // returned on the second page.
+    it('paginates through catalog entities using cursors', async () => {
+      // parallelismLimit of 1 → batchSize of 50 per request.
+      const paginatedEntities = Array.from({ length: 51 }, (_, index) => ({
+        ...expectedEntities[0],
+        metadata: {
+          ...expectedEntities[0].metadata,
+          name: `test-entity-with-docs-${index}`,
+        },
+      }));
       const _config = new ConfigReader({
         ...config.get(),
         search: {
@@ -221,16 +205,47 @@ describe('DefaultTechDocsCollatorFactory', () => {
           },
         },
       });
-      factory = DefaultTechDocsCollatorFactory.fromConfig(_config, options);
+      const paginationCatalog = catalogServiceMock({
+        entities: paginatedEntities,
+      });
+      const queryEntitiesSpy = jest.spyOn(paginationCatalog, 'queryEntities');
+      factory = DefaultTechDocsCollatorFactory.fromConfig(_config, {
+        ...options,
+        catalog: paginationCatalog,
+        customCatalogApiFilters: { kind: 'Component' },
+      });
       collator = await factory.getCollator();
+      worker.use(
+        http.get(
+          'http://test-backend/static/docs/default/Component/:name/search/search_index.json',
+          () => HttpResponse.json(mockSearchDocIndex),
+        ),
+      );
 
       const pipeline = TestPipeline.fromCollator(collator);
       const { documents } = await pipeline.execute();
 
-      // Only 1 entity with TechDocs configured multiplied by 3 pages.
-      expect(documents).toHaveLength(3);
-      expect(_config.get('search.collators.techdocs.parallelismLimit')).toEqual(
+      expect(queryEntitiesSpy).toHaveBeenNthCalledWith(
         1,
+        {
+          filter: {
+            kind: 'Component',
+            'metadata.annotations.backstage.io/techdocs-ref':
+              CATALOG_FILTER_EXISTS,
+          },
+          limit: 50,
+          totalItems: 'exclude',
+        },
+        { credentials: expect.anything() },
+      );
+      expect(queryEntitiesSpy).toHaveBeenNthCalledWith(
+        2,
+        { cursor: expect.any(String), limit: 50 },
+        { credentials: expect.anything() },
+      );
+      expect(queryEntitiesSpy).toHaveBeenCalledTimes(2);
+      expect(documents).toHaveLength(
+        paginatedEntities.length * mockSearchDocIndex.docs.length,
       );
     });
 

@@ -1,5 +1,115 @@
 # @backstage/plugin-permission-react
 
+## 0.5.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/plugin-permission-common@0.9.10
+
+## 0.5.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9-next.0
+
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.8
+
+## 0.5.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.8-next.0
+
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.7
+
+## 0.5.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.7-next.0
+
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/plugin-permission-common@0.9.9
+  - @backstage/config@1.3.8
+
+## 0.5.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.3.8-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/plugin-permission-common@0.9.9-next.0
+
+## 0.5.0
+
+### Minor Changes
+
+- 53954e1: **BREAKING**: Removed the deprecated `PermissionedRoute` component. Use `RequirePermission` instead.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.3.7
+  - @backstage/core-plugin-api@1.12.5
+  - @backstage/plugin-permission-common@0.9.8
+
+## 0.4.42-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.3.7-next.0
+  - @backstage/core-plugin-api@1.12.5-next.2
+  - @backstage/plugin-permission-common@0.9.8-next.0
+
+## 0.4.42-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.5-next.0
+  - @backstage/config@1.3.6
+  - @backstage/plugin-permission-common@0.9.7
+
+## 0.4.41
+
+### Patch Changes
+
+- 5fec07d: Permission checks made in the same tick are now batched into a single call to the permission backend.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/plugin-permission-common@0.9.7
+
+## 0.4.41-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.3.6
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/plugin-permission-common@0.9.6
+
 ## 0.4.40
 
 ### Patch Changes

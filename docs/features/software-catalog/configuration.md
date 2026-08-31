@@ -88,7 +88,7 @@ is offered by each integration.
 To ingest entities from an existing system already tracking software, you can
 also write a _custom processor_ to convert between the existing system and
 Backstage's descriptor format. This is documented in
-[External Integrations](external-integrations.md).
+[External Integrations](external-integrations/index.md).
 
 ### Processor configuration
 
@@ -234,24 +234,9 @@ Setting this value too low risks exhausting rate limits on external systems that
 are queried by processors, such as version control systems housing catalog-info
 files.
 
-## Stitching strategy
+## Stitching
 
-[Stitching](./life-of-an-entity.md#stitching) finalizes the entity. It can be run in
-two modes:
-
-- `immediate` - performs stitching in-band immediately when needed
-- `deferred` - performs the stitching asynchronously
-
-It can be configured with the `stitchingStrategy` app-config parameter.
-
-```yaml title="app-config.yaml"
-catalog:
-  stitchingStrategy:
-    mode: immediate
-```
-
-For the `deferred` mode you can set up additional parameters to further tune the process,
-by setting the following parameters:
+[Stitching](./life-of-an-entity.md#stitching) finalizes entities asynchronously via a worker queue. You can tune the following parameters under `catalog.stitchingStrategy`:
 
 - `pollingInterval` - the interval between polling for entities that need stitching
 - `stitchTimeout` - the maximum time to wait for an entity to be stitched
@@ -261,9 +246,8 @@ These parameters accept a duration object, similar to the `processingInterval` p
 ```yaml title="app-config.yaml"
 catalog:
   stitchingStrategy:
-    mode: deferred
     pollingInterval: { seconds: 1 }
-    stitchTimeout: { minutes: 1 };
+    stitchTimeout: { minutes: 1 }
 ```
 
 ## Subscribing to Catalog Errors
@@ -302,7 +286,7 @@ This will log errors with a level of `warn`.
 
 You should now see logs as the catalog emits events. Example:
 
-```
+```log
 [1] 2024-06-07T00:00:28.787Z events warn Policy check failed for user:default/guest; caused by Error: Malformed envelope, /metadata/tags must be array entity=user:default/guest location=file:/Users/foobar/code/backstage-demo-instance/examples/org.yaml
 ```
 
@@ -365,4 +349,83 @@ Now install your module.
 
 ```ts title="packages/backend/src/index.ts"
 backend.add(eventsModuleCatalogErrors);
+```
+
+## OpenAPI and AsyncAPI Placeholder Support
+
+The **OpenAPI Catalog Backend Module** registers a JSON Schema placeholder resolver for the `openapi` (and `asyncapi`) placeholder keys. This enables you to use `$openapi` and `$asyncapi` references in your catalog entities, while having all underlying `$ref` pointers resolved and bundled as part of the schema processing.
+
+### Installation
+
+1. Add the package to your backend:
+
+```bash title="From your Backstage root directory"
+yarn --cwd packages/backend add @backstage/plugin-catalog-backend-module-openapi
+```
+
+2. Register the module in your backend:
+
+```ts title="packages/backend/src/index.ts"
+backend.add(import('@backstage/plugin-catalog-backend-module-openapi'));
+```
+
+### Usage
+
+To trigger the `$ref` resolution, use the `$openapi` (or `$asyncapi`) placeholder in your catalog entity definition:
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: example
+  description: Example API
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team
+  definition:
+    $openapi: ./spec/openapi.yaml # by using $openapi Backstage will now resolve all $ref instances
+```
+
+## Backstage OpenAPI Module
+
+As Backstage increasingly uses OpenAPI to define its core APIs (such as the Catalog and Scaffolder), discovering and interacting with these APIs is essential for integrating external tools.
+
+You can install the **Backstage OpenAPI Module** to easily expose the OpenAPI specifications for your Backstage instance plugins directly into the catalog.
+
+### Installation
+
+1. Install the module in your backend:
+
+```bash
+yarn --cwd packages/backend add @backstage/plugin-catalog-backend-module-backstage-openapi
+```
+
+2. Register the module in your backend:
+
+```ts title="packages/backend/src/index.ts"
+backend.add(
+  import('@backstage/plugin-catalog-backend-module-backstage-openapi'),
+);
+```
+
+3. Add the configuration to your `app-config.yaml`:
+
+```yaml title="app-config.yaml"
+catalog:
+  providers:
+    backstageOpenapi:
+      plugins:
+        - catalog
+        - scaffolder
+      # Optional configuration:
+      # definitionFormat controls how generated definitions are serialized.
+      # Supported values: 'json' (default) or 'yaml'.
+      # definitionFormat: json
+      # entityOverrides can be used to override parts of the produced entities.
+      # For example, to add a tag to all generated APIs:
+      # entityOverrides:
+      #   metadata:
+      #     tags:
+      #       - from-openapi
 ```

@@ -26,6 +26,7 @@ import {
 } from '@backstage/frontend-plugin-api';
 import { Entity } from '@backstage/catalog-model';
 import { waitFor, screen } from '@testing-library/react';
+import { z } from 'zod';
 
 describe('EntityContentBlueprint', () => {
   it('should return an extension with sane defaults', () => {
@@ -48,173 +49,11 @@ describe('EntityContentBlueprint', () => {
         },
         "configSchema": {
           "parse": [Function],
-          "schema": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "additionalProperties": false,
-            "properties": {
-              "filter": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                  },
-                  {
-                    "anyOf": [
-                      {
-                        "anyOf": [
-                          {
-                            "additionalProperties": {
-                              "anyOf": [
-                                {
-                                  "type": [
-                                    "string",
-                                    "number",
-                                    "boolean",
-                                  ],
-                                },
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "$exists": {
-                                      "type": "boolean",
-                                    },
-                                  },
-                                  "required": [
-                                    "$exists",
-                                  ],
-                                  "type": "object",
-                                },
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "$in": {
-                                      "items": {
-                                        "$ref": "#/properties/filter/anyOf/1/anyOf/0/anyOf/0/additionalProperties/anyOf/0",
-                                      },
-                                      "type": "array",
-                                    },
-                                  },
-                                  "required": [
-                                    "$in",
-                                  ],
-                                  "type": "object",
-                                },
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "$contains": {
-                                      "$ref": "#/properties/filter/anyOf/1",
-                                    },
-                                  },
-                                  "required": [
-                                    "$contains",
-                                  ],
-                                  "type": "object",
-                                },
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "$hasPrefix": {
-                                      "type": "string",
-                                    },
-                                  },
-                                  "required": [
-                                    "$hasPrefix",
-                                  ],
-                                  "type": "object",
-                                },
-                              ],
-                            },
-                            "propertyNames": {
-                              "pattern": "^(?!\\$).*$",
-                            },
-                            "type": "object",
-                          },
-                          {
-                            "additionalProperties": {
-                              "not": {},
-                            },
-                            "propertyNames": {
-                              "pattern": "^\\$",
-                            },
-                            "type": "object",
-                          },
-                        ],
-                      },
-                      {
-                        "$ref": "#/properties/filter/anyOf/1/anyOf/0/anyOf/0/additionalProperties/anyOf/0",
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "$all": {
-                            "items": {
-                              "$ref": "#/properties/filter/anyOf/1",
-                            },
-                            "type": "array",
-                          },
-                        },
-                        "required": [
-                          "$all",
-                        ],
-                        "type": "object",
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "$any": {
-                            "items": {
-                              "$ref": "#/properties/filter/anyOf/1",
-                            },
-                            "type": "array",
-                          },
-                        },
-                        "required": [
-                          "$any",
-                        ],
-                        "type": "object",
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "$not": {
-                            "$ref": "#/properties/filter/anyOf/1",
-                          },
-                        },
-                        "required": [
-                          "$not",
-                        ],
-                        "type": "object",
-                      },
-                    ],
-                  },
-                ],
-              },
-              "group": {
-                "anyOf": [
-                  {
-                    "const": false,
-                    "type": "boolean",
-                  },
-                  {
-                    "type": "string",
-                  },
-                ],
-              },
-              "icon": {
-                "type": "string",
-              },
-              "path": {
-                "type": "string",
-              },
-              "title": {
-                "type": "string",
-              },
-            },
-            "type": "object",
-          },
+          "schema": [Function],
         },
         "disabled": false,
         "factory": [Function],
+        "if": undefined,
         "inputs": {},
         "kind": "entity-content",
         "name": "test",
@@ -348,10 +187,8 @@ describe('EntityContentBlueprint', () => {
       inputs: {
         mock: createExtensionInput([coreExtensionData.reactElement]),
       },
-      config: {
-        schema: {
-          mock: z => z.string(),
-        },
+      configSchema: {
+        mock: z.string(),
       },
       factory(originalFactory, { inputs, config }) {
         return originalFactory({

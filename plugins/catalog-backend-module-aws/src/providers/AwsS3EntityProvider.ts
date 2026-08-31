@@ -29,7 +29,7 @@ import {
   ListObjectsV2Output,
   S3,
 } from '@aws-sdk/client-s3';
-import * as uuid from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { getEndpointFromInstructions } from '@aws-sdk/middleware-endpoint';
 import {
   AwsCredentialsManager,
@@ -40,6 +40,12 @@ import {
   SchedulerService,
   SchedulerServiceTaskRunner,
 } from '@backstage/backend-plugin-api';
+
+function hasDotPathSegment(path: string): boolean {
+  return path
+    .split(/[\\/]/)
+    .some(segment => segment === '.' || segment === '..');
+}
 
 // TODO: event-based updates using S3 events (+ queue like SQS)?
 /**
@@ -137,7 +143,7 @@ export class AwsS3EntityProvider implements EntityProvider {
           const logger = this.logger.child({
             class: AwsS3EntityProvider.prototype.constructor.name,
             taskId,
-            taskInstanceId: uuid.v4(),
+            taskInstanceId: randomUUID(),
           });
 
           try {
@@ -179,7 +185,7 @@ export class AwsS3EntityProvider implements EntityProvider {
       {
         Bucket: bucketName,
       },
-      ListObjectsV2Command,
+      ListObjectsV2Command as any,
       this.s3.config as unknown as Record<string, unknown>,
     );
     if (endpoint?.url)
@@ -199,7 +205,15 @@ export class AwsS3EntityProvider implements EntityProvider {
     const keys = await this.listAllObjectKeys();
     logger.info(`Discovered ${keys.length} AWS S3 objects`);
 
-    const locations = keys.map(key => this.createLocationSpec(key));
+    const validKeys = keys.filter(key => !hasDotPathSegment(key));
+    const skippedKeys = keys.length - validKeys.length;
+    if (skippedKeys > 0) {
+      logger.warn(
+        `Skipped ${skippedKeys} AWS S3 objects with unsupported dot path segments`,
+      );
+    }
+
+    const locations = validKeys.map(key => this.createLocationSpec(key));
 
     await this.connection.applyMutation({
       type: 'full',
@@ -252,6 +266,15 @@ export class AwsS3EntityProvider implements EntityProvider {
   }
 
   private createObjectUrl(key: string): string {
-    return new URL(key, this.endpoint).href;
+    if (!this.endpoint) {
+      throw new Error('Not initialized');
+    }
+
+    const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+    const objectUrl = new URL(this.endpoint);
+    objectUrl.pathname = `${objectUrl.pathname}${encodedKey}`;
+    objectUrl.search = '';
+    objectUrl.hash = '';
+    return objectUrl.href;
   }
 }

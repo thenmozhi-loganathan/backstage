@@ -15,9 +15,11 @@
  */
 
 import { screen } from '@testing-library/react';
-import { useSelectedSubRoute } from './EntityTabs';
+import { EntityTabs, useSelectedSubRoute } from './EntityTabs';
+import { EntityTabsList } from './EntityTabsList';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render } from '@testing-library/react';
+import { renderInTestApp } from '@backstage/frontend-test-utils';
 
 function TestSubRouteHook(props: {
   subRoutes: Array<{
@@ -36,6 +38,83 @@ function TestSubRouteHook(props: {
     </div>
   );
 }
+
+describe('EntityTabsList', () => {
+  it('should render groups in the order defined by groupDefinitions', () => {
+    const tabs = [
+      { id: '/cicd', label: 'CI/CD', path: 'cicd', group: 'cicd' },
+      {
+        id: '/overview',
+        label: 'Overview',
+        path: 'overview',
+        group: 'overview',
+      },
+      {
+        id: '/techdocs',
+        label: 'TechDocs',
+        path: 'techdocs',
+        group: 'techdocs',
+      },
+    ];
+
+    const groupDefinitions = {
+      overview: { title: 'Overview' },
+      techdocs: { title: 'TechDocs' },
+      cicd: { title: 'CI/CD' },
+    };
+
+    renderInTestApp(
+      <EntityTabsList
+        tabs={tabs}
+        groupDefinitions={groupDefinitions}
+        selectedIndex={0}
+      />,
+    );
+
+    const tabElements = screen.getAllByRole('tab');
+    expect(tabElements).toHaveLength(3);
+    expect(tabElements[0]).toHaveTextContent('Overview');
+    expect(tabElements[1]).toHaveTextContent('TechDocs');
+    expect(tabElements[2]).toHaveTextContent('CI/CD');
+  });
+
+  it('should place ungrouped tabs after defined groups', () => {
+    const tabs = [
+      { id: '/standalone', label: 'Standalone', path: 'standalone' },
+      {
+        id: '/overview',
+        label: 'Overview',
+        path: 'overview',
+        group: 'overview',
+      },
+      {
+        id: '/techdocs',
+        label: 'TechDocs',
+        path: 'techdocs',
+        group: 'techdocs',
+      },
+    ];
+
+    const groupDefinitions = {
+      overview: { title: 'Overview' },
+      techdocs: { title: 'TechDocs' },
+    };
+
+    renderInTestApp(
+      <EntityTabsList
+        tabs={tabs}
+        groupDefinitions={groupDefinitions}
+        selectedIndex={0}
+      />,
+    );
+
+    const tabElements = screen.getAllByRole('tab');
+    expect(tabElements).toHaveLength(3);
+    expect(tabElements[0]).toHaveTextContent('Overview');
+    expect(tabElements[1]).toHaveTextContent('TechDocs');
+    expect(tabElements[2]).toHaveTextContent('Standalone');
+  });
+});
 
 describe('EntityTabs', () => {
   const subRoutes = [
@@ -60,7 +139,7 @@ describe('EntityTabs', () => {
   ];
 
   describe('useSelectedSubRoute', () => {
-    it('should render the first route at root path', () => {
+    it('should not match when no route is registered for the root path', () => {
       render(
         <MemoryRouter initialEntries={['/']}>
           <Routes>
@@ -72,10 +151,74 @@ describe('EntityTabs', () => {
         </MemoryRouter>,
       );
 
+      expect(screen.getByTestId('selected-index')).toHaveTextContent('-1');
+      expect(screen.getByTestId('element-container')).toBeEmptyDOMElement();
+    });
+
+    it('should match the index route when path is "/"', () => {
+      const subRoutesWithIndex = [
+        {
+          group: 'default',
+          path: '/',
+          title: 'Overview',
+          children: <div>Overview Content</div>,
+        },
+        {
+          group: 'default',
+          path: '/details',
+          title: 'Details',
+          children: <div>Details Content</div>,
+        },
+      ];
+
+      render(
+        <MemoryRouter initialEntries={['/']}>
+          <Routes>
+            <Route
+              path="/*"
+              element={<TestSubRouteHook subRoutes={subRoutesWithIndex} />}
+            />
+          </Routes>
+        </MemoryRouter>,
+      );
+
       expect(screen.getByTestId('selected-index')).toHaveTextContent('0');
       expect(screen.getByTestId('selected-route-title')).toHaveTextContent(
         'Overview',
       );
+      expect(screen.getByText('Overview Content')).toBeInTheDocument();
+    });
+
+    it('should not let the index route swallow unknown sub-paths', () => {
+      const subRoutesWithIndex = [
+        {
+          group: 'default',
+          path: '/',
+          title: 'Overview',
+          children: <div>Overview Content</div>,
+        },
+        {
+          group: 'default',
+          path: '/details',
+          title: 'Details',
+          children: <div>Details Content</div>,
+        },
+      ];
+
+      render(
+        <MemoryRouter initialEntries={['/blob']}>
+          <Routes>
+            <Route
+              path="/*"
+              element={<TestSubRouteHook subRoutes={subRoutesWithIndex} />}
+            />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByTestId('selected-index')).toHaveTextContent('-1');
+      expect(screen.queryByText('Overview Content')).not.toBeInTheDocument();
+      expect(screen.queryByText('Details Content')).not.toBeInTheDocument();
     });
 
     it('should render a route at non-root path', () => {
@@ -197,7 +340,7 @@ describe('EntityTabs', () => {
       );
     });
 
-    it('should fall back to first route for unknown paths', () => {
+    it('should not match unknown paths', () => {
       render(
         <MemoryRouter initialEntries={['/unknown-path']}>
           <Routes>
@@ -209,10 +352,135 @@ describe('EntityTabs', () => {
         </MemoryRouter>,
       );
 
-      expect(screen.getByTestId('selected-index')).toHaveTextContent('0');
-      expect(screen.getByTestId('selected-route-title')).toHaveTextContent(
-        'Overview',
+      expect(screen.getByTestId('selected-index')).toHaveTextContent('-1');
+      expect(screen.getByTestId('element-container')).toBeEmptyDOMElement();
+    });
+
+    it('should accept paths that already include an explicit wildcard', () => {
+      const wildcardSubRoutes = [
+        {
+          group: 'default',
+          path: '/',
+          title: 'Overview',
+          children: <div>Overview Content</div>,
+        },
+        {
+          group: 'default',
+          path: '/docs/*',
+          title: 'Docs',
+          children: <div>Docs Content</div>,
+        },
+      ];
+
+      render(
+        <MemoryRouter initialEntries={['/docs/api/v1']}>
+          <Routes>
+            <Route
+              path="/*"
+              element={<TestSubRouteHook subRoutes={wildcardSubRoutes} />}
+            />
+          </Routes>
+        </MemoryRouter>,
       );
+
+      expect(screen.getByTestId('selected-index')).toHaveTextContent('1');
+      expect(screen.getByTestId('selected-route-title')).toHaveTextContent(
+        'Docs',
+      );
+      expect(screen.getByText('Docs Content')).toBeInTheDocument();
+    });
+  });
+
+  describe('rendering', () => {
+    const tabRoutes = [
+      {
+        group: 'overview',
+        path: '/',
+        title: 'Overview',
+        children: <div>Overview Content</div>,
+      },
+      {
+        group: 'overview',
+        path: '/details',
+        title: 'Details',
+        children: <div>Details Content</div>,
+      },
+    ];
+
+    it('renders the matched route content and no not-found page', async () => {
+      await renderInTestApp(
+        <Routes>
+          <Route
+            path="/*"
+            element={
+              <EntityTabs
+                routes={tabRoutes}
+                groupDefinitions={{ overview: { title: 'Overview' } }}
+              />
+            }
+          />
+        </Routes>,
+        { initialRouteEntries: ['/details'] },
+      );
+
+      expect(await screen.findByText('Details Content')).toBeInTheDocument();
+      expect(screen.queryByTestId('error')).toBeNull();
+    });
+
+    it('renders the not-found page for unknown sub-paths', async () => {
+      await renderInTestApp(
+        <Routes>
+          <Route
+            path="/*"
+            element={
+              <EntityTabs
+                routes={tabRoutes}
+                groupDefinitions={{ overview: { title: 'Overview' } }}
+              />
+            }
+          />
+        </Routes>,
+        { initialRouteEntries: ['/blob'] },
+      );
+
+      expect(await screen.findByTestId('error')).toBeInTheDocument();
+      expect(screen.queryByText('Overview Content')).not.toBeInTheDocument();
+      expect(screen.queryByText('Details Content')).not.toBeInTheDocument();
+    });
+
+    it('still routes nested sub-paths to the matching tab content', async () => {
+      const nestedRoutes = [
+        {
+          group: 'overview',
+          path: '/',
+          title: 'Overview',
+          children: <div>Overview Content</div>,
+        },
+        {
+          group: 'overview',
+          path: '/docs',
+          title: 'Docs',
+          children: <div>Docs Content</div>,
+        },
+      ];
+
+      await renderInTestApp(
+        <Routes>
+          <Route
+            path="/*"
+            element={
+              <EntityTabs
+                routes={nestedRoutes}
+                groupDefinitions={{ overview: { title: 'Overview' } }}
+              />
+            }
+          />
+        </Routes>,
+        { initialRouteEntries: ['/docs/api/v1'] },
+      );
+
+      expect(await screen.findByText('Docs Content')).toBeInTheDocument();
+      expect(screen.queryByTestId('error')).toBeNull();
     });
   });
 });

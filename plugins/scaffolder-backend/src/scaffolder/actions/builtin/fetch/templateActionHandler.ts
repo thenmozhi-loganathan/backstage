@@ -27,9 +27,12 @@ import {
 import fs from 'fs-extra';
 import globby from 'globby';
 import { isBinaryFile } from 'isbinaryfile';
+import { createTemplateRenderer, TemplateCapabilities } from 'nunjitsu';
 import { createDefaultFilters } from '../../../../lib/templating/filters/createDefaultFilters';
-import { convertFiltersToRecord } from '../../../../util/templating';
-import { SecureTemplater } from '../../../../lib/templating/SecureTemplater';
+import {
+  collectTemplateCapabilities,
+  convertFiltersToRecord,
+} from '../../../../util/templating';
 import { extname } from 'node:path';
 
 export type TemplateActionInput = {
@@ -43,6 +46,22 @@ export type TemplateActionInput = {
   lstripBlocks?: boolean;
 };
 
+export function collectActionTemplateCapabilities(options: {
+  integrations: ScmIntegrations;
+  additionalTemplateFilters?: Record<string, TemplateFilter>;
+  additionalTemplateGlobals?: Record<string, TemplateGlobal>;
+}) {
+  return collectTemplateCapabilities({
+    filters: {
+      ...convertFiltersToRecord(
+        createDefaultFilters({ integrations: options.integrations }),
+      ),
+      ...options.additionalTemplateFilters,
+    },
+    globals: options.additionalTemplateGlobals,
+  });
+}
+
 export async function createTemplateActionHandler<
   I extends TemplateActionInput,
 >(options: {
@@ -51,19 +70,11 @@ export async function createTemplateActionHandler<
   integrations: ScmIntegrations;
   additionalTemplateFilters?: Record<string, TemplateFilter>;
   additionalTemplateGlobals?: Record<string, TemplateGlobal>;
+  templateCapabilities?: TemplateCapabilities;
 }) {
-  const {
-    resolveTemplate,
-    integrations,
-    additionalTemplateFilters,
-    additionalTemplateGlobals: templateGlobals,
-    ctx,
-  } = options;
-
-  const templateFilters = {
-    ...convertFiltersToRecord(createDefaultFilters({ integrations })),
-    ...additionalTemplateFilters,
-  };
+  const { resolveTemplate, ctx } = options;
+  const templateCapabilities =
+    options.templateCapabilities ?? collectActionTemplateCapabilities(options);
 
   const { outputDir, copyOnlyPatterns, renderFilename, extension } =
     resolveTemplateActionSettings(ctx);
@@ -107,15 +118,14 @@ export async function createTemplateActionHandler<
     ctx.input.values,
   );
 
-  const renderTemplate = await SecureTemplater.loadRenderer({
+  const templateRenderer = createTemplateRenderer({
+    ...templateCapabilities,
+    allowRegexExecution: true,
     cookiecutterCompat: ctx.input.cookiecutterCompat,
-    templateFilters,
-    templateGlobals,
-    nunjucksConfigs: {
-      trimBlocks: ctx.input.trimBlocks,
-      lstripBlocks: ctx.input.lstripBlocks,
-    },
+    trimBlocks: ctx.input.trimBlocks,
+    lstripBlocks: ctx.input.lstripBlocks,
   });
+  const preparedContext = templateRenderer.prepareContext(context);
 
   for (const location of allEntriesInTemplate) {
     let renderContents: boolean;
@@ -128,7 +138,10 @@ export async function createTemplateActionHandler<
       }
       // extension is mutual exclusive with copyWithoutRender/copyWithoutTemplating,
       // therefore the output path is always rendered.
-      localOutputPath = renderTemplate(localOutputPath, context);
+      localOutputPath = templateRenderer.render(
+        localOutputPath,
+        preparedContext,
+      );
     } else {
       renderContents = !nonTemplatedEntries.has(location);
       // The logic here is a bit tangled because it depends on two variables.
@@ -137,10 +150,13 @@ export async function createTemplateActionHandler<
       // If renderFilename is false, which means copyWithoutRender is used,
       // then matched file/directory won't be processed, same as before.
       if (renderFilename) {
-        localOutputPath = renderTemplate(localOutputPath, context);
+        localOutputPath = templateRenderer.render(
+          localOutputPath,
+          preparedContext,
+        );
       } else {
         localOutputPath = renderContents
-          ? renderTemplate(localOutputPath, context)
+          ? templateRenderer.render(localOutputPath, preparedContext)
           : localOutputPath;
       }
     }
@@ -179,7 +195,7 @@ export async function createTemplateActionHandler<
         await fs.outputFile(
           outputPath,
           renderContents
-            ? renderTemplate(inputFileContents, context)
+            ? templateRenderer.render(inputFileContents, preparedContext)
             : inputFileContents,
           { mode: statsObj.mode },
         );

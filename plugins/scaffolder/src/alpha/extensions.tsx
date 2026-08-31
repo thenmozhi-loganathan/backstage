@@ -20,16 +20,28 @@ import {
   discoveryApiRef,
   fetchApiRef,
   identityApiRef,
-  NavItemBlueprint,
   PageBlueprint,
+  SubPageBlueprint,
 } from '@backstage/frontend-plugin-api';
+import { z } from 'zod/v4';
+import {
+  createZodV4FilterPredicateSchema,
+  filterPredicateToFilterFunction,
+} from '@backstage/filter-predicates';
 import { rootRouteRef } from '../routes';
 import CreateComponentIcon from '@material-ui/icons/AddCircleOutline';
-import { FormFieldBlueprint } from '@backstage/plugin-scaffolder-react/alpha';
+import {
+  FormFieldBlueprint,
+  formFieldsApiRef,
+  scaffolderTemplateOutputsComponentRef,
+  scaffolderTemplateOutputTemplateRefsRef,
+} from '@backstage/plugin-scaffolder-react/alpha';
 import { scmIntegrationsApiRef } from '@backstage/integration-react';
-import { scaffolderApiRef } from '@backstage/plugin-scaffolder-react';
+import {
+  scaffolderApiRef,
+  TemplateGroupFilter,
+} from '@backstage/plugin-scaffolder-react';
 import { ScaffolderClient } from '../api';
-import { formFieldsApiRef } from './formFieldsApi';
 
 export const scaffolderPage = PageBlueprint.makeWithOverrides({
   inputs: {
@@ -37,38 +49,132 @@ export const scaffolderPage = PageBlueprint.makeWithOverrides({
       FormFieldBlueprint.dataRefs.formFieldLoader,
     ]),
   },
-  factory(originalFactory, { apis, inputs }) {
-    const formFieldsApi = apis.get(formFieldsApiRef);
-
+  factory(originalFactory) {
     return originalFactory({
       routeRef: rootRouteRef,
       path: '/create',
+      title: 'Create',
+      icon: <CreateComponentIcon fontSize="inherit" />,
+    });
+  },
+});
+
+export const scaffolderTemplatesSubPage = SubPageBlueprint.makeWithOverrides({
+  name: 'templates',
+  configSchema: {
+    enableBackstageUi: z.boolean().optional().default(false),
+    groups: z
+      .array(
+        z.object({
+          title: z.string(),
+          filter: createZodV4FilterPredicateSchema(),
+        }),
+      )
+      .optional(),
+  },
+  factory(originalFactory, { apis, config }) {
+    const formFieldsApi = apis.get(formFieldsApiRef);
+
+    const groups: TemplateGroupFilter[] | undefined = config.groups?.map(
+      group => ({
+        title: group.title,
+        filter: filterPredicateToFilterFunction(group.filter),
+      }),
+    );
+
+    return originalFactory({
+      path: 'templates',
+      title: 'Templates',
       loader: async () => {
-        // Merge form fields from the API with old-style direct attachments
-        const apiFormFields = (await formFieldsApi?.loadFormFields()) ?? [];
-        const formFieldLoaders = inputs.formFields.map(output =>
-          output.get(FormFieldBlueprint.dataRefs.formFieldLoader),
-        );
+        const formFields = (await formFieldsApi?.loadFormFields()) ?? [];
 
-        // Resolve direct attachments and combine with API form fields
-        const loadedFormFields = await Promise.all(
-          formFieldLoaders.map(loader => loader()),
-        );
-        const formFields = [...apiFormFields, ...loadedFormFields];
-
-        return import('../components/Router/Router').then(m => (
-          <m.InternalRouter formFields={formFields} />
+        return import('./components/TemplatesSubPage').then(m => (
+          <m.TemplatesSubPage
+            formFields={formFields}
+            groups={groups}
+            formProps={{
+              EXPERIMENTAL_theme: config.enableBackstageUi ? 'bui' : 'mui',
+            }}
+          />
         ));
       },
     });
   },
 });
 
-export const scaffolderNavItem = NavItemBlueprint.make({
+export const scaffolderTasksSubPage = SubPageBlueprint.makeWithOverrides({
+  name: 'tasks',
+  inputs: {
+    templateOutputsComponents: createExtensionInput(
+      [
+        scaffolderTemplateOutputsComponentRef,
+        scaffolderTemplateOutputTemplateRefsRef,
+      ],
+      { optional: true },
+    ),
+  },
+  factory(originalFactory, { inputs }) {
+    return originalFactory({
+      path: 'tasks',
+      title: 'Tasks',
+      loader: async () => {
+        const templateOutputsComponents = inputs.templateOutputsComponents?.map(
+          input => ({
+            component: input.get(scaffolderTemplateOutputsComponentRef),
+            templateRefs: input.get(scaffolderTemplateOutputTemplateRefsRef),
+          }),
+        );
+        return import('./components/TasksSubPage').then(m => (
+          <m.TasksSubPage
+            templateOutputsComponents={templateOutputsComponents}
+          />
+        ));
+      },
+    });
+  },
+});
+
+export const scaffolderActionsSubPage = SubPageBlueprint.make({
+  name: 'actions',
   params: {
-    routeRef: rootRouteRef,
-    title: 'Create...',
-    icon: CreateComponentIcon,
+    path: 'actions',
+    title: 'Actions',
+    loader: () =>
+      Promise.all([
+        import('../components/ActionsPage'),
+        import('@backstage/core-components'),
+      ]).then(([m, { Content }]) => (
+        <Content>
+          <m.ActionPageContent />
+        </Content>
+      )),
+  },
+});
+
+export const scaffolderEditorSubPage = SubPageBlueprint.make({
+  name: 'editor',
+  params: {
+    path: 'edit',
+    title: 'Template Editor',
+    loader: () =>
+      import('./components/EditorSubPage').then(m => <m.EditorSubPage />),
+  },
+});
+
+export const scaffolderTemplatingExtensionsSubPage = SubPageBlueprint.make({
+  name: 'templating-extensions',
+  params: {
+    path: 'templating-extensions',
+    title: 'Templating Extensions',
+    loader: () =>
+      Promise.all([
+        import('../components/TemplatingExtensionsPage'),
+        import('@backstage/core-components'),
+      ]).then(([m, { Content }]) => (
+        <Content>
+          <m.TemplatingExtensionsPageContent linkLocal />
+        </Content>
+      )),
   },
 });
 

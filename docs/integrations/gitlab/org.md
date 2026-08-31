@@ -11,16 +11,6 @@ groups -- directly from GitLab. The result is a hierarchy of
 [`Group`](../../features/software-catalog/descriptor-format.md#kind-group)
 entities that mirrors your org setup.
 
-This provider can also be configured to ingest GitLab data based on [GitLab System hooks](https://docs.gitlab.com/ee/administration/system_hooks.html). The events currently accepted are:
-
-- `group_create`
-- `group_destroy`
-- `group_rename`
-- `user_create`
-- `user_destroy`
-- `user_add_to_group`
-- `user_remove_from_group`
-
 ## Installation
 
 As this provider is not one of the default providers, you will first need to install the Gitlab provider plugin:
@@ -29,11 +19,9 @@ As this provider is not one of the default providers, you will first need to ins
 yarn --cwd packages/backend add @backstage/plugin-catalog-backend-module-gitlab @backstage/plugin-catalog-backend-module-gitlab-org
 ```
 
-### Installation with New Backend System
-
 Then add the following to your backend initialization:
 
-```ts title="packages/backend/src/index.ts
+```ts title="packages/backend/src/index.ts"
 // optional if you want HTTP endpoints to receive external events
 // backend.add(import('@backstage/plugin-events-backend'));
 // optional if you want to use AWS SQS instead of HTTP endpoints to receive external events
@@ -45,104 +33,45 @@ Then add the following to your backend initialization:
 backend.add(import('@backstage/plugin-catalog-backend-module-gitlab-org'));
 ```
 
-You need to decide how you want to receive events from external sources like
+## Events Support
 
-- [via HTTP endpoint](https://github.com/backstage/backstage/blob/master/plugins/events-backend/README.md#configuration)
-- [via an AWS SQS queue](https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-aws-sqs/README.md)
-- [via Google Pub/Sub](https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-google-pubsub/README.md)
-- [via a Kafka topic](https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-kafka/README.md)
+The catalog module for GitLab Org comes with events support enabled. This will make it subscribe to its relevant topics and expects these events to be published via the `EventsService`.
 
-Further documentation:
+The provider subscribes to the following topics:
 
-- [GitLab System hooks](https://docs.gitlab.com/ee/administration/system_hooks.html)
-- [Events Plugin](https://github.com/backstage/backstage/tree/master/plugins/events-backend/README.md)
-- [GitLab Module for the Events Plugin](https://github.com/backstage/backstage/blob/master/plugins/events-backend-module-gitlab/README.md)
+- `gitlab.group_create`
+- `gitlab.group_destroy`
+- `gitlab.group_rename`
+- `gitlab.user_create`
+- `gitlab.user_destroy`
+- `gitlab.user_add_to_group`
+- `gitlab.user_remove_from_group`
 
-### Installation with Legacy Backend System
+### Prerequisites
 
-#### Installation without Events Support
+There are two prerequisites to use the builtin events support:
 
-Add the plugin to the plugin catalog `packages/backend/src/plugins/catalog.ts`:
+1. Creating a system hook in GitLab
+2. Installing and configuring `@backstage/plugin-events-backend-module-gitlab`
 
-```ts
-/* packages/backend/src/plugins/catalog.ts */
-/* highlight-add-next-line */
-import { GitlabOrgDiscoveryEntityProvider } from '@backstage/plugin-catalog-backend-module-gitlab';
+#### Configure a system hook in GitLab
 
-export default async function createPlugin(
-  env: PluginEnvironment,
-): Promise<Router> {
-  const builder = await CatalogBuilder.create(env);
-  /** ... other processors and/or providers ... */
-  /* highlight-add-start */
-  builder.addEntityProvider(
-    ...GitlabOrgDiscoveryEntityProvider.fromConfig(env.config, {
-      logger: env.logger,
-      // optional: alternatively, use scheduler with schedule defined in app-config.yaml
-      schedule: env.scheduler.createScheduledTaskRunner({
-        frequency: { minutes: 30 },
-        timeout: { minutes: 3 },
-      }),
-      // optional: alternatively, use schedule
-      scheduler: env.scheduler,
-    }),
-  );
-  /* highlight-add-end */
-  // ..
-}
-```
+Refer to the official docs to [configure system hooks](https://docs.gitlab.com/ee/administration/system_hooks.html).
 
-#### Installation with Events Support
+The webhook(s) will need to be configured to react to `group_create`, `group_destroy`, `group_rename`, `user_create`, `user_destroy`, `user_add_to_group`, and `user_remove_from_group` events.
 
-Please follow the installation instructions at
+#### Install and Configure GitLab Events Module
 
-- [Events Plugin](https://github.com/backstage/backstage/tree/master/plugins/events-backend/README.md)
-- [GitLab Module for the Events Plugin](https://github.com/backstage/backstage/blob/master/plugins/events-backend-module-gitlab/README.md)
+Install and configure `@backstage/plugin-events-backend-module-gitlab` as described in [GitLab Discovery — Install and Configure GitLab Events Module](./discovery.md#install-and-configure-gitlab-events-module). The [gitlab events module](https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-gitlab/README.md) routes received events from the generic topic `gitlab` to more specific ones based on the event type (for example, `gitlab.user_add_to_group`). These more specific events are what the builtin org events support expects.
 
-Additionally, you need to decide how you want to receive events from external sources like
+### Receiving events in Backstage
 
-- [via HTTP endpoint](https://github.com/backstage/backstage/tree/master/plugins/events-backend/README.md)
-- [via an AWS SQS queue](https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-aws-sqs/README.md)
-- [via Google Pub/Sub](https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-google-pubsub/README.md)
-- [via a Kafka topic](https://github.com/backstage/backstage/tree/master/plugins/events-backend-module-kafka/README.md)
+Set up how your Backstage instance receives these events using one of the options below:
 
-Set up your provider
-
-```ts title="packages/backend/src/plugins/catalog.ts"
-import { CatalogBuilder } from '@backstage/plugin-catalog-backend';
-/* highlight-add-next-line */
-import { GitlabOrgDiscoveryEntityProvider } from '@backstage/plugin-catalog-backend-module-gitlab';
-import { ScaffolderEntitiesProcessor } from '@backstage/plugin-scaffolder-backend';
-import { Router } from 'express';
-import { PluginEnvironment } from '../types';
-
-export default async function createPlugin(
-  env: PluginEnvironment,
-): Promise<Router> {
-  const builder = await CatalogBuilder.create(env);
-  builder.addProcessor(new ScaffolderEntitiesProcessor());
-  /* highlight-add-start */
-  const gitlabOrgProvider = GitlabOrgDiscoveryEntityProvider.fromConfig(
-    env.config,
-    {
-      logger: env.logger,
-      // optional: alternatively, use scheduler with schedule defined in app-config.yaml
-      schedule: env.scheduler.createScheduledTaskRunner({
-        frequency: { minutes: 30 },
-        timeout: { minutes: 3 },
-      }),
-      // optional: alternatively, use schedule
-      scheduler: env.scheduler,
-      events: env.events,
-    },
-  );
-  builder.addEntityProvider(gitlabOrgProvider);
-  /* highlight-add-end */
-  const { processingEngine, router } = await builder.build();
-  await processingEngine.start();
-  return router;
-}
-```
+- [Events Setup using HTTP endpoint](./discovery.md#events-setup-using-http-endpoint)
+- [Events Setup using AWS SQS module](./discovery.md#events-setup-using-aws-sqs-module)
+- [Events Setup using Google Pub/Sub module](./discovery.md#events-setup-using-google-pubsub-module)
+- [Events Setup using Kafka module](./discovery.md#events-setup-using-kafka-module)
 
 ## Configuration
 
@@ -161,9 +90,9 @@ amount of data, this can take significant time and resources.
 The token used must have the `read_api` scope, and the Users and Groups fetched
 will be those visible to the account which provisioned the token.
 
-:::note Note
+:::note
 
-If you are using the New Backend System, the `schedule` has to be setup in the config, as shown below.
+The `schedule` has to be setup in the config, as shown below.
 
 :::
 

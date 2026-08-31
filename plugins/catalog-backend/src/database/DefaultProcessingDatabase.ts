@@ -18,7 +18,6 @@ import { Entity, stringifyEntityRef } from '@backstage/catalog-model';
 import { ConflictError } from '@backstage/errors';
 import { DeferredEntity } from '@backstage/plugin-catalog-node';
 import { Knex } from 'knex';
-import lodash from 'lodash';
 import { ProcessingIntervalFunction } from '../processing/refresh';
 import { rethrowError, timestampToDateTime } from './conversion';
 import { initDatabaseMetrics } from './metrics';
@@ -42,11 +41,16 @@ import { checkLocationKeyConflict } from './operations/refreshState/checkLocatio
 import { insertUnprocessedEntity } from './operations/refreshState/insertUnprocessedEntity';
 import { updateUnprocessedEntity } from './operations/refreshState/updateUnprocessedEntity';
 import { generateStableHash, generateTargetKey } from './util';
+import {
+  syncRelations,
+  SyncRelationsResult,
+} from './operations/relations/syncRelations';
 import { EventParams, EventsService } from '@backstage/plugin-events-node';
 import { DateTime } from 'luxon';
 import { CATALOG_CONFLICTS_TOPIC } from '../constants';
 import { CatalogConflictEventPayload } from '../catalog/types';
 import { LoggerService } from '@backstage/backend-plugin-api';
+import { MetricsService } from '@backstage/backend-plugin-api/alpha';
 
 // The number of items that are sent per batch to the database layer, when
 // doing .batchInsert calls to knex. This needs to be low enough to not cause
@@ -60,6 +64,7 @@ export class DefaultProcessingDatabase implements ProcessingDatabase {
     logger: LoggerService;
     refreshInterval: ProcessingIntervalFunction;
     events: EventsService;
+    metrics: MetricsService;
   };
 
   constructor(options: {
@@ -67,15 +72,16 @@ export class DefaultProcessingDatabase implements ProcessingDatabase {
     logger: LoggerService;
     refreshInterval: ProcessingIntervalFunction;
     events: EventsService;
+    metrics: MetricsService;
   }) {
     this.options = options;
-    initDatabaseMetrics(options.database);
+    initDatabaseMetrics(options.database, options.metrics);
   }
 
   async updateProcessedEntity(
     txOpaque: Transaction,
     options: UpdateProcessedEntityOptions,
-  ): Promise<{ previous: { relations: DbRelationsRow[] } }> {
+  ): Promise<{ relationsChange: SyncRelationsResult }> {
     const tx = txOpaque as Knex.Transaction;
     const {
       id,
@@ -87,7 +93,6 @@ export class DefaultProcessingDatabase implements ProcessingDatabase {
       refreshKeys,
       locationKey,
     } = options;
-    const configClient = tx.client.config.client;
     const refreshResult = await tx<DbRefreshStateRow>('refresh_state')
       .update({
         processed_entity: JSON.stringify(processedEntity),
@@ -117,24 +122,8 @@ export class DefaultProcessingDatabase implements ProcessingDatabase {
       sourceEntityRef,
     });
 
-    // Delete old relations
-    // NOTE(freben): knex implemented support for returning() on update queries for sqlite, but at the current time of writing (Sep 2022) not for delete() queries.
-    let previousRelationRows: DbRelationsRow[];
-    if (configClient.includes('sqlite3') || configClient.includes('mysql')) {
-      previousRelationRows = await tx<DbRelationsRow>('relations')
-        .select('*')
-        .where({ originating_entity_id: id });
-      await tx<DbRelationsRow>('relations')
-        .where({ originating_entity_id: id })
-        .delete();
-    } else {
-      previousRelationRows = await tx<DbRelationsRow>('relations')
-        .where({ originating_entity_id: id })
-        .delete()
-        .returning('*');
-    }
-
-    // Batch insert new relations
+    // Sync relations using a diff-based approach — only touches rows that
+    // actually changed, eliminating steady-state write churn.
     const relationRows: DbRelationsRow[] = relations.map(
       ({ source, target, type }) => ({
         originating_entity_id: id,
@@ -144,11 +133,7 @@ export class DefaultProcessingDatabase implements ProcessingDatabase {
       }),
     );
 
-    await tx.batchInsert(
-      'relations',
-      this.deduplicateRelations(relationRows),
-      BATCH_SIZE,
-    );
+    const relationsResult = await syncRelations(tx, id, relationRows);
 
     // Delete old refresh keys
     await tx<DbRefreshKeysRow>('refresh_keys')
@@ -166,9 +151,7 @@ export class DefaultProcessingDatabase implements ProcessingDatabase {
     );
 
     return {
-      previous: {
-        relations: previousRelationRows,
-      },
+      relationsChange: relationsResult,
     };
   }
 
@@ -204,49 +187,66 @@ export class DefaultProcessingDatabase implements ProcessingDatabase {
     request: { processBatchSize: number },
   ): Promise<GetProcessableEntitiesResult> {
     const knex = maybeTx as Knex.Transaction | Knex;
-
-    let itemsQuery = knex<DbRefreshStateRow>('refresh_state').select([
-      'entity_id',
-      'entity_ref',
-      'unprocessed_entity',
-      'result_hash',
-      'cache',
-      'errors',
-      'location_key',
-      'next_update_at',
-    ]);
-
-    // This avoids duplication of work because of race conditions and is
-    // also fast because locked rows are ignored rather than blocking.
-    // It's only available in MySQL and PostgreSQL
-    if (['mysql', 'mysql2', 'pg'].includes(knex.client.config.client)) {
-      itemsQuery = itemsQuery.forUpdate().skipLocked();
-    }
-
-    const items = await itemsQuery
-      .where('next_update_at', '<=', knex.fn.now())
-      .limit(request.processBatchSize)
-      .orderBy('next_update_at', 'asc');
+    const useLocking = ['mysql', 'mysql2', 'pg'].includes(
+      knex.client.config.client,
+    );
 
     const interval = this.options.refreshInterval();
 
-    const nextUpdateAt = (refreshInterval: number) => {
-      if (knex.client.config.client.includes('sqlite3')) {
-        return knex.raw(`datetime('now', ?)`, [`${refreshInterval} seconds`]);
-      } else if (knex.client.config.client.includes('mysql')) {
-        return knex.raw(`now() + interval ${refreshInterval} second`);
+    const nextUpdateAt = (
+      tx: Knex | Knex.Transaction,
+      refreshInterval: number,
+    ) => {
+      if (tx.client.config.client.includes('sqlite3')) {
+        return tx.raw(`datetime('now', ?)`, [`${refreshInterval} seconds`]);
+      } else if (tx.client.config.client.includes('mysql')) {
+        return tx.raw(`now() + interval ${refreshInterval} second`);
       }
-      return knex.raw(`now() + interval '${refreshInterval} seconds'`);
+      return tx.raw(`now() + interval '${refreshInterval} seconds'`);
     };
 
-    await knex<DbRefreshStateRow>('refresh_state')
-      .whereIn(
-        'entity_ref',
-        items.map(i => i.entity_ref),
-      )
-      .update({
-        next_update_at: nextUpdateAt(interval),
-      });
+    // The SELECT FOR UPDATE SKIP LOCKED + UPDATE must run inside a
+    // single transaction so that the row locks persist until
+    // next_update_at has been bumped.
+    const run = async (tx: Knex | Knex.Transaction) => {
+      const items: DbRefreshStateRow[] = await tx('refresh_state')
+        .select([
+          'entity_id',
+          'entity_ref',
+          'unprocessed_entity',
+          'result_hash',
+          'cache',
+          'errors',
+          'location_key',
+          'next_update_at',
+        ])
+        .where('next_update_at', '<=', tx.fn.now())
+        .limit(request.processBatchSize)
+        .orderBy('next_update_at', 'asc')
+        .modify(qb => {
+          if (useLocking) {
+            qb.forUpdate().skipLocked();
+          }
+        });
+
+      if (items.length > 0) {
+        await tx('refresh_state')
+          .whereIn(
+            'entity_ref',
+            items.map(i => i.entity_ref),
+          )
+          .update({
+            next_update_at: nextUpdateAt(tx, interval),
+          });
+      }
+
+      return items;
+    };
+
+    const items =
+      knex.isTransaction || !useLocking
+        ? await run(knex)
+        : await knex.transaction(run);
 
     return {
       items: items.map(
@@ -303,13 +303,6 @@ export class DefaultProcessingDatabase implements ProcessingDatabase {
       this.options.logger.debug(`Error during transaction, ${e}`);
       throw rethrowError(e);
     }
-  }
-
-  private deduplicateRelations(rows: DbRelationsRow[]): DbRelationsRow[] {
-    return lodash.uniqBy(
-      rows,
-      r => `${r.source_entity_ref}:${r.target_entity_ref}:${r.type}`,
-    );
   }
 
   /**

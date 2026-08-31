@@ -30,7 +30,7 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { EventsService } from '@backstage/plugin-events-node';
 import { WebhookProjectSchema, WebhookPushEventSchema } from '@gitbeaker/rest';
-import * as uuid from 'uuid';
+import { randomUUID } from 'node:crypto';
 import {
   GitLabClient,
   GitLabGroup,
@@ -180,7 +180,7 @@ export class GitlabDiscoveryEntityProvider implements EntityProvider {
           const logger = this.logger.child({
             class: GitlabDiscoveryEntityProvider.prototype.constructor.name,
             taskId,
-            taskInstanceId: uuid.v4(),
+            taskInstanceId: randomUUID(),
           });
 
           try {
@@ -383,7 +383,7 @@ export class GitlabDiscoveryEntityProvider implements EntityProvider {
         per_page: 50,
         ...(!this.config.includeArchivedRepos && { archived: false }),
         ...(this.config.membership && { membership: true }),
-        ...(this.config.topics && { topics: this.config.topics }),
+        ...(this.config.topics && { topic: this.config.topics }),
         // Only use simple=true when we don't need to skip forked repos.
         // The simple=true parameter reduces response size by returning fewer fields,
         // but it excludes the 'forked_from_project' field which is required for fork detection.
@@ -458,6 +458,18 @@ export class GitlabDiscoveryEntityProvider implements EntityProvider {
       return;
     }
 
+    const targetBranch =
+      this.config.branch ??
+      event.project.default_branch ??
+      this.config.fallbackBranch;
+
+    if (targetBranch && event.ref !== `refs/heads/${targetBranch}`) {
+      this.logger.debug(
+        `Skipping push event for ${event.project.path_with_namespace} targeting ${event.ref}`,
+      );
+      return;
+    }
+
     // Get array of added, removed or modified files from the push event
     const added = this.getFilesMatchingConfig(
       event,
@@ -476,12 +488,12 @@ export class GitlabDiscoveryEntityProvider implements EntityProvider {
     );
 
     // Modified files will be scheduled to a refresh
-    const addedEntities = this.createLocationSpecCommitedFiles(
+    const addedEntities = this.createLocationSpecCommittedFiles(
       event.project,
       added,
     );
 
-    const removedEntities = this.createLocationSpecCommitedFiles(
+    const removedEntities = this.createLocationSpecCommittedFiles(
       event.project,
       removed,
     );
@@ -563,7 +575,7 @@ export class GitlabDiscoveryEntityProvider implements EntityProvider {
    * @param addedFiles - The array of added file paths.
    * @returns An array of location specs.
    */
-  private createLocationSpecCommitedFiles(
+  private createLocationSpecCommittedFiles(
     project: WebhookProjectSchema,
     addedFiles: string[],
   ): LocationSpec[] {

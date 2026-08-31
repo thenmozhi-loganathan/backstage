@@ -32,7 +32,7 @@ More specifically, the Software Catalog enables two main use-cases:
 ## Getting Started
 
 The Software Catalog is available to browse at `/catalog`. If you've followed
-[Getting Started with Backstage](../../getting-started), you should be able to
+[Getting Started with Backstage](../../getting-started/index.md), you should be able to
 browse the catalog at `http://localhost:3000`.
 
 ![screenshot of software catalog](../../assets/software-catalog/software-catalog-home.png)
@@ -48,7 +48,7 @@ There are 3 ways to add components to the catalog:
 
 1. Manually register components
 2. Creating new components through Backstage
-3. Integrating with an [external source](external-integrations.md)
+3. Integrating with an [external source](external-integrations/index.md)
 
 ### Manually register components
 

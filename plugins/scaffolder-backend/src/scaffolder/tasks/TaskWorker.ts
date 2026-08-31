@@ -15,7 +15,8 @@
  */
 
 import { AuditorService, LoggerService } from '@backstage/backend-plugin-api';
-import { assertError, InputError, stringifyError } from '@backstage/errors';
+import type { MetricsService } from '@backstage/backend-plugin-api/alpha';
+import { InputError, stringifyError, toError } from '@backstage/errors';
 import { ScmIntegrations } from '@backstage/integration';
 import { PermissionEvaluator } from '@backstage/plugin-permission-common';
 import {
@@ -31,6 +32,7 @@ import { WorkflowRunner } from './types';
 import { setTimeout } from 'node:timers/promises';
 import { JsonObject } from '@backstage/types';
 import { Config } from '@backstage/config';
+import { collectTemplateCapabilities } from '../../util/templating';
 
 const DEFAULT_TASK_PARAMETER_MAX_LENGTH = 256;
 
@@ -78,6 +80,7 @@ export type CreateWorkerOptions = {
   additionalTemplateGlobals?: Record<string, TemplateGlobal>;
   permissions?: PermissionEvaluator;
   gracefulShutdown?: boolean;
+  metrics: MetricsService;
 };
 
 /**
@@ -123,6 +126,7 @@ export class TaskWorker {
       additionalTemplateGlobals,
       permissions,
       gracefulShutdown,
+      metrics,
     } = options;
 
     const workflowRunner = new NunjucksWorkflowRunner({
@@ -131,10 +135,13 @@ export class TaskWorker {
       logger,
       auditor,
       workingDirectory,
-      additionalTemplateFilters,
-      additionalTemplateGlobals,
+      templateCapabilities: collectTemplateCapabilities({
+        filters: additionalTemplateFilters,
+        globals: additionalTemplateGlobals,
+      }),
       permissions,
       config,
+      metrics,
     });
 
     return new TaskWorker({
@@ -224,12 +231,12 @@ export class TaskWorker {
       await task.complete('completed', { output });
       await auditorEvent?.success();
     } catch (error) {
-      assertError(error);
+      const err = toError(error);
       await auditorEvent?.fail({
-        error,
+        error: err,
       });
       await task.complete('failed', {
-        error: { name: error.name, message: error.message },
+        error: { name: err.name, message: err.message },
       });
     }
   }

@@ -25,7 +25,7 @@ This guide assumes a basic understanding of working on a Linux based operating s
 
 ## 1. Install and Configure PostgreSQL
 
-:::tip Already configured your database?
+:::tip[Already configured your database?]
 
 If you've already installed PostgreSQL and created a schema and user, you can skip to [Step 2](#2-configuring-backstage-pg-client).
 
@@ -190,7 +190,7 @@ backend:
       # highlight-remove-end
 ```
 
-[Start the Backstage app](../index.md#2-run-the-backstage-app):
+[Start the Backstage app](../index.md#creating-and-running-a-backstage-application):
 
 ```shell
 yarn start

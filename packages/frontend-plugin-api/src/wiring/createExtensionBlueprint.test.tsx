@@ -31,6 +31,7 @@ import {
 import { createExtensionInput } from './createExtensionInput';
 import { RouteRef } from '../routing';
 import { createExtension, ExtensionDefinition } from './createExtension';
+import { z as zodV4 } from 'zod/v4';
 import {
   createExtensionDataContainer,
   OpaqueExtensionDefinition,
@@ -180,10 +181,8 @@ describe('createExtensionBlueprint', () => {
       kind: 'test-extension',
       attachTo: { id: 'test', input: 'default' },
       output: [coreExtensionData.reactElement],
-      config: {
-        schema: {
-          text: z => z.string(),
-        },
+      configSchema: {
+        text: zodV4.string(),
       },
       factory(_, { config }) {
         // @ts-expect-error
@@ -200,11 +199,9 @@ describe('createExtensionBlueprint', () => {
 
     const extension = TestExtensionBlueprint.makeWithOverrides({
       name: 'my-extension',
-      config: {
-        schema: {
-          something: z => z.string(),
-          defaulted: z => z.string().optional().default('default'),
-        },
+      configSchema: {
+        something: zodV4.string(),
+        defaulted: zodV4.string().optional().default('default'),
       },
       factory(origFactory, { config }) {
         const b: string = config.something;
@@ -238,10 +235,8 @@ describe('createExtensionBlueprint', () => {
       kind: 'test-extension',
       attachTo: { id: 'test', input: 'default' },
       output: [coreExtensionData.reactElement],
-      config: {
-        schema: {
-          text: z => z.string(),
-        },
+      configSchema: {
+        text: zodV4.string(),
       },
       factory(params: { text: string }) {
         return [coreExtensionData.reactElement(<div>{params.text}</div>)];
@@ -253,12 +248,10 @@ describe('createExtensionBlueprint', () => {
       params: {
         text: 'Hello, world!',
       },
-      config: {
-        schema: {
-          // @ts-expect-error
-          text: z => z.number(),
-          something: z => z.string(),
-        },
+      configSchema: {
+        // @ts-expect-error: overlapping config key 'text'
+        text: zodV4.number(),
+        something: zodV4.string(),
       },
     });
 
@@ -280,11 +273,9 @@ describe('createExtensionBlueprint', () => {
 
     const extension = TestExtensionBlueprint.makeWithOverrides({
       name: 'my-extension',
-      config: {
-        schema: {
-          something: z => z.string(),
-          defaulted: z => z.string().optional().default('default'),
-        },
+      configSchema: {
+        something: zodV4.string(),
+        defaulted: zodV4.string().optional().default('default'),
       },
       factory(origFactory, { config }) {
         const b: string = config.something;
@@ -307,6 +298,78 @@ describe('createExtensionBlueprint', () => {
         },
       }).reactElement(),
     );
+  });
+
+  it('should merge configSchema from blueprint and override', () => {
+    const TestBlueprint = createExtensionBlueprint({
+      kind: 'test-extension',
+      attachTo: { id: 'test', input: 'default' },
+      output: [coreExtensionData.reactElement],
+      configSchema: {
+        title: zodV4.string().default('default title'),
+      },
+      factory(_, { config }) {
+        return [
+          coreExtensionData.reactElement(<div>{String(config.title)}</div>),
+        ];
+      },
+    });
+
+    const extension = TestBlueprint.makeWithOverrides({
+      name: 'my-extension',
+      configSchema: {
+        extra: zodV4.string(),
+      },
+      factory(origFactory, { config }) {
+        const c = config as { title: string; extra: string };
+        expect(c.title).toBe('default title');
+        expect(c.extra).toBe('extra value');
+        return origFactory({});
+      },
+    });
+
+    expect.assertions(2);
+
+    renderInTestApp(
+      createExtensionTester(extension, {
+        config: { extra: 'extra value' },
+      }).reactElement(),
+    );
+  });
+
+  it('should reject legacy config schemas during creation and override', () => {
+    const migrationError =
+      'The `config.schema` option is no longer supported. Migrate to the ' +
+      'top-level `configSchema` option with Standard Schema values.';
+    const options = {
+      kind: 'test-extension',
+      attachTo: { id: 'test', input: 'default' },
+      output: [coreExtensionData.reactElement],
+      factory: () => [coreExtensionData.reactElement(<div />)],
+    };
+
+    expect(() =>
+      (createExtensionBlueprint as any)({
+        ...options,
+        config: {
+          schema: {
+            value: (zImpl: typeof zodV4) => zImpl.string(),
+          },
+        },
+      }),
+    ).toThrow(migrationError);
+
+    const blueprint = createExtensionBlueprint(options);
+    expect(() =>
+      (blueprint.makeWithOverrides as any)({
+        config: {
+          schema: {
+            value: (zImpl: typeof zodV4) => zImpl.string(),
+          },
+        },
+        factory: () => [coreExtensionData.reactElement(<div />)],
+      }),
+    ).toThrow(migrationError);
   });
 
   it('should allow getting inputs properly', () => {

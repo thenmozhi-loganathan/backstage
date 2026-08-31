@@ -15,6 +15,7 @@
  */
 
 import { InputError, NotAllowedError, stringifyError } from '@backstage/errors';
+
 import { ScmIntegrations } from '@backstage/integration';
 import {
   TaskRecovery,
@@ -23,50 +24,73 @@ import {
   TaskStep,
 } from '@backstage/plugin-scaffolder-common';
 import { JsonArray, JsonObject, JsonValue } from '@backstage/types';
-import { metrics } from '@opentelemetry/api';
 import fs from 'fs-extra';
 import { validate as validateJsonSchema } from 'jsonschema';
-import nunjucks from 'nunjucks';
+import { toPath } from 'lodash';
 import path from 'node:path';
-import * as winston from 'winston';
 import {
-  SecureTemplater,
-  SecureTemplateRenderer,
-} from '../../lib/templating/SecureTemplater';
+  createTemplateRenderer,
+  PreparedTemplateContext,
+  TemplateCapabilities,
+  TemplateContext as NunjitsuTemplateContext,
+  TemplateRenderer,
+  TemplateValue as NunjitsuTemplateValue,
+} from 'nunjitsu';
+import * as winston from 'winston';
+import { z } from 'zod/v3';
 import { TemplateActionRegistry } from '../actions/TemplateActionRegistry';
-import { generateExampleOutput, isTruthy } from './helper';
-import { TaskTrackType, WorkflowResponse, WorkflowRunner } from './types';
+import {
+  filterConditionalItems,
+  generateExampleOutput,
+  isTruthy,
+} from './helper';
+import { isTaskRecoveryEnabled } from './taskRecoveryHelper';
+import {
+  TaskTrackType,
+  TaskState,
+  WorkflowResponse,
+  WorkflowRunner,
+} from './types';
 
 import type {
   AuditorService,
   LoggerService,
   PermissionsService,
 } from '@backstage/backend-plugin-api';
+import type { MetricsService } from '@backstage/backend-plugin-api/alpha';
 import { UserEntity } from '@backstage/catalog-model';
+import { Config } from '@backstage/config';
 import {
   AuthorizeResult,
+  type PermissionCondition,
+  type PermissionCriteria,
   PolicyDecision,
 } from '@backstage/plugin-permission-common';
-import { createConditionAuthorizer } from '@backstage/plugin-permission-node';
+import {
+  createConditionAuthorizer,
+  isAndCriteria,
+  isNotCriteria,
+  isOrCriteria,
+} from '@backstage/plugin-permission-node';
 import { actionExecutePermission } from '@backstage/plugin-scaffolder-common/alpha';
 import {
   TaskContext,
   TaskSecrets,
   TemplateAction,
-  TemplateFilter,
-  TemplateGlobal,
 } from '@backstage/plugin-scaffolder-node';
-import { createDefaultFilters } from '../../lib/templating/filters/createDefaultFilters';
-import { scaffolderActionRules } from '../../service/rules';
-import { createCounterMetric, createHistogramMetric } from '../../util/metrics';
-import { BackstageLoggerTransport, WinstonLogger } from './logger';
-import { convertFiltersToRecord } from '../../util/templating';
 import {
   CheckpointContext,
   CheckpointState,
 } from '@backstage/plugin-scaffolder-node/alpha';
-import { Config } from '@backstage/config';
 import { resolveDefaultEnvironment } from '../../lib/defaultEnvironment';
+import { createDefaultFilters } from '../../lib/templating/filters/createDefaultFilters';
+import { scaffolderActionRules } from '../../service/rules';
+import { createCounterMetric, createHistogramMetric } from '../../util/metrics';
+import {
+  collectTemplateCapabilities,
+  convertFiltersToRecord,
+} from '../../util/templating';
+import { BackstageLoggerTransport, WinstonLogger } from './logger';
 
 type NunjucksWorkflowRunnerOptions = {
   workingDirectory: string;
@@ -74,10 +98,10 @@ type NunjucksWorkflowRunnerOptions = {
   integrations: ScmIntegrations;
   logger: LoggerService;
   auditor?: AuditorService;
-  additionalTemplateFilters?: Record<string, TemplateFilter>;
-  additionalTemplateGlobals?: Record<string, TemplateGlobal>;
+  templateCapabilities?: TemplateCapabilities;
   permissions?: PermissionsService;
   config?: Config;
+  metrics: MetricsService;
 };
 
 type TemplateContext = {
@@ -104,6 +128,20 @@ const isValidTaskSpec = (taskSpec: TaskSpec): taskSpec is TaskSpecV1beta3 => {
   return taskSpec.apiVersion === 'scaffolder.backstage.io/v1beta3';
 };
 
+function stringifyEachLogValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value
+      .map(item =>
+        item === null || item === undefined ? '' : stringifyEachLogValue(item),
+      )
+      .join(',');
+  }
+  if (value !== null && typeof value === 'object') {
+    return '[object Object]';
+  }
+  return String(value);
+}
+
 const createStepLogger = ({
   task,
   step,
@@ -113,7 +151,7 @@ const createStepLogger = ({
   task: TaskContext;
   step: TaskStep;
   rootLogger: LoggerService;
-  redactions?: Record<string, string>;
+  redactions?: Iterable<string>;
 }) => {
   const taskLogger = WinstonLogger.create({
     level: process.env.LOG_LEVEL || 'info',
@@ -124,33 +162,147 @@ const createStepLogger = ({
     transports: [new BackstageLoggerTransport(rootLogger, task, step.id)],
   });
 
-  taskLogger.addRedactions(Object.values(redactions ?? {}));
+  taskLogger.addRedactions(redactions ?? []);
 
   return { taskLogger };
 };
+
+/**
+ * Recursively compares two rendered objects and returns string keys and values
+ * from `withSecrets` that differ from their counterpart in `withoutSecrets`.
+ * These were influenced by secret interpolation and should be added as log
+ * redactions.
+ */
+function collectSecretRedactions(
+  withSecrets: unknown,
+  withoutSecrets: unknown,
+): string[] {
+  if (typeof withSecrets === 'string') {
+    return withSecrets !== withoutSecrets ? [withSecrets] : [];
+  }
+  if (Array.isArray(withSecrets)) {
+    const other = Array.isArray(withoutSecrets) ? withoutSecrets : [];
+    return withSecrets.flatMap((val, i) =>
+      collectSecretRedactions(val, other[i]),
+    );
+  }
+  if (withSecrets && typeof withSecrets === 'object') {
+    const otherEntries =
+      withoutSecrets && typeof withoutSecrets === 'object'
+        ? Object.entries(withoutSecrets as Record<string, unknown>)
+        : [];
+    return Object.entries(withSecrets as Record<string, unknown>).flatMap(
+      ([key, value], index) => {
+        const otherEntry = otherEntries[index];
+        if (!otherEntry) {
+          return [key, ...extractStringValues(value)];
+        }
+        const [otherKey, otherValue] = otherEntry;
+        return [
+          ...(key !== otherKey ? [key] : []),
+          ...collectSecretRedactions(value, otherValue),
+        ];
+      },
+    );
+  }
+  return [];
+}
+
+/**
+ * Extracts all string values from a nested object structure.
+ * Used as a fallback when the comparison render fails.
+ */
+function extractStringValues(obj: unknown): string[] {
+  if (typeof obj === 'string') return [obj];
+  if (Array.isArray(obj)) return obj.flatMap(extractStringValues);
+  if (obj && typeof obj === 'object') {
+    return Object.entries(obj).flatMap(([key, val]) => [
+      key,
+      ...extractStringValues(val),
+    ]);
+  }
+  return [];
+}
 
 const isActionAuthorized = createConditionAuthorizer(
   Object.values(scaffolderActionRules),
 );
 
+const stringPathConditionSchema = z.object({
+  rule: z.literal('HAS_STRING_PROPERTY'),
+  params: z.object({
+    key: z.string().refine(key => toPath(key).join('.') === 'path'),
+    value: z.string(),
+  }),
+});
+
+const numericGroupPathSchema = z.number().or(z.string().regex(/^\d+$/u));
+
+function getStringPathConditions(
+  criteria: PermissionCriteria<PermissionCondition>,
+): Array<string> {
+  switch (true) {
+    case isAndCriteria(criteria):
+      return criteria.allOf.flatMap(getStringPathConditions);
+    case isOrCriteria(criteria):
+      return criteria.anyOf.flatMap(getStringPathConditions);
+    case isNotCriteria(criteria):
+      return getStringPathConditions(criteria.not);
+    default: {
+      const condition = stringPathConditionSchema.safeParse(criteria);
+      return condition.success ? [condition.data.params.value] : [];
+    }
+  }
+}
+
+function isActionInputAuthorized(
+  decision: PolicyDecision,
+  action: string,
+  input: JsonObject,
+): boolean {
+  if (!isActionAuthorized(decision, { action, input })) {
+    return false;
+  }
+
+  if (
+    decision.result !== AuthorizeResult.CONDITIONAL ||
+    !action.split(':').includes('group') ||
+    !numericGroupPathSchema.safeParse(input.path).success
+  ) {
+    return true;
+  }
+
+  return getStringPathConditions(decision.conditions).every(candidatePath =>
+    isActionAuthorized(decision, {
+      action,
+      input: { ...input, path: candidatePath },
+    }),
+  );
+}
+
 export class NunjucksWorkflowRunner implements WorkflowRunner {
-  private readonly defaultTemplateFilters: Record<string, TemplateFilter>;
+  private readonly defaultTemplateCapabilities: TemplateCapabilities;
   private readonly options: NunjucksWorkflowRunnerOptions;
   private environment: {
     parameters: JsonObject;
     secrets?: Record<string, string>;
   } = { parameters: {}, secrets: {} };
 
+  private readonly tracker: ReturnType<typeof scaffoldingTracker>;
+  private readonly recoveryEnabled: boolean;
+
   constructor(options: NunjucksWorkflowRunnerOptions) {
     this.options = options;
-    this.defaultTemplateFilters = convertFiltersToRecord(
-      createDefaultFilters({
-        integrations: this.options.integrations,
-      }),
-    );
+    this.defaultTemplateCapabilities = collectTemplateCapabilities({
+      filters: convertFiltersToRecord(
+        createDefaultFilters({
+          integrations: this.options.integrations,
+        }),
+      ),
+    });
+    this.tracker = scaffoldingTracker(options.metrics);
+    this.recoveryEnabled = isTaskRecoveryEnabled(options.config);
   }
-
-  private readonly tracker = scaffoldingTracker();
 
   async getEnvironmentConfig(): Promise<{
     parameters: JsonObject;
@@ -170,77 +322,15 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
     };
   }
 
-  private isSingleTemplateString(input: string) {
-    const { parser, nodes } = nunjucks as unknown as {
-      parser: {
-        parse(
-          template: string,
-          ctx: object,
-          options: nunjucks.ConfigureOptions,
-        ): { children: { children?: unknown[] }[] };
-      };
-      nodes: { TemplateData: Function };
-    };
-
-    const parsed = parser.parse(
-      input,
-      {},
-      {
-        autoescape: false,
-        tags: {
-          variableStart: '${{',
-          variableEnd: '}}',
-        },
-      },
-    );
-
-    return (
-      parsed.children.length === 1 &&
-      !(parsed.children[0]?.children?.[0] instanceof nodes.TemplateData)
-    );
-  }
-
   private render<T>(
     input: T,
-    context: TemplateContext,
-    renderTemplate: SecureTemplateRenderer,
+    context: PreparedTemplateContext,
+    templateRenderer: TemplateRenderer,
   ): T {
     return JSON.parse(JSON.stringify(input), (_key, value) => {
       try {
         if (typeof value === 'string') {
-          try {
-            if (this.isSingleTemplateString(value)) {
-              // Lets convert ${{ parameters.bob }} to ${{ (parameters.bob) | dump }} so we can keep the input type
-              const wrappedDumped = value.replace(
-                /\${{(.+)}}/g,
-                '${{ ( $1 ) | dump }}',
-              );
-
-              // Run the templating
-              const templated = renderTemplate(wrappedDumped, context);
-
-              // If there's an empty string returned, then it's undefined
-              if (templated === '') {
-                return undefined;
-              }
-
-              // Reparse the dumped string
-              return JSON.parse(templated);
-            }
-          } catch (ex) {
-            this.options.logger.error(
-              `Failed to parse template string: ${value} with error ${ex.message}`,
-            );
-          }
-
-          // Fallback to default behaviour
-          const templated = renderTemplate(value, context);
-
-          if (templated === '') {
-            return undefined;
-          }
-
-          return templated;
+          return templateRenderer.renderValue(value, context);
         }
       } catch {
         return value;
@@ -253,12 +343,23 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
     task: TaskContext,
     step: TaskStep,
     context: TemplateContext,
-    renderTemplate: (template: string, values: unknown) => string,
+    preparedContext: PreparedTemplateContext,
+    templateRenderer: TemplateRenderer,
     taskTrack: TaskTrackType,
     workspacePath: string,
     decision: PolicyDecision,
   ) {
     const stepTrack = await this.tracker.stepStart(task, step);
+    let workspaceSerializationAttempted = false;
+    const { taskLogger } = createStepLogger({
+      task,
+      step,
+      rootLogger: this.options.logger,
+      redactions: [
+        ...Object.values(task.secrets ?? {}),
+        ...Object.values(this.environment?.secrets ?? {}),
+      ],
+    });
 
     if (task.cancelSignal.aborted) {
       throw new Error(
@@ -271,24 +372,15 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
         step.if === false ||
         (typeof step.if === 'string' &&
           step.each === undefined &&
-          !isTruthy(this.render(step.if, context, renderTemplate)))
+          !isTruthy(this.render(step.if, preparedContext, templateRenderer)))
       ) {
         await stepTrack.skipFalsy();
-        return;
+        return preparedContext;
       }
       const action: TemplateAction<JsonObject> =
         await this.options.actionRegistry.get(step.action, {
           credentials: await task.getInitiatorCredentials(),
         });
-      const { taskLogger } = createStepLogger({
-        task,
-        step,
-        rootLogger: this.options.logger,
-        redactions: {
-          ...task.secrets,
-          ...this.environment?.secrets,
-        },
-      });
 
       if (task.isDryRun) {
         const redactedSecrets = Object.fromEntries(
@@ -301,20 +393,15 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
             '***',
           ]),
         );
+        const dryRunContext = preparedContext
+          .withValue(['environment'], {
+            parameters: this.environment?.parameters || {},
+            secrets: redactedEnvironmentSecrets,
+          } as NunjitsuTemplateValue)
+          .withValue(['secrets'], redactedSecrets);
         const debugInput =
           (step.input &&
-            this.render(
-              step.input,
-              {
-                ...context,
-                environment: {
-                  parameters: this.environment?.parameters || {},
-                  secrets: redactedEnvironmentSecrets,
-                },
-                secrets: redactedSecrets,
-              },
-              renderTemplate,
-            )) ??
+            this.render(step.input, dryRunContext, templateRenderer)) ??
           {};
         taskLogger.info(
           `Running ${
@@ -337,7 +424,10 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
           } else {
             context.steps[step.id] = { output: {} };
           }
-          return;
+          return preparedContext.withValue(
+            ['steps', step.id],
+            context.steps[step.id] as unknown as NunjitsuTemplateValue,
+          );
         }
       }
 
@@ -345,48 +435,155 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
         ...context,
         environment: {
           parameters: this.environment?.parameters ?? {},
-          secrets: this.environment?.secrets ?? {},
+          secrets: task.isDryRun ? {} : this.environment?.secrets ?? {},
         },
         secrets: task.secrets ?? {},
       };
+      const preparedPreIterationContext = preparedContext
+        .withValue(
+          ['environment'],
+          preIterationContext.environment as NunjitsuTemplateValue,
+        )
+        .withValue(
+          ['secrets'],
+          preIterationContext.secrets as NunjitsuTemplateValue,
+        );
+      const hasSecrets =
+        Object.keys(task.secrets ?? {}).length > 0 ||
+        Object.keys(this.environment?.secrets ?? {}).length > 0;
+      const preparedPreIterationContextNoSecrets = preparedPreIterationContext
+        .withValue(['secrets'], {})
+        .withValue(['environment', 'secrets'], {});
 
-      const resolvedEach =
-        step.each &&
-        this.render(step.each, preIterationContext, renderTemplate);
+      const hasEach = step.each !== undefined;
+      const resolvedEach = hasEach
+        ? this.render(step.each, preparedPreIterationContext, templateRenderer)
+        : undefined;
 
-      if (step.each && !resolvedEach) {
+      if (hasEach && resolvedEach === undefined) {
         throw new InputError(
           `Invalid value on action ${action.id}.each parameter, "${step.each}" cannot be resolved to a value`,
         );
       }
 
+      if (
+        hasEach &&
+        (resolvedEach === null || typeof resolvedEach !== 'object')
+      ) {
+        throw new InputError(
+          `Invalid value on action ${action.id}.each parameter, must resolve to an array or object`,
+        );
+      }
+
+      // Discover secret-derived iteration values before logging or executing
+      // any iteration. The iteration value is already resolved by the time it
+      // is added to each iteration's context, so input-only comparison cannot
+      // identify it as secret-derived.
+      let eachWithoutSecretsEntries: [string, unknown][] | undefined;
+      if (step.each && resolvedEach && hasSecrets) {
+        try {
+          const eachWithoutSecrets = this.render(
+            step.each,
+            preparedPreIterationContextNoSecrets,
+            templateRenderer,
+          );
+          eachWithoutSecretsEntries =
+            Array.isArray(resolvedEach) && Array.isArray(eachWithoutSecrets)
+              ? Object.keys(resolvedEach).map(
+                  key =>
+                    [key, eachWithoutSecrets[Number(key)]] as [string, unknown],
+                )
+              : Object.entries(eachWithoutSecrets);
+          taskLogger.addRedactions(
+            collectSecretRedactions(
+              Object.entries(resolvedEach),
+              eachWithoutSecretsEntries,
+            ),
+          );
+        } catch {
+          taskLogger.addRedactions(extractStringValues(resolvedEach));
+        }
+      }
+
       const iterations = (
         resolvedEach
-          ? Object.entries(resolvedEach).map(([key, value]) => ({
-              each: { key, value },
-            }))
+          ? Object.entries(resolvedEach).map(([key, value], index) => {
+              const eachWithoutSecrets = eachWithoutSecretsEntries?.[index];
+              return {
+                each: { key, value },
+                eachWithoutSecrets: eachWithoutSecrets
+                  ? {
+                      key: eachWithoutSecrets[0],
+                      value: eachWithoutSecrets[1],
+                    }
+                  : {},
+              };
+            })
           : [{}]
       ).map(i => {
-        const fullContext = { ...preIterationContext, ...i };
+        const preparedFullContext =
+          'each' in i
+            ? preparedPreIterationContext.withValue(
+                ['each'],
+                i.each as NunjitsuTemplateValue,
+              )
+            : preparedPreIterationContext;
+        const preparedContextNoSecrets =
+          'each' in i
+            ? preparedPreIterationContextNoSecrets.withValue(
+                ['each'],
+                i.eachWithoutSecrets as NunjitsuTemplateValue,
+              )
+            : preparedPreIterationContextNoSecrets;
         // Evaluate if condition once per iteration, only when using 'each'
         const shouldRun =
           !('each' in i) ||
           !step.if ||
-          isTruthy(this.render(step.if, fullContext, renderTemplate));
+          isTruthy(this.render(step.if, preparedFullContext, templateRenderer));
 
         return {
           ...i,
+          preparedContext: preparedFullContext,
+          preparedContextNoSecrets,
           shouldRun,
           // Secrets are only passed when templating the input to actions for security reasons
           input: step.input
-            ? this.render(step.input, fullContext, renderTemplate)
+            ? this.render(step.input, preparedFullContext, templateRenderer)
             : {},
         };
       });
       for (const iteration of iterations) {
+        if (hasSecrets && iteration.each) {
+          taskLogger.addRedactions(
+            collectSecretRedactions(
+              iteration.each,
+              iteration.eachWithoutSecrets,
+            ),
+          );
+        }
         if (!iteration.shouldRun) {
           // No need to check schema or authorization for iterations that will not run
           continue;
+        }
+
+        // Redact any rendered values that were influenced by secrets.
+        // Re-render the input without secrets and diff against the real render
+        // to find values that changed due to secret interpolation.
+        if (step.input) {
+          if (hasSecrets) {
+            try {
+              const inputWithoutSecrets = this.render(
+                step.input,
+                iteration.preparedContextNoSecrets,
+                templateRenderer,
+              );
+              taskLogger.addRedactions(
+                collectSecretRedactions(iteration.input, inputWithoutSecrets),
+              );
+            } catch {
+              taskLogger.addRedactions(extractStringValues(iteration.input));
+            }
+          }
         }
 
         const actionId = `${action.id}${
@@ -405,18 +602,9 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
             );
           }
         }
-        if (
-          !isActionAuthorized(decision, {
-            action: action.id,
-            input: iteration.input,
-          })
-        ) {
+        if (!isActionInputAuthorized(decision, action.id, iteration.input)) {
           throw new NotAllowedError(
-            `Unauthorized action: ${actionId}. The action is not allowed. Input: ${JSON.stringify(
-              iteration.input,
-              null,
-              2,
-            )}`,
+            `Unauthorized action: ${action.id}. The action is not allowed.`,
           );
         }
       }
@@ -430,7 +618,7 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
             taskLogger.info(
               `Skipping step each: ${JSON.stringify(
                 iteration.each,
-                (k, v) => (k ? String(v) : v),
+                (key, value) => (key ? stringifyEachLogValue(value) : value),
                 0,
               )}`,
             );
@@ -439,7 +627,7 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
           taskLogger.info(
             `Running step each: ${JSON.stringify(
               iteration.each,
-              (k, v) => (k ? String(v) : v),
+              (key, value) => (key ? stringifyEachLogValue(value) : value),
               0,
             )}`,
           );
@@ -461,34 +649,44 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
 
             try {
               let prevValue: T | undefined;
+              let value: T;
 
-              if (prevTaskState) {
-                const prevState = (
-                  prevTaskState.state?.checkpoints as CheckpointState
-                )?.[key];
+              try {
+                if (prevTaskState) {
+                  const prevState = (
+                    prevTaskState.state?.checkpoints as CheckpointState
+                  )?.[key];
 
-                if (prevState && prevState.status === 'success') {
-                  prevValue = prevState.value as T;
+                  if (prevState && prevState.status === 'success') {
+                    prevValue = prevState.value as T;
+                  }
                 }
+
+                value = prevValue !== undefined ? prevValue : await fn();
+              } catch (err) {
+                try {
+                  await task.updateCheckpoint?.({
+                    key,
+                    status: 'failed',
+                    reason: stringifyError(taskLogger.redactError(err)),
+                  });
+                } catch (persistenceError) {
+                  throw new AggregateError(
+                    [err, persistenceError],
+                    `Checkpoint '${checkpointKey}' failed and its failure state could not be persisted`,
+                  );
+                }
+                throw err;
               }
 
-              const value = prevValue ? prevValue : await fn();
-
-              if (!prevValue) {
-                task.updateCheckpoint?.({
+              if (prevValue === undefined) {
+                await task.updateCheckpoint?.({
                   key,
                   status: 'success',
                   value: value ?? {},
                 });
               }
               return value;
-            } catch (err) {
-              task.updateCheckpoint?.({
-                key,
-                status: 'failed',
-                reason: stringifyError(err),
-              });
-              throw err;
             } finally {
               await task.serializeWorkspace?.({ path: workspacePath });
             }
@@ -526,6 +724,10 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
       }
 
       context.steps[step.id] = { output: stepOutput };
+      const updatedPreparedContext = preparedContext.withValue(
+        ['steps', step.id],
+        context.steps[step.id] as unknown as NunjitsuTemplateValue,
+      );
 
       if (task.cancelSignal.aborted) {
         throw new Error(
@@ -533,13 +735,30 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
         );
       }
 
+      workspaceSerializationAttempted = true;
+      await task.serializeWorkspace?.({ path: workspacePath });
+
+      // Persist step state so a recovered task can resume from here. Only done
+      // when recovery is enabled to keep the default retry lifecycle unchanged.
+      if (this.recoveryEnabled) {
+        await task.updateStepState?.({
+          stepId: step.id,
+          status: 'completed',
+          output: stepOutput,
+        });
+      }
+
       await stepTrack.markSuccessful();
-    } catch (err) {
+      return updatedPreparedContext;
+    } catch (cause) {
+      const err = taskLogger.redactError(cause);
       await taskTrack.markFailed(step, err);
       await stepTrack.markFailed();
       throw err;
     } finally {
-      await task.serializeWorkspace?.({ path: workspacePath });
+      if (!workspaceSerializationAttempted) {
+        await task.serializeWorkspace?.({ path: workspacePath });
+      }
     }
   }
 
@@ -553,19 +772,34 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
 
     const workspacePath = path.join(this.options.workingDirectory, taskId);
 
-    const { additionalTemplateFilters, additionalTemplateGlobals } =
-      this.options;
+    const { templateCapabilities } = this.options;
 
     this.environment = await this.getEnvironmentConfig();
 
-    const renderTemplate = await SecureTemplater.loadRenderer({
-      templateFilters: {
-        ...this.defaultTemplateFilters,
-        ...additionalTemplateFilters,
-      },
-      templateGlobals: additionalTemplateGlobals,
-    });
+    // Track whether any step has failed, used by status check functions
+    const taskState = { failed: false };
 
+    // Track whether a status check global (always/failure) was invoked during rendering
+    const statusCheckInvoked = { value: false };
+
+    const templateRenderer = createTemplateRenderer({
+      allowRegexExecution: true,
+      filters: {
+        ...this.defaultTemplateCapabilities.filters,
+        ...templateCapabilities?.filters,
+      },
+      globals: {
+        ...templateCapabilities?.globals,
+        always: () => {
+          statusCheckInvoked.value = true;
+          return true;
+        },
+        failure: () => {
+          statusCheckInvoked.value = true;
+          return taskState.failed;
+        },
+      },
+    });
     try {
       await task.rehydrateWorkspace?.({ taskId, targetPath: workspacePath });
 
@@ -586,6 +820,9 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
           },
         },
       };
+      let preparedContext = templateRenderer.prepareContext(
+        context as unknown as NunjitsuTemplateContext,
+      );
 
       const [decision]: PolicyDecision[] =
         this.options.permissions && task.spec.steps.length
@@ -595,21 +832,131 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
             )
           : [{ result: AuthorizeResult.ALLOW }];
 
-      for (const step of task.spec.steps) {
-        await this.executeStep(
-          task,
-          step,
-          context,
-          renderTemplate,
-          taskTrack,
-          workspacePath,
-          decision,
+      // Only resume from persisted step state when recovery is enabled.
+      // Otherwise ignore any saved state so retries always re-run every step,
+      // matching the behavior when recovery is disabled.
+      const prevTaskState = this.recoveryEnabled
+        ? await task.getTaskState?.()
+        : undefined;
+      const recoveredTaskState = prevTaskState?.state as TaskState | undefined;
+      const savedSteps = recoveredTaskState?.steps ?? {};
+      const completedStepIds = Object.keys(savedSteps).filter(
+        id => savedSteps[id]?.status === 'completed',
+      );
+      if (completedStepIds.length > 0) {
+        await task.emitLog(
+          `Task recovered - resuming from last known good state. ${completedStepIds.length} step(s) already completed.`,
         );
       }
 
-      const output = this.render(task.spec.output, context, renderTemplate);
+      let firstError: Error | undefined;
+      const allErrors: Array<{ step: TaskStep; error: Error }> = [];
+
+      for (const step of task.spec.steps) {
+        const savedStepState = savedSteps[step.id];
+        if (savedStepState?.status === 'completed') {
+          context.steps[step.id] = { output: savedStepState.output };
+          preparedContext = preparedContext.withValue(
+            ['steps', step.id],
+            context.steps[step.id] as unknown as NunjitsuTemplateValue,
+          );
+          // Re-emit the completion status event for the skipped step so the
+          // frontend, which reconstructs step status from log events, does not
+          // show a recovered step as stuck in `processing`. This also covers
+          // the crash window between persisting the step state and emitting the
+          // original completion event.
+          await task.emitLog(
+            `Skipping step ${step.id} because it was already completed in a previous run`,
+            { stepId: step.id, status: 'completed' },
+          );
+          continue;
+        }
+
+        // If a previous step failed, only run steps whose `if` condition
+        // invokes a status check global (${{ always() }} or ${{ failure() }})
+        if (taskState.failed) {
+          if (typeof step.if !== 'string') {
+            await task.emitLog(
+              `Skipping step ${step.id} because a previous step failed`,
+              { stepId: step.id, status: 'skipped' },
+            );
+            continue;
+          }
+
+          // Render the if condition to detect status check function usage
+          statusCheckInvoked.value = false;
+          this.render(step.if, preparedContext, templateRenderer);
+
+          if (!statusCheckInvoked.value) {
+            await task.emitLog(
+              `Skipping step ${step.id} because a previous step failed`,
+              { stepId: step.id, status: 'skipped' },
+            );
+            continue;
+          }
+        }
+
+        try {
+          preparedContext = await this.executeStep(
+            task,
+            step,
+            context,
+            preparedContext,
+            templateRenderer,
+            taskTrack,
+            workspacePath,
+            decision,
+          );
+        } catch (err) {
+          const error = err as Error;
+          allErrors.push({ step, error });
+
+          if (!firstError) {
+            firstError = error;
+          } else {
+            // Log subsequent errors to preserve debugging information
+            this.options.logger.error(
+              `Additional error in step ${step.id} (${step.name}): ${error.message}`,
+              error,
+            );
+            await task.emitLog(
+              `Additional error occurred: ${error.message}\n${error.stack}`,
+              { stepId: step.id, status: 'failed' },
+            );
+          }
+          taskState.failed = true;
+        }
+      }
+
+      if (firstError) {
+        // If there were multiple errors, add context to the first error
+        if (allErrors.length > 1) {
+          const additionalErrorSummary = allErrors
+            .slice(1)
+            .map(({ step }) => `${step.id} (${step.name})`)
+            .join(', ');
+          this.options.logger.warn(
+            `Task failed with ${allErrors.length} errors. First error from step ${allErrors[0].step.id}. Additional failures in: ${additionalErrorSummary}`,
+          );
+        }
+        throw firstError;
+      }
+
+      const output = this.render(
+        task.spec.output,
+        preparedContext,
+        templateRenderer,
+      );
+
+      // Filter output links and text items based on their `if` condition
+      if (Array.isArray(output?.links)) {
+        output.links = filterConditionalItems(output.links);
+      }
+      if (Array.isArray(output?.text)) {
+        output.text = filterConditionalItems(output.text);
+      }
+
       await taskTrack.markSuccessful();
-      await task.cleanWorkspace?.();
 
       return { output };
     } finally {
@@ -620,19 +967,19 @@ export class NunjucksWorkflowRunner implements WorkflowRunner {
   }
 }
 
-function scaffoldingTracker() {
+function scaffoldingTracker(metrics: MetricsService) {
   // prom-client metrics are deprecated in favour of OpenTelemetry metrics.
   const promTaskCount = createCounterMetric({
     name: 'scaffolder_task_count',
     help: 'Count of task runs',
-    labelNames: ['template', 'user', 'result'],
+    labelNames: ['template', 'result'],
   });
   const promTaskDuration = createHistogramMetric({
     name: 'scaffolder_task_duration',
     help: 'Duration of a task run',
     labelNames: ['template', 'result'],
   });
-  const promtStepCount = createCounterMetric({
+  const promStepCount = createCounterMetric({
     name: 'scaffolder_step_count',
     help: 'Count of step runs',
     labelNames: ['template', 'step', 'result'],
@@ -643,29 +990,27 @@ function scaffoldingTracker() {
     labelNames: ['template', 'step', 'result'],
   });
 
-  const meter = metrics.getMeter('default');
-  const taskCount = meter.createCounter('scaffolder.task.count', {
-    description: 'Count of task runs',
+  const taskCount = metrics.createCounter('scaffolder.task.count', {
+    description: 'Total number of scaffolder tasks executed',
   });
 
-  const taskDuration = meter.createHistogram('scaffolder.task.duration', {
-    description: 'Duration of a task run',
-    unit: 'seconds',
+  const taskDuration = metrics.createHistogram('scaffolder.task.duration', {
+    description: 'Time taken to complete a scaffolder task end-to-end',
+    unit: 's',
   });
 
-  const stepCount = meter.createCounter('scaffolder.step.count', {
-    description: 'Count of step runs',
+  const stepCount = metrics.createCounter('scaffolder.step.count', {
+    description: 'Total number of individual scaffolder action steps executed',
   });
 
-  const stepDuration = meter.createHistogram('scaffolder.step.duration', {
-    description: 'Duration of a step runs',
-    unit: 'seconds',
+  const stepDuration = metrics.createHistogram('scaffolder.step.duration', {
+    description: 'Time taken to complete a single scaffolder action step',
+    unit: 's',
   });
 
   async function taskStart(task: TaskContext) {
     await task.emitLog(`Starting up task with ${task.spec.steps.length} steps`);
     const template = task.spec.templateInfo?.entityRef || '';
-    const user = task.spec.user?.ref || '';
 
     const startTime = process.hrtime();
     const taskTimer = promTaskDuration.startTimer({
@@ -690,12 +1035,11 @@ function scaffoldingTracker() {
     async function markSuccessful() {
       promTaskCount.inc({
         template,
-        user,
         result: 'ok',
       });
       taskTimer({ result: 'ok' });
 
-      taskCount.add(1, { template, user, result: 'ok' });
+      taskCount.add(1, { template, result: 'ok' });
       taskDuration.record(endTime(), {
         template,
         result: 'ok',
@@ -709,12 +1053,11 @@ function scaffoldingTracker() {
       });
       promTaskCount.inc({
         template,
-        user,
         result: 'failed',
       });
       taskTimer({ result: 'failed' });
 
-      taskCount.add(1, { template, user, result: 'failed' });
+      taskCount.add(1, { template, result: 'failed' });
       taskDuration.record(endTime(), {
         template,
         result: 'failed',
@@ -728,12 +1071,11 @@ function scaffoldingTracker() {
       });
       promTaskCount.inc({
         template,
-        user,
         result: 'cancelled',
       });
       taskTimer({ result: 'cancelled' });
 
-      taskCount.add(1, { template, user, result: 'cancelled' });
+      taskCount.add(1, { template, result: 'cancelled' });
       taskDuration.record(endTime(), {
         template,
         result: 'cancelled',
@@ -771,7 +1113,7 @@ function scaffoldingTracker() {
         stepId: step.id,
         status: 'completed',
       });
-      promtStepCount.inc({
+      promStepCount.inc({
         template,
         step: step.name,
         result: 'ok',
@@ -787,7 +1129,7 @@ function scaffoldingTracker() {
     }
 
     async function markCancelled() {
-      promtStepCount.inc({
+      promStepCount.inc({
         template,
         step: step.name,
         result: 'cancelled',
@@ -803,7 +1145,7 @@ function scaffoldingTracker() {
     }
 
     async function markFailed() {
-      promtStepCount.inc({
+      promStepCount.inc({
         template,
         step: step.name,
         result: 'failed',

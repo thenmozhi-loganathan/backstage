@@ -41,7 +41,7 @@ interface ListProjectOptions extends CommonListOptions {
   archived?: boolean;
   group?: string;
   membership?: boolean;
-  topics?: string;
+  topic?: string;
   last_activity_after?: string;
 }
 
@@ -152,6 +152,34 @@ export class GitLabClient {
       `/groups/${encodeURIComponent(groupPath)}/members/all`,
       options,
     );
+  }
+
+  async getGroupMemberById(
+    groupPath: string,
+    userId: number,
+  ): Promise<GitLabUser | undefined> {
+    const endpoint = `/groups/${encodeURIComponent(
+      groupPath,
+    )}/members/all/${userId}`;
+    const request = new URL(`${this.config.apiBaseUrl}${endpoint}`);
+    const response = await this.integration.fetch(
+      request.toString(),
+      getGitLabRequestOptions(this.config),
+    );
+
+    if (response.status === 404) {
+      return undefined;
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Unexpected response when fetching ${request.toString()}. Expected 200 but got ${
+          response.status
+        } - ${response.statusText}`,
+      );
+    }
+
+    return response.json();
   }
 
   async listUsers(

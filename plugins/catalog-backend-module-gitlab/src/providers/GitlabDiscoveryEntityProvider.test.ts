@@ -598,6 +598,42 @@ describe('GitlabDiscoveryEntityProvider - events', () => {
     expect(entityProviderConnection.applyMutation).toHaveBeenCalledTimes(0);
   });
 
+  it('should ignore push events from non-configured branches', async () => {
+    const config = new ConfigReader(mock.config_single_integration);
+    const schedule = new PersistingTaskRunner();
+    const events = DefaultEventsService.create({ logger });
+    const entityProviderConnection: EntityProviderConnection = {
+      applyMutation: jest.fn(),
+      refresh: jest.fn(),
+    };
+    const provider = GitlabDiscoveryEntityProvider.fromConfig(config, {
+      logger,
+      schedule,
+      events,
+    })[0];
+
+    await provider.connect(entityProviderConnection);
+
+    const basePayload = mock.push_remove_event.eventPayload as Record<
+      string,
+      unknown
+    >;
+    const featureBranchEvent = {
+      topic: 'gitlab.push',
+      metadata: { 'x-gitlab-event': 'Push Hook' },
+      eventPayload: {
+        ...basePayload,
+        ref: 'refs/heads/feature-branch',
+        ref_protected: false,
+      },
+    };
+
+    await events.publish(featureBranchEvent);
+
+    expect(entityProviderConnection.applyMutation).toHaveBeenCalledTimes(0);
+    expect(entityProviderConnection.refresh).toHaveBeenCalledTimes(0);
+  });
+
   it('should ignore projects when none of the groups regex patterns match', async () => {
     const config = new ConfigReader(mock.config_groupPatterns_only_noMatch);
 
@@ -825,5 +861,69 @@ describe('GitlabDiscoveryEntityProvider - simple parameter', () => {
       archived: false,
       // simple should not be present when skipForkedRepos is true
     });
+  });
+});
+
+describe('GitlabDiscoveryEntityProvider - topic parameter', () => {
+  it('should pass topic (singular) when topics (plural) is configured', async () => {
+    const config = new ConfigReader({
+      integrations: {
+        gitlab: [
+          {
+            host: 'example.com',
+            apiBaseUrl: 'https://example.com/api/v4',
+            token: 'test-token',
+          },
+        ],
+      },
+      catalog: {
+        providers: {
+          gitlab: {
+            'test-id': {
+              host: 'example.com',
+              group: 'test-group',
+              topics: ['topic1', 'topic2'],
+            },
+          },
+        },
+      },
+    });
+
+    const schedule = new PersistingTaskRunner();
+    const entityProviderConnection: EntityProviderConnection = {
+      applyMutation: jest.fn(),
+      refresh: jest.fn(),
+    };
+
+    const provider = GitlabDiscoveryEntityProvider.fromConfig(config, {
+      logger,
+      schedule,
+    })[0];
+
+    // Mock the GitLabClient listProjects method to verify parameters
+    const mockListProjects = jest.fn().mockResolvedValue({
+      items: [],
+      nextPage: undefined,
+    });
+
+    (provider as any).gitLabClient.listProjects = mockListProjects;
+
+    await provider.connect(entityProviderConnection);
+    await provider.refresh(logger);
+
+    expect(mockListProjects).toHaveBeenCalledWith({
+      group: 'test-group',
+      page: undefined,
+      per_page: 50,
+      archived: false,
+      topic: 'topic1,topic2', // Correct singular 'topic' parameter
+      simple: true,
+    });
+    // Verify the old incorrect 'topics' key is NOT present
+    expect(mockListProjects).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        topics: expect.anything(),
+      }),
+    );
   });
 });

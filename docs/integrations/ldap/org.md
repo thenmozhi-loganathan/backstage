@@ -40,7 +40,7 @@ catalog:
           timeout: PT15M
 ```
 
-Finally, updated your backend by adding the following line:
+Finally, update your backend by adding the following line:
 
 ```ts title="packages/backend/src/index.ts"
 backend.add(import('@backstage/plugin-catalog-backend'));
@@ -85,7 +85,7 @@ catalog:
 
 These config blocks have a lot of options in them, so we will describe each "root" key within the block separately.
 
-:::note Note
+:::note
 
 If you want to import users and groups from different LDAP servers, you can define multiple providers with different names.
 If they should come from the same server, you can define multiple users and groups blocks within the same provider using an array of users / groups.

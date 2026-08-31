@@ -157,7 +157,7 @@ export class AwsIamStrategy implements AuthenticationStrategy {
 
 Sometimes you need to add a new way to authenticate against a kubernetes cluster not support by default by Backstage. This is how integrators can bring their own kubernetes auth strategies through the use of the [`addAuthStrategy`](https://github.com/backstage/backstage/blob/57397e7d6d2d725712c439f4ab93f2ac6aa27bf8/plugins/kubernetes-backend/src/service/KubernetesBuilder.ts#L211) method on `KubernetesBuilder` or through the [AuthStrategyExtensionPoint](https://github.com/backstage/backstage/blob/57397e7d6d2d725712c439f4ab93f2ac6aa27bf8/plugins/kubernetes-backend/src/plugin.ts#L112). So, on the following sections, we are going to introduce a new AuthStrategy for [Pinniped][1], an authentication service for Kubernetes clusters.
 
-### Custom Pinniped auth strategy in the new backend system
+### Custom Pinniped auth strategy in the backend system
 
 To add a new AuthStrategy, we need to create a new Pinniped [backend module](../../backend-system/building-plugins-and-modules/01-index.md#modules) to extend the Kubernetes-Backend plugin. The Pinniped module will interact with the Kubernetes-Backend plugin through the [extension points](../../backend-system/architecture/05-extension-points.md) registered by the plugin. The Kubernetes-Backend plugin [registers](https://github.com/backstage/backstage/blob/ebe7afad9d19f279469168ca0d4feceb92c1ad36/plugins/kubernetes-backend/src/plugin.ts#L155) multiple extension points like `kubernetesObjectsProvider`, `kubernetesClusterSupplier`, `kubernetesFetcher`, `kubernetesServiceLocator` and the `kubernetesAuthStrategy`.
 
@@ -165,7 +165,7 @@ Notice that this guide assumes that you already installed the [Kubernetes Plugin
 
 To create the Backend module, run `yarn new`, select `backend-module`. Then fill out:
 
-```
+```text
 ? What do you want to create? backend-module - A new backend module
 ? Enter the ID of the plugin [required] kubernetes
 ? Enter the ID of the module [required] pinniped

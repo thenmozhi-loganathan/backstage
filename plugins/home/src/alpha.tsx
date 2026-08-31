@@ -25,10 +25,10 @@
  */
 
 import { lazy as reactLazy } from 'react';
+import { z } from 'zod/v4';
 import {
   createExtensionInput,
   PageBlueprint,
-  NavItemBlueprint,
   createFrontendPlugin,
   createRouteRef,
   AppRootElementBlueprint,
@@ -37,10 +37,13 @@ import {
   errorApiRef,
   ApiBlueprint,
   ExtensionBoundary,
+  iconsApiRef,
 } from '@backstage/frontend-plugin-api';
+import { useApi } from '@backstage/core-plugin-api';
 import { VisitListener } from './components/';
 import { visitsApiRef, VisitsStorageApi, VisitsWebStorageApi } from './api';
 import HomeIcon from '@material-ui/icons/Home';
+import LinkIcon from '@material-ui/icons/Link';
 import {
   homePageWidgetDataRef,
   homePageLayoutComponentDataRef,
@@ -51,6 +54,17 @@ import {
 
 const rootRouteRef = createRouteRef();
 
+const defaultConfigItemSchema = z.object({
+  component: z.string(),
+  column: z.number(),
+  row: z.number(),
+  width: z.number(),
+  height: z.number(),
+  movable: z.boolean().optional(),
+  deletable: z.boolean().optional(),
+  resizable: z.boolean().optional(),
+});
+
 const homePage = PageBlueprint.makeWithOverrides({
   inputs: {
     widgets: createExtensionInput([homePageWidgetDataRef]),
@@ -60,11 +74,16 @@ const homePage = PageBlueprint.makeWithOverrides({
       internal: true,
     }),
   },
-  factory(originalFactory, { node, inputs }) {
+  configSchema: {
+    defaultConfig: z.array(defaultConfigItemSchema).optional(),
+  },
+  factory(originalFactory, { node, inputs, config }) {
     return originalFactory({
       path: '/home',
       noHeader: true,
       routeRef: rootRouteRef,
+      title: 'Home',
+      icon: <HomeIcon fontSize="inherit" />,
       loader: async () => {
         const LazyDefaultLayout = reactLazy(() =>
           import('./alpha/DefaultHomePageLayout').then(m => ({
@@ -87,7 +106,9 @@ const homePage = PageBlueprint.makeWithOverrides({
           node: widget.node,
         }));
 
-        return <Layout widgets={widgets} />;
+        return (
+          <Layout widgets={widgets} defaultConfig={config.defaultConfig} />
+        );
       },
     });
   },
@@ -122,33 +143,38 @@ const visitsApi = ApiBlueprint.make({
     }),
 });
 
-const homeNavItem = NavItemBlueprint.make({
-  params: {
-    title: 'Home',
-    routeRef: rootRouteRef,
-    icon: HomeIcon,
-  },
-});
-
-const homePageToolkitWidget = HomePageWidgetBlueprint.make({
+const homePageToolkitWidget = HomePageWidgetBlueprint.makeWithOverrides({
   name: 'toolkit',
-  params: {
-    name: 'HomePageToolkit',
-    title: 'Toolkit',
-    components: () =>
-      import('./homePageComponents/Toolkit').then(m => ({
-        Content: m.Content,
-        ContextProvider: m.ContextProvider,
-      })),
-    componentProps: {
-      tools: [
-        {
-          url: 'https://backstage.io',
-          label: 'Backstage Docs',
-          icon: <HomeIcon />,
-        },
-      ],
-    },
+  configSchema: {
+    tools: z
+      .array(
+        z.object({
+          url: z.string(),
+          label: z.string(),
+          icon: z.string().optional(),
+        }),
+      )
+      .default([{ url: 'https://backstage.io', label: 'Backstage Docs' }]),
+  },
+  *factory(originalFactory, { config }) {
+    yield* originalFactory({
+      name: 'HomePageToolkit',
+      title: 'Toolkit',
+      description: 'A collection of useful links and tools',
+      components: () =>
+        import('./homePageComponents/Toolkit').then(m => ({
+          Content: (props: Record<string, unknown>) => {
+            const iconsApi = useApi(iconsApiRef);
+            const tools = config.tools.map(tool => ({
+              url: tool.url,
+              label: tool.label,
+              icon: (tool.icon && iconsApi.icon(tool.icon)) ?? <LinkIcon />,
+            }));
+            return <m.Content {...props} tools={tools} />;
+          },
+          ContextProvider: m.ContextProvider,
+        })),
+    });
   },
 });
 
@@ -157,6 +183,7 @@ const homePageStarredEntitiesWidget = HomePageWidgetBlueprint.make({
   params: {
     name: 'HomePageStarredEntities',
     title: 'Your Starred Entities',
+    description: 'Shows entities you have starred in the catalog',
     components: () =>
       import('./homePageComponents/StarredEntities').then(m => ({
         Content: m.Content,
@@ -198,6 +225,79 @@ const homePageRandomJokeWidget = HomePageWidgetBlueprint.make({
   },
 });
 
+const homePageMostVisitedWidget = HomePageWidgetBlueprint.make({
+  name: 'most-visited',
+  params: {
+    name: 'HomePageMostVisited',
+    title: 'Most Visited',
+    description: 'Shows your most frequently visited pages',
+    components: () =>
+      import('./homePageComponents/VisitedByType/TopVisited').then(m => ({
+        Content: m.Content,
+        Actions: m.Actions,
+        ContextProvider: m.ContextProvider,
+      })),
+  },
+});
+
+const homePageRecentlyVisitedWidget = HomePageWidgetBlueprint.make({
+  name: 'recently-visited',
+  params: {
+    name: 'HomePageRecentlyVisited',
+    title: 'Recently Visited',
+    description: 'Shows pages you have recently visited',
+    components: () =>
+      import('./homePageComponents/VisitedByType/RecentlyVisited').then(m => ({
+        Content: m.Content,
+        Actions: m.Actions,
+        ContextProvider: m.ContextProvider,
+      })),
+  },
+});
+
+const homePageWorldClockWidget = HomePageWidgetBlueprint.makeWithOverrides({
+  name: 'world-clock',
+  configSchema: {
+    clockConfigs: z
+      .array(
+        z.object({
+          label: z.string(),
+          timeZone: z.string(),
+        }),
+      )
+      .optional(),
+    customTimeFormat: z
+      .object({
+        hour12: z.boolean().optional(),
+      })
+      .optional(),
+  },
+  *factory(originalFactory, { config }) {
+    yield* originalFactory({
+      name: 'HomePageWorldClock',
+      title: 'World Clocks',
+      description: 'Displays clocks for configured time zones',
+      components: () =>
+        import('./homePageComponents/WorldClock').then(m => ({
+          Content: () => (
+            <m.WorldClock
+              clockConfigs={config.clockConfigs}
+              customTimeFormat={
+                config.customTimeFormat
+                  ? {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      ...config.customTimeFormat,
+                    }
+                  : undefined
+              }
+            />
+          ),
+        })),
+    });
+  },
+});
+
 /**
  * Home plugin for the new frontend system.
  *
@@ -213,16 +313,24 @@ export default createFrontendPlugin({
   info: { packageJson: () => import('../package.json') },
   extensions: [
     homePage,
-    homeNavItem,
     visitsApi,
     visitListenerAppRootElement,
     homePageToolkitWidget,
     homePageStarredEntitiesWidget,
     homePageRandomJokeWidget,
+    homePageMostVisitedWidget,
+    homePageRecentlyVisitedWidget,
+    homePageWorldClockWidget,
   ],
   routes: {
     root: rootRouteRef,
   },
 });
 
-export { homeTranslationRef } from './translation';
+import { homeTranslationRef as _homeTranslationRef } from './translation';
+
+/**
+ * @alpha
+ * @deprecated Import from `@backstage/plugin-home` instead.
+ */
+export const homeTranslationRef = _homeTranslationRef;

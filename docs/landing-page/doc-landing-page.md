@@ -18,13 +18,13 @@ description: Documentation landing page.
       <ul>
         <li><a href='https://backstage.io/docs/overview/what-is-backstage'>What is Backstage?</a></li>
         <li><a href='https://backstage.io/docs/overview/technical-overview'>Technical Overview</a></li>
-        <li><a href='https://backstage.io/docs/overview/architecture-overview'>Architecture overview</a></li> 
+        <li><a href='https://backstage.io/docs/overview/architecture-overview'>Architecture overview</a></li>
         <li><a href='https://backstage.io/docs/plugins/'>Introduction to Plugins</a></li>
         <li><a href='https://backstage.io/docs/features/software-catalog/'>Software Catalog Overview</a></li>
         <li><a href='https://backstage.io/docs/features/software-catalog/system-model'>System Model</a></li>
         <li><a href='https://backstage.io/docs/auth/'>Authentication in Backstage</a></li>
         <li><a href='https://backstage.io/docs/backend-system/'>Backend System Overview</a></li>
-        <li><a href='https://backstage.io/docs/frontend-system/architecture/index'>New Frontend System Overview</a></li> 
+        <li><a href='https://backstage.io/docs/frontend-system/architecture/index'>New Frontend System Overview</a></li>
         <li><a href='https://backstage.io/docs/overview/threat-model'>Security & Threat Model</a></li>
         <li><a href='https://backstage.io/docs/overview/versioning-policy'>Release & Versioning Policy</a></li>
       </ul>
@@ -33,15 +33,28 @@ description: Documentation landing page.
       <ul>
         <li><a href='https://backstage.io/docs/getting-started/'>Create your Backstage App</a></li>
         <li><a href='https://backstage.io/docs/getting-started/logging-in'>Logging into Backstage</a></li>
-        <li><a href='https://backstage.io/docs/getting-started/register-a-component'>Registering a Component</a></li>
-        <li><a href='https://backstage.io/docs/getting-started/create-a-component'>Creating a Component</a></li>
+        <li>Using the Catalog
+          <ul>
+            <li><a href='https://backstage.io/docs/getting-started/viewing-catalog'>Viewing the Catalog</a></li>
+            <li><a href='https://backstage.io/docs/getting-started/view-what-you-own'>Viewing what you own</a></li>
+            <li><a href='https://backstage.io/docs/getting-started/viewing-entity-relationships'>Viewing entity relationships</a></li>
+            <li><a href='https://backstage.io/docs/getting-started/filter-catalog'>Filtering the Catalog</a></li>
+          </ul>
+        </li>
+        <li>Managing Components
+          <ul>
+            <li><a href='https://backstage.io/docs/getting-started/register-a-component'>Register</a></li>
+            <li><a href='https://backstage.io/docs/getting-started/create-a-component'>Create</a></li>
+            <li><a href='https://backstage.io/docs/getting-started/update-a-component'>Update</a></li>
+            <li><a href='https://backstage.io/docs/getting-started/unregister-delete-component'>Unregister/delete</a></li>
+          </ul>
+        </li>
         <li><a href='https://backstage.io/docs/features/software-templates/configuration'>Configuring a Software Template</a></li>
         <li><a href='https://backstage.io/docs/features/software-templates/adding-templates'>Creating a Software Template</a></li>
         <li><a href='https://backstage.io/docs/features/kubernetes/'>Check health of services with Kubernetes</a></li>
         <li><a href='https://backstage.io/docs/tooling/cli/overview/'>Backstage CLI</a></li>
-        <li><a href='https://backstage.io/docs/features/techdocs/'>TechDocs - a docs-like-code solution</a></li>
-      </ul>           
-    </td> 
+      </ul>
+    </td>
     <td valign='top'><i>Configure, Deploy, & Upgrade.</i><br><br>
       <ul>
         <li><a href='https://backstage.io/docs/getting-started/config/authentication'>Setup Authentication</a></li>
@@ -57,10 +70,11 @@ description: Documentation landing page.
     </td>
     <td valign='top'><i>Additional Backstage Features</i><br><br>
       <ul>
+        <li><a href='https://backstage.io/docs/ai/generated-index/'>AI</a></li>
         <li><a href='https://backstage.io/docs/features/search/'>Search</a></li>
         <li><a href='https://backstage.io/docs/features/software-catalog/'>Software Catalog</a></li>
         <li><a href='https://backstage.io/docs/features/software-templates/'>Software Templates (aka Scaffolder)</a></li>
-        <li><a href='https://backstage.io/docs/features/techdocs/'>TechDocs</a></li>
+        <li><a href='https://backstage.io/docs/features/techdocs/'>TechDocs - a docs-like-code solution</a></li>
       </ul>
     </td>
   </tr>
@@ -102,7 +116,7 @@ description: Documentation landing page.
       <ul>
         <li><a href='https://backstage.io/docs/contribute/'>Contributor's Guide</a></li>
         <li><a href='https://backstage.io/docs/contribute/getting-involved'>Getting Involved</a></li>
-        <li><a href=https://backstage.io/docs/contribute/project-structure'>Backstage Project Structure</a></li>
+        <li><a href='https://backstage.io/docs/contribute/project-structure'>Backstage Project Structure</a></li>
       </ul>
     </td>
   </tr>

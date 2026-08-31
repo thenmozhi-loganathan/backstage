@@ -29,9 +29,9 @@ import {
 
 import { SerializedTask, TaskFilter } from '@backstage/plugin-scaffolder-node';
 
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { JsonObject, JsonPrimitive } from '@backstage/types';
-import { get } from 'lodash';
+import { get, toPath } from 'lodash';
 
 export const createTemplatePermissionRule = makeCreatePermissionRule<
   TemplateEntityStepV1beta3 | TemplateParametersV1beta3,
@@ -72,12 +72,6 @@ export const hasActionId = createActionPermissionRule({
     return resource.action === actionId;
   },
   toQuery: () => ({}),
-});
-
-export const hasProperty = buildHasProperty({
-  name: 'HAS_PROPERTY',
-  valueSchema: z.union([z.string(), z.number(), z.boolean(), z.null()]),
-  validateProperty: false,
 });
 
 export const hasBooleanProperty = buildHasProperty({
@@ -122,6 +116,26 @@ function buildHasProperty<Schema extends z.ZodType<JsonPrimitive>>({
       }
       if (value !== undefined) {
         if (valueSchema.safeParse(value).success) {
+          if (typeof value === 'string' && typeof foundValue === 'string') {
+            const property = toPath(key).join('.');
+            const actionSegments = resource.action.split(':');
+            const integration = actionSegments.find(segment =>
+              /^(?:gitlab|github|bitbucket(?:Cloud|Server)?)$/u.test(segment),
+            );
+
+            if (
+              integration &&
+              (['owner', 'repoName', 'projectId', 'repoUrl'].includes(
+                property,
+              ) ||
+                (actionSegments.includes('group') && property === 'path'))
+            ) {
+              return (
+                value.toLocaleLowerCase('en-US') ===
+                foundValue.toLocaleLowerCase('en-US')
+              );
+            }
+          }
           return value === foundValue;
         }
         return false;
@@ -147,7 +161,7 @@ export const isTaskOwner = createTaskPermissionRule({
     createdBy: z
       .array(z.string())
       .describe(
-        'List of creater entity refs; only tasks created by these users will be viewable',
+        'List of creator entity refs; only tasks created by these users will be viewable',
       ),
   }),
   apply: (resource, { createdBy }) => {

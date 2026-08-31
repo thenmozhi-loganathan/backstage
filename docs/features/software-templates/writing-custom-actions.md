@@ -8,15 +8,6 @@ If you want to extend the functionality of the Scaffolder, you can do so
 by writing custom actions which can be used alongside our
 [built-in actions](./builtin-actions.md).
 
-:::note Note
-
-When adding custom actions, the actions array will **replace the
-built-in actions too**. Meaning, you will no longer be able to use them.
-If you want to continue using the builtin actions, include them in the `actions`
-array when registering your custom actions, as seen below.
-
-:::
-
 ## Streamlining Custom Action Creation with Backstage CLI
 
 The creation of custom actions in Backstage has never been easier thanks to the Backstage CLI. This tool streamlines the
@@ -56,7 +47,7 @@ its generated unit test. We will replace the existing placeholder code with our 
 import { resolveSafeChildPath } from '@backstage/backend-plugin-api';
 import { createTemplateAction } from '@backstage/plugin-scaffolder-node';
 import fs from 'fs-extra';
-import { type z } from 'zod';
+import { type z } from 'zod/v3';
 
 export const createNewFileAction = () => {
   return createTemplateAction({
@@ -193,10 +184,8 @@ When the action `handler` is called, we provide you a `context` as the only
 argument. It looks like the following:
 
 - `ctx.baseUrl` - a string where the template is located
-- `ctx.checkpoint` - _Experimental_ allows to
-  implement [idempotency of the actions](https://github.com/backstage/backstage/tree/master/beps/0004-scaffolder-task-idempotency)
-  by not re-running the same function again if it was
-  executed successfully on the previous run.
+- `ctx.checkpoint` - allows you to implement [idempotent actions](https://github.com/backstage/backstage/tree/master/beps/0004-scaffolder-task-idempotency)
+  by skipping functions that already executed successfully on a previous run. Used with [task recovery](./configuration.md#task-recovery).
 - `ctx.logger` - a [LoggerService](../../backend-system/core-services/logger.md) instance for additional logging inside your action
 - `ctx.workspacePath` - a string of the working directory of the template run
 - `ctx.input` - an object which should match the `zod` schema provided in the
@@ -235,7 +224,7 @@ env.registerInit({
   })
 ```
 
-### Using Checkpoints in Custom Actions (Experimental)
+### Using Checkpoints in Custom Actions
 
 Idempotent action could be achieved via the usage of checkpoints, for example:
 

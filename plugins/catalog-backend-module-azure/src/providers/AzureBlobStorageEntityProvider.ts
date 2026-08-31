@@ -32,15 +32,21 @@ import {
   locationSpecToLocationEntity,
 } from '@backstage/plugin-catalog-node';
 import { LocationSpec } from '@backstage/plugin-catalog-common';
-import * as uuid from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { readAzureBlobStorageConfigs } from './config';
 import {
-  AzureBlobStorageIntergation,
+  AzureBlobStorageIntegration,
   DefaultAzureCredentialsManager,
   ScmIntegrations,
 } from '@backstage/integration';
 import { TokenCredential } from '@azure/identity';
 import { AzureBlobStorageConfig } from './types';
+
+function hasDotPathSegment(path: string): boolean {
+  return path
+    .split(/[\\/]/)
+    .some(segment => segment === '.' || segment === '..');
+}
 
 /**
  * Provider which discovers catalog files within an Azure Storage accounts.
@@ -106,12 +112,12 @@ export class AzureBlobStorageEntityProvider implements EntityProvider {
     });
   }
   private readonly config: AzureBlobStorageConfig;
-  private readonly integration: AzureBlobStorageIntergation;
+  private readonly integration: AzureBlobStorageIntegration;
   private readonly credentialsProvider: DefaultAzureCredentialsManager;
 
   private constructor(
     config: AzureBlobStorageConfig,
-    integration: AzureBlobStorageIntergation,
+    integration: AzureBlobStorageIntegration,
     credentialsProvider: DefaultAzureCredentialsManager,
     logger: LoggerService,
     schedule: SchedulerServiceTaskRunner,
@@ -134,7 +140,7 @@ export class AzureBlobStorageEntityProvider implements EntityProvider {
           const logger = this.logger.child({
             class: AzureBlobStorageEntityProvider.prototype.constructor.name,
             taskId,
-            taskInstanceId: uuid.v4(),
+            taskInstanceId: randomUUID(),
           });
 
           try {
@@ -199,7 +205,15 @@ export class AzureBlobStorageEntityProvider implements EntityProvider {
     const keys = await this.listAllBlobKeys();
     logger.info(`Discovered ${keys.length} Azure Blob Storage blobs`);
 
-    const locations = keys.map(key => this.createLocationSpec(key));
+    const validKeys = keys.filter(key => !hasDotPathSegment(key));
+    const skippedKeys = keys.length - validKeys.length;
+    if (skippedKeys > 0) {
+      logger.warn(
+        `Skipped ${skippedKeys} Azure Blob Storage blobs with unsupported dot path segments`,
+      );
+    }
+
+    const locations = validKeys.map(key => this.createLocationSpec(key));
 
     await this.connection.applyMutation({
       type: 'full',
@@ -242,7 +256,17 @@ export class AzureBlobStorageEntityProvider implements EntityProvider {
   }
 
   private createObjectUrl(key: string): string {
-    const endpoint = this.blobServiceClient?.url;
-    return `${endpoint}${this.config.containerName}/${key}`;
+    if (!this.blobServiceClient) {
+      throw new Error('Not initialized');
+    }
+
+    const objectUrl = new URL(
+      this.blobServiceClient
+        .getContainerClient(this.config.containerName)
+        .getBlobClient(key).url,
+    );
+    objectUrl.search = '';
+    objectUrl.hash = '';
+    return objectUrl.toString();
   }
 }

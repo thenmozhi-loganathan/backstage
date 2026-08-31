@@ -12,95 +12,32 @@ Please leave feedback on these features in the [Backstage Discord](https://disco
 
 ## Retries and Recovery
 
-Running tasks, especially longer running ones can be at risk of being lost when the `scaffolder-backend` plugin is redeployed. These tasks will just be stuck in a `processing` state, with no real way to recover them.
+:::note Note
 
-The experimental Retries and Recovery is here to help mitigate this.
+Task recovery has been promoted from experimental to a stable feature. See the [Task Recovery configuration docs](./configuration.md#task-recovery) for the current setup guide.
 
-Whenever you do redeploy, on startup there will be a check of all tasks in `processing` state that you identified in your template as being capable of starting over.
+The workspace provider extension point remains an alpha API.
 
-More details about the motivation and the goals of this feature can be found in [the `Scaffolder Retries and Idempotency` BEP](https://github.com/backstage/backstage/tree/master/beps/0004-scaffolder-task-idempotency)
+The experimental flags (`EXPERIMENTAL_recoverTasks`, `EXPERIMENTAL_workspaceSerialization`, etc.) and the per-template `EXPERIMENTAL_recovery` field are still supported as fallbacks but are deprecated and will be removed in a future release.
 
-Here is an example of how you can enable this in your `template.yaml` manifest:
+:::
+
+## Form Decorators
+
+Form decorators provide the ability to run arbitrary code before the form is submitted along with secrets to the `scaffolder-backend` plugin.
+
+#### Configuring templates
+
+Define which decorators run in each template using the `formDecorators` key in the template's `spec`:
 
 ```yaml
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: recoverable-template
-spec:
-  EXPERIMENTAL_recovery:
-    EXPERIMENTAL_strategy: startOver
-```
-
-You'll also need enable the recovery feature, add this snippet into your `app-config.yaml` file:
-
-```yaml
-scaffolder:
-  EXPERIMENTAL_recoverTasks: true
-```
-
-By default, the tasks that are in a `processing` state and have not reported back with a heartbeat for longer than 30 seconds will be automatically recovered.
-
-This implies that the task's status will shift to `open` initiating and will be restarted from the beginning. This means that it's important that your actions that you have in the template run are idempotent.
-
-You can look at how to incorporate [checkpoints](https://backstage.io/docs/features/software-templates/writing-custom-actions#using-checkpoints-in-custom-actions-experimental) into your custom actions to achieve that.
-
-In the case that you would like to make the heartbeat threshold shorter or longer than the default 30 seconds, you can customize it for your needs with the configuration:
-
-```yaml
-scaffolder:
-  EXPERIMENTAL_recoverTasksTimeout: { minutes: 1 }
-```
-
-If your task works with the filesystem and stores files in the workspace and you want to store these workspaces across runs, you can enable this with some additional config to `app-config.yaml`
-
-```yaml
-scaffolder:
-  EXPERIMENTAL_workspaceSerialization: true
-```
-
-By default, the serialized workspace will be stored in the database, however if there's larger files, or if you're worried about the size of these files taking up space in the database you can configure bucket storage and have a sensible retention policy there to cleanup older files.
-
-At the moment we also support integration with Google GCS; to switch the serialization to this provider, you can do so with:
-
-```yaml
-scaffolder:
-  EXPERIMENTAL_workspaceSerializationProvider: gcpBucket
-  EXPERIMENTAL_workspaceSerializationGcpBucketName: name-of-your-bucket
-```
-
-You don't need to provide any extra configuration, but you have to be sure that you are using [workload identity](https://cloud.google.com/iam/docs/workload-identity-federation).
-
-## Form Decorators
-
-Form decorators provide the ability to run arbitrary code before the form is submitted along with secrets to the `scaffolder-backend` plugin. They are provided to the `app` using a Utility API.
-
-#### Installation
-
-To install the Form Decorators, add the following to your `packages/app/src/apis.ts`:
-
-```ts
-  createApiFactory({
-    api: formDecoratorsApiRef,
-    deps: {},
-    factory: () =>
-      DefaultScaffolderFormDecoratorsApi.create({
-        decorators: [
-          // add decorators here
-        ],
-      }),
-  }),
-```
-
-And then you'll also need to define which decorators run in each template using the `EXPERIMENTAL_formDecorators` key in the template's `spec`:
-
-```yaml
-kind: Template
-metadata:
   name: my-template
 spec:
-  EXPERIMENTAL_formDecorators:
-    - id: myDecorator
+  formDecorators:
+    - id: mockDecorator
       input:
         test: something funky
 
@@ -108,36 +45,67 @@ spec:
   steps: ...
 ```
 
-#### Creating a Decorator
+:::note
+The legacy `EXPERIMENTAL_formDecorators` field is still supported but deprecated. Migrate to `formDecorators` when possible.
+:::
 
-You can create a decorator using the simple helper method `createScaffolderFormDecorator`:
+#### Creating a decorator
+
+Create a decorator with `createScaffolderFormDecorator` and register it as an extension using `FormDecoratorBlueprint`:
 
 ```ts
-export const mockDecorator = createScaffolderFormDecorator({
-  // give the decorator a name
-  id: 'mockDecorator',
+import { createScaffolderFormDecorator } from '@backstage/plugin-scaffolder-react/alpha';
+import { githubAuthApiRef } from '@backstage/core-plugin-api';
 
-  // define the schema for the input that can be provided in `template.yaml`
+const mockDecorator = createScaffolderFormDecorator({
+  id: 'mockDecorator',
   schema: {
     input: {
       test: z => z.string(),
     },
   },
   deps: {
-    // define dependencies here
     githubApi: githubAuthApiRef,
   },
   decorator: async (
-    // Context has all the things needed to write simple decorators
     { setSecrets, setFormState, input: { test } },
-    // Depepdencies injected here
     { githubApi },
   ) => {
-    // mutate the form state
-    setFormState(state => ({ ...state, test, mock: 'MOCK' }));
-
-    // mutate the form secrets
-    setSecrets(state => ({ ...state, GITHUB_TOKEN: 'MOCK_TOKEN' }));
+    const token = await githubApi.getAccessToken(['repo']);
+    setFormState(state => ({ ...state, test }));
+    setSecrets(state => ({ ...state, GITHUB_TOKEN: token }));
   },
 });
+```
+
+#### Installation (new frontend system)
+
+Register your decorator as an extension using `FormDecoratorBlueprint`:
+
+```ts
+import { FormDecoratorBlueprint } from '@backstage/plugin-scaffolder-react/alpha';
+
+export const myDecoratorExtension = FormDecoratorBlueprint.make({
+  name: 'my-decorator',
+  params: {
+    decorator: mockDecorator,
+  },
+});
+```
+
+Then install the extension in your app or plugin.
+
+#### Installation (legacy frontend system)
+
+For apps using the legacy frontend system, provide decorators through a Utility API in `packages/app/src/apis.ts`:
+
+```ts
+createApiFactory({
+  api: formDecoratorsApiRef,
+  deps: {},
+  factory: () =>
+    DefaultScaffolderFormDecoratorsApi.create({
+      decorators: [mockDecorator],
+    }),
+}),
 ```

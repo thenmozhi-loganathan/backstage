@@ -19,13 +19,13 @@ This should really be avoided. Our general guidance is to set up a proper integr
 
 To give some background, [signing in](../../auth/index.md) technically only requires the `auth` backend which supports the flows that establish who the current user is. At the end of that process, a so called [sign-in resolver](../../auth/identity-resolver.md) is tasked with translating the third party established identity (for example the attributes returned for your AD entry) into a Backstage identity. This important step is made much simpler if the catalog is populated with users and groups from that same third party, because identities line up trivially and you can use the out-of-the-box provided sign-in resolvers for it. As a side note, you can also write your own resolver that does not interact with the catalog at all if you so desire, but let's assume that you do not chose this advanced option.
 
-Doing on-demand user creation _is_ technically possible by writing custom [entity providers](./external-integrations.md). But it comes with significant problems both for technical and end user quality of life reasons.
+Doing on-demand user creation _is_ technically possible by writing custom [entity providers](./external-integrations/index.md). But it comes with significant problems both for technical and end user quality of life reasons.
 
 On the technical side, this is unwanted complexity. You need to implement and maintain a custom provider, instead of what usually amounts to a very easily set-up batch ingestion schedule with providers that come out of the box. Also even if you do this, the catalog is an eventually consistent engine. The user that the provider feeds into the system is not guaranteed to appear immediately. Your experience will likely be only partially functional at bootstrapping time which may have unwanted side effects.
 
 On the user experience side, a Backstage experience without complete organizational data is a serious hindrance to getting the full power out of the tool. Your users won't be able to click on owners and seeing who they are and what teams they belong to. They won't be able to find out what the communications paths are when they need to reach you or your managers when something goes wrong or they have a feature request. They can't get an overview of what teams own and how they relate to each other. It will be a much more barren experience. Organizational data is highly valuable to have centrally available, complete and correct.
 
-## Can I call the catalog itself from inside a processor / provider?
+## Can I call the catalog itself from inside a processor / provider? {#can-i-call-the-catalog-itself-from-inside-a-processor--provider}
 
 While it's possible to get hold of a catalog client via the `catalogServiceRef` from `@backstage/plugin-catalog-node`, it's almost never the right thing to do, and we strongly discourage from doing so.
 

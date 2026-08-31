@@ -1,5 +1,124 @@
 # @backstage/config-loader
 
+## 1.11.2
+
+### Patch Changes
+
+- 0c67dbc: Fix issue where `backstage-cli config:check --strict` would incorrectly reject valid configuration for open-ended object schemas, such as plain objects or map-like structures.
+- bb98419: Added an `onSchemaError` callback that allows callers to report TypeScript configuration schema errors and continue loading. The callback receives a `ConfigSchemaError` containing the source package and underlying cause. Without a handler, schema errors are thrown.
+
+## 1.11.2-next.0
+
+### Patch Changes
+
+- 0c67dbc: Fix issue where `backstage-cli config:check --strict` would incorrectly reject valid configuration for open-ended object schemas, such as plain objects or map-like structures.
+- bb98419: Added an `onSchemaError` callback that allows callers to report TypeScript configuration schema errors and continue loading. The callback receives a `ConfigSchemaError` containing the source package and underlying cause. Without a handler, schema errors are thrown.
+
+## 1.11.0
+
+### Minor Changes
+
+- 4a7240b: Configuration schemas declared in TypeScript now resolve and validate imported types instead of treating them as unconstrained values. Invalid imports now cause schema loading to fail.
+
+### Patch Changes
+
+- 005458a: Added support for comma-separated values in the `BACKSTAGE_ENV` environment variable, allowing multiple environment-specific configuration files to be loaded and stacked at startup. For example, setting `BACKSTAGE_ENV=e2e-test,production` will load `app-config.e2e-test.yaml` and `app-config.production.yaml` in addition to the base `app-config.yaml`, with later environments taking priority. Local override files (`.local.yaml`) are always loaded after all non-local files.
+- Updated dependencies
+  - @backstage/cli-common@0.3.0
+
+## 1.11.0-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/cli-common@0.3.0-next.0
+
+## 1.11.0-next.1
+
+### Patch Changes
+
+- 005458a: Added support for comma-separated values in the `BACKSTAGE_ENV` environment variable, allowing multiple environment-specific configuration files to be loaded and stacked at startup. For example, setting `BACKSTAGE_ENV=e2e-test,production` will load `app-config.e2e-test.yaml` and `app-config.production.yaml` in addition to the base `app-config.yaml`, with later environments taking priority. Local override files (`.local.yaml`) are always loaded after all non-local files.
+
+## 1.11.0-next.0
+
+### Minor Changes
+
+- 4a7240b: Configuration schemas declared in TypeScript now resolve and validate imported types instead of treating them as unconstrained values. Invalid imports now cause schema loading to fail.
+
+## 1.10.12
+
+### Patch Changes
+
+- 02c4e8a: Removed unused `json-schema` runtime dependency. The package was only used for TypeScript types from `@types/json-schema`; affected imports have been converted to `import type` to allow safe removal.
+
+## 1.10.11
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1
+  - @backstage/cli-common@0.2.2
+  - @backstage/config@1.3.8
+
+## 1.10.11-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/cli-common@0.2.2-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/types@1.2.2
+
+## 1.10.10
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- Updated dependencies
+  - @backstage/errors@1.3.0
+  - @backstage/cli-common@0.2.1
+  - @backstage/config@1.3.7
+
+## 1.10.10-next.1
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/cli-common@0.2.1-next.1
+  - @backstage/config@1.3.7-next.0
+
+## 1.10.10-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/cli-common@0.2.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+
+## 1.10.9
+
+### Patch Changes
+
+- 70fc178: Migrated from deprecated `findPaths` to `targetPaths` and `findOwnPaths` from `@backstage/cli-common`.
+- Updated dependencies
+  - @backstage/cli-common@0.2.0
+
+## 1.10.9-next.0
+
+### Patch Changes
+
+- 70fc178: Migrated from deprecated `findPaths` to `targetPaths` and `findOwnPaths` from `@backstage/cli-common`.
+- Updated dependencies
+  - @backstage/cli-common@0.2.0-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+
 ## 1.10.8
 
 ### Patch Changes

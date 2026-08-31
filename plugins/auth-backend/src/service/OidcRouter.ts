@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Router from 'express-promise-router';
-import { OidcService } from './OidcService';
+import { OidcClientCredentials, OidcService } from './OidcService';
 import { AuthenticationError, isError } from '@backstage/errors';
 import {
   AuthService,
@@ -27,8 +27,8 @@ import { UserInfoDatabase } from '../database/UserInfoDatabase';
 import { OidcDatabase } from '../database/OidcDatabase';
 import { OfflineAccessService } from './OfflineAccessService';
 import { json } from 'express';
-import { z } from 'zod';
-import { fromZodError } from 'zod-validation-error';
+import { z } from 'zod/v4';
+import { fromZodError } from 'zod-validation-error/v4';
 import { OidcError } from './OidcError';
 
 function ensureTrailingSlash(url: string): string {
@@ -84,15 +84,12 @@ function validateRequest<T>(schema: z.ZodSchema<T>, data: unknown): T {
   return parseResult.data;
 }
 
-async function authenticateClient(opts: {
+function parseClientCredentials(opts: {
   req: { headers: { authorization?: string } };
-  oidc: OidcService;
   bodyClientId?: string;
   bodyClientSecret?: string;
-}): Promise<{ clientId: string; clientSecret: string }> {
-  const { req, oidc, bodyClientId, bodyClientSecret } = opts;
-  let clientId: string | undefined;
-  let clientSecret: string | undefined;
+}): Partial<OidcClientCredentials> {
+  const { req, bodyClientId, bodyClientSecret } = opts;
 
   const basicAuth = req.headers.authorization?.match(/^Basic[ ]+([^\s]+)$/i);
   if (basicAuth) {
@@ -100,20 +97,32 @@ async function authenticateClient(opts: {
       const decoded = Buffer.from(basicAuth[1], 'base64').toString('utf8');
       const idx = decoded.indexOf(':');
       if (idx >= 0) {
-        clientId = decoded.slice(0, idx);
-        clientSecret = decoded.slice(idx + 1);
+        const clientId = decoded.slice(0, idx);
+        const clientSecret = decoded.slice(idx + 1);
+        if (clientId && clientSecret) {
+          return { clientId, clientSecret };
+        }
       }
     } catch {
       /* ignore */
     }
   }
 
-  if (!clientId || !clientSecret) {
-    if (bodyClientId && bodyClientSecret) {
-      clientId = bodyClientId;
-      clientSecret = bodyClientSecret;
-    }
-  }
+  return { clientId: bodyClientId, clientSecret: bodyClientSecret };
+}
+
+async function authenticateClient(opts: {
+  req: { headers: { authorization?: string } };
+  oidc: OidcService;
+  bodyClientId?: string;
+  bodyClientSecret?: string;
+}): Promise<Required<OidcClientCredentials>> {
+  const { req, oidc, bodyClientId, bodyClientSecret } = opts;
+  const { clientId, clientSecret } = parseClientCredentials({
+    req,
+    bodyClientId,
+    bodyClientSecret,
+  });
 
   if (!clientId || !clientSecret) {
     throw new OidcError(
@@ -124,11 +133,11 @@ async function authenticateClient(opts: {
   }
 
   try {
-    const ok = await oidc.verifyClientCredentials({
+    const isValidClient = await oidc.verifyClientCredentials({
       clientId,
       clientSecret,
     });
-    if (!ok) {
+    if (!isValidClient) {
       throw new OidcError('invalid_client', 'Invalid client credentials', 401);
     }
   } catch (e) {
@@ -145,6 +154,7 @@ export class OidcRouter {
   private readonly appUrl: string;
   private readonly httpAuth: HttpAuthService;
   private readonly config: RootConfigService;
+  private readonly baseUrl: string;
 
   private constructor(
     oidc: OidcService,
@@ -153,6 +163,7 @@ export class OidcRouter {
     appUrl: string,
     httpAuth: HttpAuthService,
     config: RootConfigService,
+    baseUrl: string,
   ) {
     this.oidc = oidc;
     this.logger = logger;
@@ -160,6 +171,7 @@ export class OidcRouter {
     this.appUrl = appUrl;
     this.httpAuth = httpAuth;
     this.config = config;
+    this.baseUrl = baseUrl;
   }
 
   static create(options: {
@@ -181,6 +193,7 @@ export class OidcRouter {
       options.appUrl,
       options.httpAuth,
       options.config,
+      options.baseUrl,
     );
   }
 
@@ -188,6 +201,8 @@ export class OidcRouter {
     const router = Router();
 
     router.use(json());
+
+    const cimdEnabled = this.oidc.isCimdEnabled();
 
     // OpenID Provider Configuration endpoint
     // https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
@@ -202,6 +217,28 @@ export class OidcRouter {
     router.get('/.well-known/jwks.json', async (_req, res) => {
       const { keys } = await this.oidc.listPublicKeys();
       res.json({ keys });
+    });
+
+    // CIMD metadata endpoint for the Backstage CLI
+    // Automatically available when CIMD is enabled
+    router.get('/.well-known/oauth-client/cli.json', (_req, res) => {
+      if (!cimdEnabled) {
+        res.status(404).json({
+          error: 'not_found',
+          error_description: 'Client ID metadata documents not enabled',
+        });
+        return;
+      }
+
+      res.json({
+        client_id: `${this.baseUrl}/.well-known/oauth-client/cli.json`,
+        client_name: 'Backstage CLI',
+        redirect_uris: ['http://127.0.0.1:8055/callback'],
+        response_types: ['code'],
+        grant_types: ['authorization_code'],
+        token_endpoint_auth_method: 'none',
+        scope: 'openid offline_access',
+      });
     });
 
     // UserInfo endpoint
@@ -224,12 +261,16 @@ export class OidcRouter {
       res.json(userInfo);
     });
 
-    const dcrEnabled = this.config.getOptionalBoolean(
-      'auth.experimentalDynamicClientRegistration.enabled',
-    );
-    const cimdEnabled = this.config.getOptionalBoolean(
-      'auth.experimentalClientIdMetadataDocuments.enabled',
-    );
+    const dcrEnabled =
+      this.config.getOptionalBoolean(
+        'auth.experimentalDynamicClientRegistration.enabled',
+      ) ?? false;
+
+    if (dcrEnabled) {
+      this.logger.warn(
+        "DEPRECATION WARNING: The 'auth.experimentalDynamicClientRegistration' configuration is deprecated. Migrate to Client ID Metadata Documents (CIMD) using 'auth.clientIdMetadataDocuments'.",
+      );
+    }
 
     if (dcrEnabled || cimdEnabled) {
       // Authorization endpoint
@@ -301,6 +342,7 @@ export class OidcRouter {
 
           return res.json({
             id: session.id,
+            clientId: session.clientId,
             clientName: session.clientName,
             scope: session.scope,
             redirectUri: session.redirectUri,
@@ -480,6 +522,56 @@ export class OidcRouter {
           throw OidcError.fromError(error);
         }
       });
+
+      // Token Revocation endpoint (RFC 7009-like)
+      // Allows clients to revoke refresh tokens. DCR clients are confidential
+      // and must authenticate with their client secret, while CIMD clients
+      // are public clients that only identify themselves with their client ID
+      router.post('/v1/revoke', async (req, res) => {
+        try {
+          const {
+            token,
+            client_id: bodyClientId,
+            client_secret: bodyClientSecret,
+          } = validateRequest(revokeRequestBodySchema, req.body ?? {});
+
+          const { clientId, clientSecret } = parseClientCredentials({
+            req,
+            bodyClientId,
+            bodyClientSecret,
+          });
+
+          if (!clientId) {
+            throw new OidcError(
+              'invalid_client',
+              'Client authentication required',
+              401,
+            );
+          }
+
+          const isValidClient = await this.oidc.verifyRevocationClient({
+            clientId,
+            clientSecret,
+          });
+          if (!isValidClient) {
+            throw new OidcError(
+              'invalid_client',
+              'Invalid client credentials',
+              401,
+            );
+          }
+
+          try {
+            await this.oidc.revokeRefreshToken(token);
+          } catch (e) {
+            this.logger.error('Failed to revoke token', e);
+          }
+
+          return res.status(200).send('');
+        } catch (e) {
+          throw OidcError.fromError(e);
+        }
+      });
     }
 
     // Dynamic Client Registration endpoint - only available when DCR is enabled
@@ -509,36 +601,6 @@ export class OidcRouter {
             redirect_uris: client.redirectUris,
             client_secret: client.clientSecret,
           });
-        } catch (e) {
-          throw OidcError.fromError(e);
-        }
-      });
-
-      // Token Revocation endpoint (RFC 7009-like)
-      // Allows clients to revoke refresh tokens
-      router.post('/v1/revoke', async (req, res) => {
-        try {
-          const {
-            token,
-            client_id: bodyClientId,
-            client_secret: bodyClientSecret,
-          } = validateRequest(revokeRequestBodySchema, req.body ?? {});
-
-          await authenticateClient({
-            req,
-            oidc: this.oidc,
-            bodyClientId,
-            bodyClientSecret,
-          });
-
-          try {
-            await this.oidc.revokeRefreshToken(token);
-          } catch (e) {
-            // RFC 7009 says always respond 200 even for invalid tokens
-            this.logger.debug('Failed to revoke token', e);
-          }
-
-          return res.status(200).send('');
         } catch (e) {
           throw OidcError.fromError(e);
         }

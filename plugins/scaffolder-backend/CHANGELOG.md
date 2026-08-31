@@ -1,5 +1,410 @@
 # @backstage/plugin-scaffolder-backend
 
+## 4.1.0-next.0
+
+### Minor Changes
+
+- 1a705ca: Applied `templateDryRunPermission` to inline Software Template dry runs and the corresponding backend action. Permission policies that deny unknown permissions must explicitly allow `scaffolder.template.dry-run` to retain existing dry-run access.
+- e95b649: Added task recovery feature with new `scaffolder.taskRecovery` config section. When enabled, tasks that crash or timeout are automatically recovered and resume from the last completed step, task secrets are retained until the task reaches a terminal state so recovery can continue, and completed step outputs are persisted. Enabling recovery applies to all scaffolder tasks, so actions used by those tasks should be idempotent or use checkpoints. When recovery is disabled (the default), the previous behavior is unchanged: secrets are cleared as soon as a task is claimed and retries re-run every step. The new config consolidates previous experimental flags (`EXPERIMENTAL_recoverTasks`, `EXPERIMENTAL_workspaceSerialization`, `EXPERIMENTAL_recoverTasksTimeout`) which remain supported as fallbacks. The legacy workspace provider setting continues to select a provider only when `EXPERIMENTAL_workspaceSerialization` is `true`.
+
+  Workspace serialization for task recovery now requires installing a separate workspace provider module, including when you use the legacy configuration. For development, use `@backstage/plugin-scaffolder-backend-module-workspace-database` (50 MB limit, not recommended for production). On first startup, that module migrates existing database workspace snapshots from the legacy task storage. For production, use `@backstage/plugin-scaffolder-backend-module-gcp` or a similar external storage provider. The scaffolder rejects a configured provider that has not been installed and registered.
+
+  Enabling crash recovery does not keep completed task event streams open; normal task completion remains terminal for event-stream clients.
+
+### Patch Changes
+
+- 2bf1392: Software template inline conditionals without an `else` branch now render an empty string when their condition is false, matching Nunjucks behavior.
+- beaa3db: Reject Scaffolder steps where `each` resolves to a primitive value instead of an array or object.
+- c1a30ef: Restored support for intrinsic string, number, array, `Map`, and `Set` methods in software templates.
+- Updated dependencies
+  - @backstage/plugin-scaffolder-common@2.3.0-next.0
+  - @backstage/plugin-scaffolder-node@0.13.7-next.0
+
+## 4.0.3
+
+### Patch Changes
+
+- 4bbc088: Fixed the stale task janitor not being set up by passing the scheduler service to the router.
+- 943687f: Removed the native addon requirement from scaffolder template rendering. Templates now run through a TypeScript interpreter, and the backend no longer needs the `--no-node-snapshot` Node.js option.
+- 7ca434e: Scaffolder tasks now wait for recovery checkpoint state to be persisted before continuing, preventing later execution from racing ahead of stored recovery state. Restored checkpoints also preserve falsy values without re-running their callbacks.
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/plugin-scaffolder-node@0.13.6
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/integration@2.1.0
+  - @backstage/plugin-permission-common@0.9.10
+  - @backstage/plugin-permission-node@0.11.3
+  - @backstage/plugin-scaffolder-common@2.2.2
+  - @backstage/backend-openapi-utils@0.7.1
+  - @backstage/plugin-catalog-node@2.2.4
+  - @backstage/plugin-events-node@0.4.25
+
+## 4.0.3-next.2
+
+### Patch Changes
+
+- 943687f: Removed the native addon requirement from scaffolder template rendering. Templates now run through a TypeScript interpreter, and the backend no longer needs the `--no-node-snapshot` Node.js option.
+- Updated dependencies
+  - @backstage/plugin-scaffolder-node@0.13.6-next.2
+  - @backstage/backend-plugin-api@1.10.0-next.1
+
+## 4.0.3-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.1.0-next.0
+  - @backstage/plugin-scaffolder-common@2.2.2-next.0
+  - @backstage/plugin-scaffolder-node@0.13.6-next.1
+
+## 4.0.3-next.0
+
+### Patch Changes
+
+- 4bbc088: Fixed the stale task janitor not being set up by passing the scheduler service to the router.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0-next.0
+  - @backstage/plugin-permission-node@0.11.3-next.0
+  - @backstage/backend-openapi-utils@0.7.1-next.0
+  - @backstage/plugin-catalog-node@2.2.4-next.0
+  - @backstage/plugin-events-node@0.4.25-next.0
+  - @backstage/plugin-scaffolder-node@0.13.6-next.0
+
+## 4.0.2
+
+### Patch Changes
+
+- 55902bb: Fixed `DatabaseTaskStore.list` returning `totalTasks` as a string on PostgreSQL. knex returns a `COUNT(*)` aggregate as a string on PostgreSQL (the column is a bigint) while better-sqlite3 returns a number, so the count is now coerced with `Number(...)` and guarded with `Number.isSafeInteger(...)`. This in turn fixes the `list-scaffolder-tasks` action, whose output schema declares `totalTasks: z.number()` and previously failed validation in production with `Invalid output ... totalTasks: Expected number, received string`.
+- Updated dependencies
+  - @backstage/backend-openapi-utils@0.7.0
+  - @backstage/backend-plugin-api@1.9.3
+  - @backstage/plugin-catalog-node@2.2.3
+  - @backstage/plugin-events-node@0.4.24
+  - @backstage/plugin-permission-node@0.11.2
+  - @backstage/plugin-scaffolder-node@0.13.5
+
+## 4.0.2-next.1
+
+### Patch Changes
+
+- 55902bb: Fixed `DatabaseTaskStore.list` returning `totalTasks` as a string on PostgreSQL. knex returns a `COUNT(*)` aggregate as a string on PostgreSQL (the column is a bigint) while better-sqlite3 returns a number, so the count is now coerced with `Number(...)` and guarded with `Number.isSafeInteger(...)`. This in turn fixes the `list-scaffolder-tasks` action, whose output schema declares `totalTasks: z.number()` and previously failed validation in production with `Invalid output ... totalTasks: Expected number, received string`.
+- Updated dependencies
+  - @backstage/backend-openapi-utils@0.7.0-next.1
+  - @backstage/backend-plugin-api@1.9.3-next.1
+
+## 4.0.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-permission-node@0.11.2-next.0
+  - @backstage/backend-plugin-api@1.9.3-next.0
+  - @backstage/plugin-catalog-node@2.2.3-next.0
+  - @backstage/plugin-events-node@0.4.24-next.0
+  - @backstage/plugin-scaffolder-node@0.13.5-next.0
+  - @backstage/backend-openapi-utils@0.6.11-next.0
+
+## 4.0.1
+
+### Patch Changes
+
+- 063fc34: Restored user-supplied task secrets in scaffolder dry-run executions. The previous security fix that stripped secrets from dry-run also removed task secrets passed in the dry-run request body, which broke integration test setups that rely on user-supplied secrets. Environment secrets (server-configured) remain stripped during dry-run; only task secrets supplied by the caller are now forwarded to actions.
+- Updated dependencies
+  - @backstage/plugin-scaffolder-node@0.13.4
+  - @backstage/integration@2.0.3
+  - @backstage/backend-plugin-api@1.9.2
+  - @backstage/plugin-scaffolder-common@2.2.1
+  - @backstage/backend-openapi-utils@0.6.10
+  - @backstage/plugin-catalog-node@2.2.2
+  - @backstage/plugin-events-node@0.4.23
+  - @backstage/plugin-permission-node@0.11.1
+
+## 4.0.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.3-next.0
+  - @backstage/plugin-catalog-node@2.2.2-next.0
+  - @backstage/plugin-scaffolder-common@2.2.1-next.0
+  - @backstage/plugin-scaffolder-node@0.13.4-next.0
+  - @backstage/plugin-permission-node@0.11.1-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+  - @backstage/plugin-events-node@0.4.23-next.0
+  - @backstage/backend-openapi-utils@0.6.10-next.0
+
+## 4.0.0
+
+### Minor Changes
+
+- 77bee9f: Updated the `list-scaffolder-tasks` action to support the new "status" filter parameter, allowing the action to return tasks matching a specific status.
+- 07e08be: Added `always()` and `failure()` status check functions for scaffolder steps. These functions can be used in the if field of a step to control execution after failures. `always()` ensures a step runs regardless of previous step outcomes, while `failure()` runs a step only when a previous step has failed.
+- 8006acf: The template parameter schema response now exposes a `formDecorators` field
+  instead of `EXPERIMENTAL_formDecorators`. Templates that still declare
+  `spec.EXPERIMENTAL_formDecorators` are read transparently and surfaced under
+  the new field.
+
+### Patch Changes
+
+- c78b3b6: Add explicit memory management to SecureTemplater usage
+- 1ecc3ca: Fixed spelling mistakes in internal code
+- e9b78e9: Removed the `uuid` dependency and replaced usage with the built-in `crypto.randomUUID()`.
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/errors@1.3.1
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/plugin-catalog-node@2.2.1
+  - @backstage/integration@2.0.2
+  - @backstage/plugin-scaffolder-node@0.13.3
+  - @backstage/plugin-permission-node@0.11.0
+  - @backstage/plugin-permission-common@0.9.9
+  - @backstage/plugin-scaffolder-common@2.2.0
+  - @backstage/backend-openapi-utils@0.6.9
+  - @backstage/config@1.3.8
+  - @backstage/plugin-events-node@0.4.22
+
+## 4.0.0-next.2
+
+### Major Changes
+
+- c78b3b6: Add explicit memory management to SecureTemplater usage
+
+### Minor Changes
+
+- 8006acf: The template parameter schema response now exposes a `formDecorators` field
+  instead of `EXPERIMENTAL_formDecorators`. Templates that still declare
+  `spec.EXPERIMENTAL_formDecorators` are read transparently and surfaced under
+  the new field.
+
+### Patch Changes
+
+- 1ecc3ca: Fixed spelling mistakes in internal code
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.1-next.1
+  - @backstage/plugin-scaffolder-common@2.2.0-next.1
+  - @backstage/plugin-scaffolder-node@0.13.3-next.2
+
+## 3.5.0-next.1
+
+### Minor Changes
+
+- 77bee9f: Updated the `list-scaffolder-tasks` action to support the new "status" filter parameter, allowing the action to return tasks matching a specific status.
+- 07e08be: Added `always()` and `failure()` status check functions for scaffolder steps. These functions can be used in the if field of a step to control execution after failures. `always()` ensures a step runs regardless of previous step outcomes, while `failure()` runs a step only when a previous step has failed.
+
+### Patch Changes
+
+- e9b78e9: Removed the `uuid` dependency and replaced usage with the built-in `crypto.randomUUID()`.
+- Updated dependencies
+  - @backstage/catalog-model@1.8.1-next.1
+  - @backstage/plugin-catalog-node@2.2.1-next.1
+  - @backstage/plugin-scaffolder-node@0.13.3-next.1
+  - @backstage/plugin-permission-common@0.9.9-next.1
+
+## 3.4.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/integration@2.0.2-next.0
+  - @backstage/backend-openapi-utils@0.6.9-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/plugin-catalog-node@2.2.1-next.0
+  - @backstage/plugin-events-node@0.4.22-next.0
+  - @backstage/plugin-permission-common@0.9.9-next.0
+  - @backstage/plugin-permission-node@0.10.13-next.0
+  - @backstage/plugin-scaffolder-common@2.1.1-next.0
+  - @backstage/plugin-scaffolder-node@0.13.3-next.0
+  - @backstage/types@1.2.2
+
+## 3.4.0
+
+### Minor Changes
+
+- 309b712: Added a new `execute-template` actions registry action that executes a scaffolder template with provided input values and returns a task ID for tracking progress.
+- 5af48e7: Migrated permission registration to use the `PermissionsRegistryService` instead of the deprecated `createPermissionIntegrationRouter`. This fixes an issue where scaffolder permissions were not visible to RBAC plugins because the `actionsRegistryServiceRef` dependency caused an empty permissions metadata router to shadow the scaffolder's actual permission metadata. The old `createPermissionIntegrationRouter` path is retained as a fallback for standalone `createRouter` usage.
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- 961e274: Migrated OpenTelemetry metrics to use the `MetricsService` from `@backstage/backend-plugin-api/alpha` instead of the raw `@opentelemetry/api` meter.
+- 8a42f77: Fix handling of `after=0` in task events endpoint
+- 4559806: Removed unnecessary empty `examples` array from actions bridged via the actions registry.
+- 79453c0: Updated dependency `wait-for-expect` to `^4.0.0`.
+- 3ef6078: Added support for conditional `if` filtering on output `links` and `text` items. Items where the `if` condition evaluates to false are now excluded from the task output.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/errors@1.3.0
+  - @backstage/catalog-model@1.8.0
+  - @backstage/plugin-catalog-node@2.2.0
+  - @backstage/plugin-scaffolder-common@2.1.0
+  - @backstage/plugin-scaffolder-node@0.13.2
+  - @backstage/backend-openapi-utils@0.6.8
+  - @backstage/integration@2.0.1
+  - @backstage/plugin-permission-node@0.10.12
+  - @backstage/config@1.3.7
+  - @backstage/plugin-events-node@0.4.21
+  - @backstage/plugin-permission-common@0.9.8
+
+## 3.4.0-next.2
+
+### Minor Changes
+
+- 5af48e7: Migrated permission registration to use the `PermissionsRegistryService` instead of the deprecated `createPermissionIntegrationRouter`. This fixes an issue where scaffolder permissions were not visible to RBAC plugins because the `actionsRegistryServiceRef` dependency caused an empty permissions metadata router to shadow the scaffolder's actual permission metadata. The old `createPermissionIntegrationRouter` path is retained as a fallback for standalone `createRouter` usage.
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- 961e274: Migrated OpenTelemetry metrics to use the `MetricsService` from `@backstage/backend-plugin-api/alpha` instead of the raw `@opentelemetry/api` meter.
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/plugin-catalog-node@2.2.0-next.2
+  - @backstage/plugin-scaffolder-node@0.13.2-next.2
+  - @backstage/integration@2.0.1-next.0
+  - @backstage/backend-openapi-utils@0.6.8-next.2
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/catalog-model@1.7.8-next.0
+  - @backstage/config@1.3.7-next.0
+  - @backstage/plugin-events-node@0.4.21-next.2
+  - @backstage/plugin-permission-common@0.9.8-next.0
+  - @backstage/plugin-permission-node@0.10.12-next.2
+  - @backstage/plugin-scaffolder-common@2.0.1-next.0
+
+## 3.3.0-next.1
+
+### Minor Changes
+
+- 309b712: Added a new `execute-template` actions registry action that executes a scaffolder template with provided input values and returns a task ID for tracking progress.
+
+### Patch Changes
+
+- 4559806: Removed unnecessary empty `examples` array from actions bridged via the actions registry.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/backend-openapi-utils@0.6.8-next.1
+  - @backstage/plugin-catalog-node@2.1.1-next.1
+  - @backstage/plugin-events-node@0.4.21-next.1
+  - @backstage/plugin-permission-node@0.10.12-next.1
+  - @backstage/plugin-scaffolder-node@0.13.1-next.1
+
+## 3.2.1-next.0
+
+### Patch Changes
+
+- 79453c0: Updated dependency `wait-for-expect` to `^4.0.0`.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/plugin-permission-node@0.10.12-next.0
+  - @backstage/backend-openapi-utils@0.6.8-next.0
+  - @backstage/plugin-catalog-node@2.1.1-next.0
+  - @backstage/plugin-events-node@0.4.21-next.0
+  - @backstage/plugin-scaffolder-node@0.13.1-next.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/integration@2.0.0
+  - @backstage/types@1.2.2
+  - @backstage/plugin-permission-common@0.9.7
+  - @backstage/plugin-scaffolder-common@2.0.0
+
+## 3.2.0
+
+### Minor Changes
+
+- c9b11eb: Added a new `list-scaffolder-tasks` action that allows querying scaffolder tasks with optional ownership filtering and pagination support
+- 1b42218: Adds a new `get-scaffolder-task-logs` action to `@backstage/plugin-scaffolder-backend` that retrieves log events for a given scaffolder task, with optional support for retrieving only new events after a given event ID.
+- 0fbcf23: Migrated OpenAPI schemas to 3.1.
+- 7695dd2: Added a new `list-scaffolder-actions` action that returns all installed scaffolder actions with their schemas and examples
+- e8736ea: Added secrets schema validation for task creation, retry, and dry-run endpoints. When a template defines `spec.secrets.schema`, the API validates provided secrets against the schema and returns a `400` error if validation fails.
+
+### Patch Changes
+
+- e27bd4e: Removed `@backstage/plugin-scaffolder-backend-module-bitbucket` from `package.json` as the package itself has been deprecated and the code deleted.
+- 4f5ed06: Fixed a security vulnerability where server-configured environment secrets were exposed through the scaffolder dry-run endpoint.
+- 30ff981: Fixed a security vulnerability where secrets could bypass log redaction when transformed through Nunjucks filters in scaffolder templates.
+- 4e39e63: Removed unused dependencies
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- ccc20cf: create scaffolder MCP action to dry run a provided scaffolder template
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/plugin-scaffolder-node@0.13.0
+  - @backstage/integration@2.0.0
+  - @backstage/plugin-catalog-node@2.1.0
+  - @backstage/plugin-scaffolder-common@2.0.0
+  - @backstage/plugin-permission-common@0.9.7
+  - @backstage/plugin-permission-node@0.10.11
+  - @backstage/catalog-model@1.7.7
+  - @backstage/backend-openapi-utils@0.6.7
+  - @backstage/plugin-events-node@0.4.20
+
+## 3.2.0-next.2
+
+### Minor Changes
+
+- e8736ea: Added secrets schema validation for task creation, retry, and dry-run endpoints. When a template defines `spec.secrets.schema`, the API validates provided secrets against the schema and returns a `400` error if validation fails.
+
+### Patch Changes
+
+- 30ff981: Fixed a security vulnerability where secrets could bypass log redaction when transformed through Nunjucks filters in scaffolder templates.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/integration@2.0.0-next.2
+  - @backstage/plugin-scaffolder-common@2.0.0-next.2
+  - @backstage/backend-openapi-utils@0.6.7-next.1
+  - @backstage/plugin-catalog-node@2.1.0-next.2
+  - @backstage/plugin-events-node@0.4.20-next.1
+  - @backstage/plugin-permission-node@0.10.11-next.1
+  - @backstage/plugin-scaffolder-node@0.13.0-next.2
+
+## 3.2.0-next.1
+
+### Minor Changes
+
+- c9b11eb: Added a new `list-scaffolder-tasks` action that allows querying scaffolder tasks with optional ownership filtering and pagination support
+- 0fbcf23: Migrated OpenAPI schemas to 3.1.
+- 7695dd2: Added a new `list-scaffolder-actions` action that returns all installed scaffolder actions with their schemas and examples
+
+### Patch Changes
+
+- e27bd4e: Removed `@backstage/plugin-scaffolder-backend-module-bitbucket` from `package.json` as the package itself has been deprecated and the code deleted.
+- ccc20cf: create scaffolder MCP action to dry run a provided scaffolder template
+- Updated dependencies
+  - @backstage/integration@2.0.0-next.1
+  - @backstage/plugin-scaffolder-common@2.0.0-next.1
+  - @backstage/plugin-scaffolder-node@0.13.0-next.1
+  - @backstage/plugin-catalog-node@2.1.0-next.1
+  - @backstage/backend-openapi-utils@0.6.7-next.0
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-events-node@0.4.20-next.0
+  - @backstage/plugin-permission-common@0.9.6
+  - @backstage/plugin-permission-node@0.10.11-next.0
+
+## 3.1.4-next.0
+
+### Patch Changes
+
+- 4e39e63: Removed unused dependencies
+- Updated dependencies
+  - @backstage/integration@1.21.0-next.0
+  - @backstage/plugin-catalog-node@2.1.0-next.0
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/backend-openapi-utils@0.6.7-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-events-node@0.4.20-next.0
+  - @backstage/plugin-permission-common@0.9.6
+  - @backstage/plugin-permission-node@0.10.11-next.0
+  - @backstage/plugin-scaffolder-common@1.7.7-next.0
+  - @backstage/plugin-scaffolder-node@0.12.6-next.0
+
 ## 3.1.3
 
 ### Patch Changes
@@ -5518,7 +5923,7 @@
     - `step`: The name of the step that was run
     - `result`: A string describing whether the task ran successfully, failed, or was skipped
 
-  You can find a guide for running Prometheus metrics here: https://github.com/backstage/backstage/blob/master/contrib/docs/tutorials/prometheus-metrics.md
+  You can find a guide for running Prometheus metrics here: https://github.com/backstage/backstage/blob/384b7bac2e/contrib/docs/tutorials/prometheus-metrics.md
 
 - 5921b5ce49: - The GitLab Project ID for the `publish:gitlab:merge-request` action is now passed through the query parameter `project` in the `repoUrl`. It still allows people to not use the `projectid` and use the `repoUrl` with the `owner` and `repo` query parameters instead. This makes it easier to publish to repositories instead of writing the full path to the project.
 - 5025d2e8b6: Adds the ability to pass (an optional) array of strings that will be applied to the newly scaffolded repository as topic labels.
@@ -5611,7 +6016,7 @@
     - `step`: The name of the step that was run
     - `result`: A string describing whether the task ran successfully, failed, or was skipped
 
-  You can find a guide for running Prometheus metrics here: https://github.com/backstage/backstage/blob/master/contrib/docs/tutorials/prometheus-metrics.md
+  You can find a guide for running Prometheus metrics here: https://github.com/backstage/backstage/blob/384b7bac2e/contrib/docs/tutorials/prometheus-metrics.md
 
 ### Patch Changes
 

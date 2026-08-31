@@ -21,6 +21,7 @@ import { ScmIntegrations } from '@backstage/integration';
 import { scaffolderAutocompleteExtensionPoint } from '@backstage/plugin-scaffolder-node/alpha';
 import {
   createGitlabGroupEnsureExistsAction,
+  createGitlabGroupAccessAction,
   createGitlabIssueAction,
   createGitlabProjectAccessTokenAction,
   createGitlabProjectDeployTokenAction,
@@ -52,20 +53,48 @@ export const gitlabModule = createBackendModule({
       },
       async init({ scaffolder, autocomplete, config }) {
         const integrations = ScmIntegrations.fromConfig(config);
+        const requireScmUserCredentials =
+          config.getOptionalBoolean('scaffolder.requireScmUserCredentials') ??
+          false;
 
         scaffolder.addActions(
-          createGitlabGroupEnsureExistsAction({ integrations }),
+          createGitlabGroupEnsureExistsAction({
+            integrations,
+            requireScmUserCredentials,
+          }),
+          createGitlabGroupAccessAction({
+            integrations,
+            requireScmUserCredentials,
+          }),
           createGitlabProjectMigrateAction({ integrations }),
-          createGitlabIssueAction({ integrations }),
-          createGitlabProjectAccessTokenAction({ integrations }),
-          createGitlabProjectDeployTokenAction({ integrations }),
-          createGitlabProjectVariableAction({ integrations }),
-          createGitlabRepoPushAction({ integrations }),
+          createGitlabIssueAction({ integrations, requireScmUserCredentials }),
+          createGitlabProjectAccessTokenAction({
+            integrations,
+            requireScmUserCredentials,
+          }),
+          createGitlabProjectDeployTokenAction({
+            integrations,
+            requireScmUserCredentials,
+          }),
+          createGitlabProjectVariableAction({
+            integrations,
+            requireScmUserCredentials,
+          }),
+          createGitlabRepoPushAction({
+            integrations,
+            requireScmUserCredentials,
+          }),
           createGitlabUserInfoAction({ integrations }),
-          editGitlabIssueAction({ integrations }),
+          editGitlabIssueAction({ integrations, requireScmUserCredentials }),
           createPublishGitlabAction({ config, integrations }),
-          createPublishGitlabMergeRequestAction({ integrations }),
-          createTriggerGitlabPipelineAction({ integrations }),
+          createPublishGitlabMergeRequestAction({
+            integrations,
+            requireScmUserCredentials,
+          }),
+          createTriggerGitlabPipelineAction({
+            integrations,
+            requireScmUserCredentials,
+          }),
         );
 
         autocomplete.addAutocompleteProvider({

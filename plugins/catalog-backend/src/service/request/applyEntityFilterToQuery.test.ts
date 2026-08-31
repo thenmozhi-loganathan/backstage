@@ -23,16 +23,14 @@ import {
 } from '../../database/tables';
 import { Knex } from 'knex';
 import { applyDatabaseMigrations } from '../../database/migrations';
-import { EntityFilter } from '@backstage/plugin-catalog-node';
+import { FilterPredicate } from '@backstage/filter-predicates';
 import { Entity, stringifyEntityRef } from '@backstage/catalog-model';
-import { v4 as uuid } from 'uuid';
+import { randomUUID as uuid } from 'node:crypto';
 import { buildEntitySearch } from '../../database/operations/stitcher/buildEntitySearch';
 
 jest.setTimeout(60_000);
 
 const databases = TestDatabases.create();
-const strategies = ['in', 'join'] as const;
-
 describe.each(databases.eachSupportedId())(
   'applyEntityFilterToQuery, %p',
   databaseId => {
@@ -75,10 +73,6 @@ describe.each(databases.eachSupportedId())(
       });
     });
 
-    afterAll(async () => {
-      knex.destroy();
-    });
-
     async function addEntity(entity: Entity) {
       const id = uuid();
       const entityRef = stringifyEntityRef(entity);
@@ -98,7 +92,6 @@ describe.each(databases.eachSupportedId())(
         entity_ref: entityRef,
         final_entity: entityJson,
         hash: 'h',
-        stitch_ticket: '',
       });
 
       const search = await buildEntitySearch(id, entity);
@@ -108,8 +101,8 @@ describe.each(databases.eachSupportedId())(
     }
     // #endregion
 
-    describe.each(strategies)('with strategy %p', strategy => {
-      async function query(filter: EntityFilter): Promise<string[]> {
+    describe('exists strategy', () => {
+      async function query(filter: FilterPredicate): Promise<string[]> {
         const q =
           knex<DbFinalEntitiesRow>('final_entities').whereNotNull(
             'final_entity',
@@ -119,7 +112,6 @@ describe.each(databases.eachSupportedId())(
           targetQuery: q,
           onEntityIdField: 'final_entities.entity_id',
           knex,
-          strategy,
         });
         return await q.then(rows =>
           rows
@@ -129,64 +121,55 @@ describe.each(databases.eachSupportedId())(
       }
 
       it('filters correctly', async () => {
-        await expect(query({ key: 'spec.foo' })).resolves.toEqual([
-          '1',
-          '2',
-          '3',
-        ]);
+        await expect(query({ 'spec.foo': { $exists: true } })).resolves.toEqual(
+          ['1', '2', '3'],
+        );
+
+        await expect(query({ 'spec.foo': 'a' })).resolves.toEqual(['1', '2']);
+
+        await expect(query({ 'spec.foo': 'b' })).resolves.toEqual(['3']);
 
         await expect(
-          query({ key: 'spec.foo', values: ['a'] }),
-        ).resolves.toEqual(['1', '2']);
-
-        await expect(
-          query({ key: 'spec.foo', values: ['b'] }),
-        ).resolves.toEqual(['3']);
-
-        await expect(
-          query({ key: 'spec.foo', values: ['a', 'b'] }),
+          query({ 'spec.foo': { $in: ['a', 'b'] } }),
         ).resolves.toEqual(['1', '2', '3']);
 
         await expect(
           query({
-            anyOf: [
-              { key: 'spec.foo', values: ['a'] },
-              { key: 'spec.foo', values: ['b'] },
-            ],
+            $any: [{ 'spec.foo': 'a' }, { 'spec.foo': 'b' }],
           }),
         ).resolves.toEqual(['1', '2', '3']);
 
-        await expect(
-          query({ not: { key: 'spec.foo', values: ['a'] } }),
-        ).resolves.toEqual(['3', '4']);
+        await expect(query({ $not: { 'spec.foo': 'a' } })).resolves.toEqual([
+          '3',
+          '4',
+        ]);
 
         await expect(
           query({
-            not: {
-              anyOf: [
-                { key: 'spec.foo', values: ['a'] },
-                { key: 'spec.foo', values: ['b'] },
-              ],
+            $not: {
+              $any: [{ 'spec.foo': 'a' }, { 'spec.foo': 'b' }],
             },
           }),
         ).resolves.toEqual(['4']);
 
         await expect(
           query({
-            allOf: [
-              { key: 'spec.foo' },
-              { not: { key: 'spec.foo', values: ['a'] } },
+            $all: [
+              { 'spec.foo': { $exists: true } },
+              { $not: { 'spec.foo': 'a' } },
             ],
           }),
         ).resolves.toEqual(['3']);
 
-        await expect(query({ key: 'spec.unique' })).resolves.toEqual(['1']);
+        await expect(
+          query({ 'spec.unique': { $exists: true } }),
+        ).resolves.toEqual(['1']);
 
         await expect(
           query({
-            allOf: [
-              { key: 'spec.foo', values: ['a'] },
-              { not: { key: 'spec.unique' } },
+            $all: [
+              { 'spec.foo': 'a' },
+              { $not: { 'spec.unique': { $exists: true } } },
             ],
           }),
         ).resolves.toEqual(['2']);

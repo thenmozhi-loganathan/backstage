@@ -1,5 +1,124 @@
 # @internal/frontend
 
+## 0.0.23
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.18.0
+
+## 0.0.23-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+
+## 0.0.22
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/filter-predicates@0.1.4
+
+## 0.0.22-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/filter-predicates@0.1.4-next.0
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+
+## 0.0.21
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.2
+
+## 0.0.21-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+
+## 0.0.20
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.0
+  - @backstage/filter-predicates@0.1.3
+
+## 0.0.20-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/filter-predicates@0.1.3-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+
+## 0.0.19
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/filter-predicates@0.1.2
+
+## 0.0.19-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/filter-predicates@0.1.2-next.0
+  - @backstage/frontend-plugin-api@0.16.0-next.2
+
+## 0.0.19-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.16.0-next.1
+
+## 0.0.19-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.15.2-next.0
+  - @backstage/filter-predicates@0.1.1
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.15.0
+  - @backstage/filter-predicates@0.1.1
+
+## 0.0.18-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.15.0-next.1
+
+## 0.0.18-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+
 ## 0.0.17
 
 ### Patch Changes

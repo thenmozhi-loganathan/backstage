@@ -18,7 +18,10 @@ import { ReactNode } from 'react';
 import clsx from 'clsx';
 import { useBreakpoint } from '../useBreakpoint';
 import { useBgProvider, useBgConsumer, BgProvider } from '../useBg';
-import { resolveResponsiveValue, processUtilityProps } from './helpers';
+import { resolveDefinitionProps, processUtilityProps } from './helpers';
+import { useAnalytics } from '../../analytics/useAnalytics';
+import { noopTracker } from '../../analytics/useAnalytics';
+import { useDefinitionNavigation } from './useDefinitionNavigation';
 import type {
   ComponentConfig,
   UseDefinitionOptions,
@@ -36,41 +39,26 @@ export function useDefinition<
 ): UseDefinitionResult<D, P> {
   const { breakpoint } = useBreakpoint();
 
-  // Provider: resolve bg and provide context for children
-  const providerBg = useBgProvider(
-    definition.bg === 'provider'
-      ? props.bg ?? (definition.propDefs as any).bg?.default
-      : undefined,
+  // Resolve all props centrally — applies responsive values and defaults
+  const { ownPropsResolved, restProps } = resolveDefinitionProps(
+    definition,
+    props,
+    breakpoint,
   );
 
-  // Consumer: read parent context bg
-  const consumerBg = useBgConsumer();
-
-  const ownPropKeys = new Set(Object.keys(definition.propDefs));
-  const utilityPropKeys = new Set(definition.utilityProps ?? []);
-
-  const ownPropsRaw: Record<string, any> = {};
-  const restProps: Record<string, any> = {};
-
-  for (const [key, value] of Object.entries(props)) {
-    if (ownPropKeys.has(key)) {
-      ownPropsRaw[key] = value;
-    } else if (!(utilityPropKeys as Set<string>).has(key)) {
-      restProps[key] = value;
-    }
+  let navigation;
+  if (definition.navigation) {
+    // Component definitions are module constants, so this hook condition is
+    // stable for the lifetime of the component.
+    navigation = useDefinitionNavigation(definition.navigation);
   }
 
-  const ownPropsResolved: Record<string, any> = {};
   const dataAttributes: Record<string, string | undefined> = {};
 
   for (const [key, config] of Object.entries(definition.propDefs)) {
-    const rawValue = ownPropsRaw[key];
-    const resolvedValue = resolveResponsiveValue(rawValue, breakpoint);
-    const finalValue = resolvedValue ?? (config as any).default;
+    const finalValue = ownPropsResolved[key];
 
     if (finalValue !== undefined) {
-      ownPropsResolved[key] = finalValue;
-
       // Skip data-bg for bg prop when the provider path handles it
       if (key === 'bg' && definition.bg === 'provider') continue;
 
@@ -80,6 +68,14 @@ export function useDefinition<
       }
     }
   }
+
+  // Provider: resolve bg and provide context for children
+  const providerBg = useBgProvider(
+    definition.bg === 'provider' ? ownPropsResolved.bg : undefined,
+  );
+
+  // Consumer: read parent context bg
+  const consumerBg = useBgConsumer();
 
   // Provider: set data-bg from the resolved provider bg
   if (definition.bg === 'provider' && providerBg.bg !== undefined) {
@@ -96,8 +92,17 @@ export function useDefinition<
     (definition.utilityProps ?? []) as readonly UtilityKeys<D>[],
   );
 
-  const utilityTarget = options?.utilityTarget ?? 'root';
-  const classNameTarget = options?.classNameTarget ?? 'root';
+  // Analytics: conditionally call useAnalytics based on definition flag
+  let analytics = noopTracker;
+  if (definition.analytics) {
+    const tracker = useAnalytics();
+    analytics = ownPropsResolved.noTrack ? noopTracker : tracker;
+  }
+
+  const utilityTarget =
+    options?.utilityTarget !== undefined ? options.utilityTarget : 'root';
+  const classNameTarget =
+    options?.classNameTarget !== undefined ? options.classNameTarget : 'root';
 
   const classes: Record<string, string> = {};
 
@@ -134,5 +139,7 @@ export function useDefinition<
     restProps,
     dataAttributes,
     utilityStyle,
+    ...(definition.analytics ? { analytics } : {}),
+    ...(definition.navigation ? { navigation } : {}),
   } as unknown as UseDefinitionResult<D, P>;
 }

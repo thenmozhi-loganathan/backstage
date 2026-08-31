@@ -18,6 +18,10 @@ export const components: Page[] = [
     slug: 'avatar',
   },
   {
+    title: 'Badge',
+    slug: 'badge',
+  },
+  {
     title: 'Box',
     slug: 'box',
   },
@@ -42,8 +46,25 @@ export const components: Page[] = [
     slug: 'checkbox',
   },
   {
+    title: 'CheckboxGroup',
+    slug: 'checkbox-group',
+  },
+  {
+    title: 'Combobox',
+    slug: 'combobox',
+    status: 'new',
+  },
+  {
     title: 'Container',
     slug: 'container',
+  },
+  {
+    title: 'DatePicker',
+    slug: 'date-picker',
+  },
+  {
+    title: 'DateRangePicker',
+    slug: 'date-range-picker',
   },
   {
     title: 'Dialog',
@@ -62,16 +83,24 @@ export const components: Page[] = [
     slug: 'plugin-header',
   },
   {
-    title: 'HeaderPage',
-    slug: 'header-page',
+    title: 'Header',
+    slug: 'header',
   },
   {
     title: 'Link',
     slug: 'link',
   },
   {
+    title: 'List',
+    slug: 'list',
+  },
+  {
     title: 'Menu',
     slug: 'menu',
+  },
+  {
+    title: 'NumberField',
+    slug: 'number-field',
   },
   {
     title: 'PasswordField',
@@ -86,6 +115,10 @@ export const components: Page[] = [
     slug: 'radio-group',
   },
   {
+    title: 'SearchAutocomplete',
+    slug: 'search-autocomplete',
+  },
+  {
     title: 'SearchField',
     slug: 'search-field',
   },
@@ -96,6 +129,10 @@ export const components: Page[] = [
   {
     title: 'Skeleton',
     slug: 'skeleton',
+  },
+  {
+    title: 'Slider',
+    slug: 'slider',
   },
   {
     title: 'Switch',
@@ -118,6 +155,11 @@ export const components: Page[] = [
     slug: 'text',
   },
   {
+    title: 'TextAreaField',
+    slug: 'text-area-field',
+    status: 'new',
+  },
+  {
     title: 'TextField',
     slug: 'text-field',
   },
@@ -136,5 +178,12 @@ export const components: Page[] = [
   {
     title: 'VisuallyHidden',
     slug: 'visually-hidden',
+  },
+];
+
+export const hooks: Page[] = [
+  {
+    title: 'useBreakpoint',
+    slug: 'use-breakpoint',
   },
 ];

@@ -6,6 +6,7 @@
 import { AnalyzeOptions } from '@backstage/plugin-catalog-node';
 import { AuthService } from '@backstage/backend-plugin-api';
 import { BackendFeature } from '@backstage/backend-plugin-api';
+import { CacheService } from '@backstage/backend-plugin-api';
 import { CatalogProcessor } from '@backstage/plugin-catalog-node';
 import { CatalogProcessorEmit } from '@backstage/plugin-catalog-node';
 import { CatalogService } from '@backstage/plugin-catalog-node';
@@ -25,16 +26,22 @@ import { SchedulerService } from '@backstage/backend-plugin-api';
 import { SchedulerServiceTaskRunner } from '@backstage/backend-plugin-api';
 import { ScmIntegrationRegistry } from '@backstage/integration';
 import { ScmLocationAnalyzer } from '@backstage/plugin-catalog-node';
-import { UserEntity } from '@backstage/catalog-model';
+
+// @public
+export function buildDefaultUserTransformer(
+  options?: DefaultUserTransformerOptions,
+): UserTransformer;
 
 // @public
 export const defaultOrganizationTeamTransformer: TeamTransformer;
 
 // @public
-export const defaultUserTransformer: (
-  item: GithubUser,
-  _ctx: TransformerContext,
-) => Promise<UserEntity | undefined>;
+export const defaultUserTransformer: UserTransformer;
+
+// @public
+export interface DefaultUserTransformerOptions {
+  useVerifiedEmails?: boolean;
+}
 
 // @public
 const githubCatalogModule: BackendFeature;
@@ -152,6 +159,8 @@ export class GithubMultiOrgEntityProvider implements EntityProvider {
     alwaysUseDefaultNamespace?: boolean;
     pageSizes?: Partial<GithubPageSizes>;
     excludeSuspendedUsers?: boolean;
+    cache?: CacheService;
+    experimental_checkForSuspendedUsersWithRest?: boolean;
   });
   connect(connection: EntityProviderConnection): Promise<void>;
   // (undocumented)
@@ -166,8 +175,10 @@ export class GithubMultiOrgEntityProvider implements EntityProvider {
 // @public
 export interface GithubMultiOrgEntityProviderOptions {
   alwaysUseDefaultNamespace?: boolean;
+  cache?: CacheService;
   events?: EventsService;
   excludeSuspendedUsers?: boolean;
+  experimental_checkForSuspendedUsersWithRest?: boolean;
   githubCredentialsProvider?: GithubCredentialsProvider;
   githubUrl: string;
   id: string;
@@ -231,6 +242,8 @@ export class GithubOrgEntityProvider implements EntityProvider {
     teamTransformer?: TeamTransformer;
     pageSizes?: Partial<GithubPageSizes>;
     excludeSuspendedUsers?: boolean;
+    cache?: CacheService;
+    experimental_checkForSuspendedUsersWithRest?: boolean;
   });
   connect(connection: EntityProviderConnection): Promise<void>;
   // (undocumented)
@@ -247,8 +260,10 @@ export type GitHubOrgEntityProviderOptions = GithubOrgEntityProviderOptions;
 
 // @public
 export interface GithubOrgEntityProviderOptions {
+  cache?: CacheService;
   events?: EventsService;
   excludeSuspendedUsers?: boolean;
+  experimental_checkForSuspendedUsersWithRest?: boolean;
   githubCredentialsProvider?: GithubCredentialsProvider;
   id: string;
   logger: LoggerService;

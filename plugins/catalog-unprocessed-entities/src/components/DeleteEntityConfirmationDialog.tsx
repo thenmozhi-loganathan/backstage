@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-import Button from '@material-ui/core/Button';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogTitle from '@material-ui/core/DialogTitle';
+import { Button, Dialog, DialogHeader, DialogFooter } from '@backstage/ui';
 import { useState } from 'react';
-import { assertError } from '@backstage/errors';
 
 interface DeleteEntityConfirmationProps {
   open: boolean;
-  onClose: () => any;
-  onConfirm: () => any;
+  onClose: () => void | Promise<void>;
+  onConfirm: () => void | Promise<void>;
 }
 
 export function DeleteEntityConfirmationDialog(
@@ -35,32 +31,37 @@ export function DeleteEntityConfirmationDialog(
   const onDelete = async () => {
     setBusy(true);
     try {
-      onConfirm();
-    } catch (err) {
-      assertError(err);
+      await onConfirm();
+    } catch {
+      // ignored
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle id="responsive-dialog-title">
-        Are you sure you want to delete this entity?
-      </DialogTitle>
-      <DialogActions>
+    <Dialog
+      isOpen={open}
+      onOpenChange={isOpen => {
+        if (!isOpen && !busy) {
+          onClose();
+        }
+      }}
+    >
+      <DialogHeader>Are you sure you want to delete this entity?</DialogHeader>
+      <DialogFooter>
         <Button
-          variant="contained"
-          color="secondary"
-          disabled={busy}
-          onClick={onDelete}
+          variant="primary"
+          destructive
+          isDisabled={busy}
+          onPress={onDelete}
         >
           Delete
         </Button>
-        <Button onClick={onClose} color="primary">
+        <Button variant="secondary" isDisabled={busy} onPress={onClose}>
           Cancel
         </Button>
-      </DialogActions>
+      </DialogFooter>
     </Dialog>
   );
 }

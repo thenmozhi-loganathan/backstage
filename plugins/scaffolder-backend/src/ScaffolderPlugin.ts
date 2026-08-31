@@ -23,6 +23,7 @@ import { catalogServiceRef } from '@backstage/plugin-catalog-node';
 import { eventsServiceRef } from '@backstage/plugin-events-node';
 import {
   scaffolderActionsExtensionPoint,
+  scaffolderServiceRef,
   TaskBroker,
   TemplateAction,
 } from '@backstage/plugin-scaffolder-node';
@@ -59,7 +60,12 @@ import {
   convertFiltersToRecord,
   convertGlobalsToRecord,
 } from './util/templating';
-import { actionsServiceRef } from '@backstage/backend-plugin-api/alpha';
+import {
+  actionsServiceRef,
+  actionsRegistryServiceRef,
+  metricsServiceRef,
+} from '@backstage/backend-plugin-api/alpha';
+import { createScaffolderActions } from './actions';
 
 /**
  * Scaffolder plugin
@@ -136,6 +142,7 @@ export const scaffolderPlugin = createBackendPlugin({
         lifecycle: coreServices.rootLifecycle,
         reader: coreServices.urlReader,
         permissions: coreServices.permissions,
+        permissionsRegistry: coreServices.permissionsRegistry,
         database: coreServices.database,
         auth: coreServices.auth,
         httpRouter: coreServices.httpRouter,
@@ -144,6 +151,10 @@ export const scaffolderPlugin = createBackendPlugin({
         catalog: catalogServiceRef,
         events: eventsServiceRef,
         actionsRegistry: actionsServiceRef,
+        actionsRegistryService: actionsRegistryServiceRef,
+        scaffolderService: scaffolderServiceRef,
+        scheduler: coreServices.scheduler,
+        metrics: metricsServiceRef,
       },
       async init({
         logger,
@@ -156,12 +167,20 @@ export const scaffolderPlugin = createBackendPlugin({
         httpAuth,
         catalog,
         permissions,
+        permissionsRegistry,
         events,
         auditor,
         actionsRegistry,
+        actionsRegistryService,
+        scaffolderService,
+        scheduler,
+        metrics,
       }) {
         const log = loggerToWinstonLogger(logger);
         const integrations = ScmIntegrations.fromConfig(config);
+        const requireScmUserCredentials = config.getOptionalBoolean(
+          'scaffolder.requireScmUserCredentials',
+        );
 
         const templateExtensions = {
           additionalTemplateFilters: convertFiltersToRecord(
@@ -179,19 +198,23 @@ export const scaffolderPlugin = createBackendPlugin({
           createFetchPlainAction({
             reader,
             integrations,
+            requireScmUserCredentials,
           }),
           createFetchPlainFileAction({
             reader,
             integrations,
+            requireScmUserCredentials,
           }),
           createFetchTemplateAction({
             integrations,
             reader,
+            requireScmUserCredentials,
             ...templateExtensions,
           }),
           createFetchTemplateFileAction({
             integrations,
             reader,
+            requireScmUserCredentials,
             ...templateExtensions,
           }),
           createDebugLogAction(),
@@ -211,6 +234,12 @@ export const scaffolderPlugin = createBackendPlugin({
           `Starting scaffolder with the following actions enabled ${actionIds}`,
         );
 
+        createScaffolderActions({
+          actionsRegistry: actionsRegistryService,
+          scaffolderService,
+          auth,
+        });
+
         const router = await createRouter({
           logger,
           config,
@@ -224,11 +253,14 @@ export const scaffolderPlugin = createBackendPlugin({
           auth,
           httpAuth,
           permissions,
+          permissionsRegistry,
           autocompleteHandlers,
           additionalWorkspaceProviders,
           events,
           auditor,
           actionsRegistry,
+          scheduler,
+          metrics,
         });
         httpRouter.use(router);
       },

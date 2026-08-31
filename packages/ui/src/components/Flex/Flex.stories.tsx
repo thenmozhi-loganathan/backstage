@@ -16,7 +16,9 @@
 import preview from '../../../../../.storybook/preview';
 import { Flex } from './Flex';
 import { Text } from '../Text';
-import { Box } from '../Box';
+import { Box, BoxProps } from '../Box';
+import { Card, CardHeader, CardBody, CardFooter } from '../Card';
+import { Grid } from '../Grid';
 
 const meta = preview.meta({
   title: 'Backstage UI/Flex',
@@ -35,15 +37,15 @@ const meta = preview.meta({
       options: ['row', 'column', 'row-reverse', 'column-reverse'],
     },
   },
+  args: { children: null },
 });
 
 const DecorativeBox = ({
   width = '48px',
   height = '48px',
-}: {
-  width?: string;
-  height?: string;
-}) => {
+  style,
+  ...props
+}: Omit<BoxProps, 'children'>) => {
   const diagonalStripePattern = (() => {
     const svg = `
       <svg width="6" height="6" viewBox="0 0 6 6" xmlns="http://www.w3.org/2000/svg">
@@ -57,9 +59,11 @@ const DecorativeBox = ({
 
   return (
     <Box
+      {...props}
       width={width}
       height={height}
       style={{
+        ...style,
         background: '#eaf2fd',
         borderRadius: '4px',
         border: '1px solid #2563eb',
@@ -70,6 +74,7 @@ const DecorativeBox = ({
         fontWeight: 'bold',
         color: '#2563eb',
       }}
+      children={null}
     />
   );
 };
@@ -197,6 +202,122 @@ export const ResponsiveAlign = meta.story({
   ),
 });
 
+export const FlexItems = meta.story({
+  args: {
+    component: 'Box',
+    grow: 1,
+    shrink: 0,
+    basis: 'auto',
+  },
+  argTypes: {
+    component: {
+      control: { type: 'select' },
+      options: ['Box', 'Card', 'Grid', 'Flex'],
+      mapping: {
+        Box: props => <DecorativeBox height="100%" width="256px" {...props} />,
+        Card: props => (
+          <Card style={{ height: '100%', width: '256px' }} {...props}>
+            <CardHeader>
+              <Text>Header</Text>
+            </CardHeader>
+            <CardBody>
+              <Text>
+                This is the first paragraph of a long body text that
+                demonstrates how the Card component handles extensive content.
+                The card should adjust accordingly to display all the text
+                properly while maintaining its structure.
+              </Text>
+              <Text>
+                Here's a second paragraph that adds more content to our card
+                body. Having multiple paragraphs helps to visualize how spacing
+                works within the card component.
+              </Text>
+              <Text>
+                This third paragraph continues to add more text to ensure we
+                have a proper demonstration of a card with significant content.
+                This makes it easier to test scrolling behavior and overall
+                layout when content exceeds the initial view.
+              </Text>
+            </CardBody>
+            <CardFooter>
+              <Text>Footer</Text>
+            </CardFooter>
+          </Card>
+        ),
+        Grid: props => (
+          <Grid.Root
+            {...props}
+            height="128px"
+            style={{ width: '256px' }}
+            columns="3"
+          >
+            <Grid.Item colSpan="1" rowSpan="2">
+              <DecorativeBox height="100%" width="100%" />
+            </Grid.Item>
+            <Grid.Item colSpan="2">
+              <DecorativeBox height="100%" width="100%" />
+            </Grid.Item>
+            <Grid.Item colSpan="2">
+              <DecorativeBox height="100%" width="100%" />
+            </Grid.Item>
+          </Grid.Root>
+        ),
+        Flex: props => (
+          <Flex
+            {...props}
+            height="128px"
+            style={{ width: '256px' }}
+            justify="between"
+          >
+            <DecorativeBox height="100%" />
+            <DecorativeBox height="100%" />
+            <DecorativeBox height="100%" />
+          </Flex>
+        ),
+      },
+    },
+    grow: {
+      control: 'radio',
+      options: [undefined, 0, 1, false, true],
+    },
+    shrink: {
+      control: 'radio',
+      options: [undefined, 0, 1, false, true],
+    },
+    basis: {
+      control: 'radio',
+      options: [undefined, '0%', '25%', '50%', '100%', 100, '250px', 'auto'],
+    },
+  },
+  render: ({ component: Component, ...args }) => {
+    return (
+      <Flex style={{ width: '100%', height: '256px' }}>
+        <div
+          style={{
+            width: '256px',
+            flex: '1 1 auto',
+            background:
+              'repeating-linear-gradient(-45deg, transparent 0px, transparent 5px, #e8e8e8 5px, #e8e8e8 10px)',
+            borderRadius: '12px',
+          }}
+        />
+
+        <Component {...args} />
+
+        <div
+          style={{
+            width: '256px',
+            flex: '1 1 auto',
+            background:
+              'repeating-linear-gradient(-45deg, transparent 0px, transparent 5px, #e8e8e8 5px, #e8e8e8 10px)',
+            borderRadius: '12px',
+          }}
+        />
+      </Flex>
+    );
+  },
+});
+
 export const ResponsiveGap = meta.story({
   args: {
     gap: { xs: '4', md: '8', lg: '12' },
@@ -252,18 +373,21 @@ export const Backgrounds = meta.story({
   render: args => (
     <Flex align="center" style={{ flexWrap: 'wrap' }}>
       <Flex {...args}>Default</Flex>
-      <Flex bg="neutral-1" {...args}>
-        Neutral 1
+      <Flex bg="neutral" {...args}>
+        Neutral (level 1)
       </Flex>
-      <Flex bg="neutral-2" {...args}>
-        Neutral 2
-      </Flex>
-      <Flex bg="neutral-3" {...args}>
-        Neutral 3
-      </Flex>
-      <Flex bg={{ initial: 'neutral-1', sm: 'neutral-2' }} {...args}>
-        Responsive Bg
-      </Flex>
+      <Box bg="neutral">
+        <Flex bg="neutral" {...args}>
+          Neutral (level 2)
+        </Flex>
+      </Box>
+      <Box bg="neutral">
+        <Box bg="neutral">
+          <Flex bg="neutral" {...args}>
+            Neutral (level 3)
+          </Flex>
+        </Box>
+      </Box>
       <Flex bg="danger" {...args}>
         Danger
       </Flex>
@@ -277,20 +401,20 @@ export const Backgrounds = meta.story({
   ),
 });
 
-export const BgNeutralAuto = meta.story({
+export const BgNeutral = meta.story({
   args: { px: '6', py: '4', gap: '4' },
   render: args => (
     <Flex direction="column">
       <div style={{ maxWidth: '600px', marginBottom: '16px' }}>
-        Using bg="neutral-auto" on Flex auto-increments from the parent context.
-        The first Flex defaults to neutral-1 (no parent), then each nested Flex
+        Using bg="neutral" on Flex auto-increments from the parent context. The
+        first Flex defaults to neutral-1 (no parent), then each nested Flex
         increments by one, capping at neutral-3.
       </div>
-      <Flex {...args} bg="neutral-auto" direction="column">
-        <div>Neutral 1 (auto, no parent)</div>
-        <Flex {...args} bg="neutral-auto" direction="column">
+      <Flex {...args} bg="neutral" direction="column">
+        <div>Neutral 1 (no parent)</div>
+        <Flex {...args} bg="neutral" direction="column">
           <div>Neutral 2 (auto-incremented)</div>
-          <Flex {...args} bg="neutral-auto" direction="column">
+          <Flex {...args} bg="neutral" direction="column">
             <div>Neutral 3 (auto-incremented, capped)</div>
           </Flex>
         </Flex>

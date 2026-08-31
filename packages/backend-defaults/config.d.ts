@@ -189,7 +189,8 @@ export interface Config {
           attributes?: {
             /**
              * If specified, only match actions where destructive matches this value.
-             * Actions default to destructive: true if not explicitly set.
+             * Actions default to destructive: false when readOnly is true,
+             * and destructive: true otherwise.
              */
             destructive?: boolean;
 
@@ -234,7 +235,8 @@ export interface Config {
           attributes?: {
             /**
              * If specified, only match actions where destructive matches this value.
-             * Actions default to destructive: true if not explicitly set.
+             * Actions default to destructive: false when readOnly is true,
+             * and destructive: true otherwise.
              */
             destructive?: boolean;
 
@@ -585,7 +587,7 @@ export interface Config {
     /** Database connection configuration, select base database type using the `client` field */
     database: {
       /** Default database client to use */
-      client: 'better-sqlite3' | 'sqlite3' | 'pg';
+      client: 'better-sqlite3' | 'sqlite3' | 'pg' | 'embedded-postgres';
       /**
        * Base database connection string, or object with individual connection properties
        * @visibility secret
@@ -631,6 +633,35 @@ export interface Config {
              * The ip address type to use for the connection. Defaults to 'PUBLIC'
              */
             ipAddressType?: 'PUBLIC' | 'PRIVATE' | 'PSC';
+          }
+        | {
+            /**
+             * The specific config for AWS RDS connections with IAM authentication.
+             * Requires the `@aws-sdk/rds-signer` package to be installed.
+             * The IAM role or user must have the `rds-db:connect` permission for the database user.
+             */
+            type: 'rds';
+            /**
+             * The hostname of the RDS instance.
+             */
+            host: string;
+            /**
+             * The port number the database is listening on.
+             */
+            port: number;
+            /**
+             * The database user to authenticate as. This user must have the `rds_iam` role granted.
+             */
+            user: string;
+            /**
+             * The AWS region where the RDS instance is located.
+             * Falls back to the AWS_REGION or AWS_DEFAULT_REGION environment variables if not set.
+             */
+            region?: string;
+            /**
+             * Other connection settings
+             */
+            [key: string]: unknown;
           }
         | {
             /**
@@ -755,10 +786,24 @@ export interface Config {
       | {
           store: 'redis';
           /**
-           * A redis connection string in the form `redis://user:pass@host:port`.
+           * A redis connection string in the form `redis://user:pass@host:port`,
+           * or an object with connection options passed directly to the underlying
+           * client (e.g. `{ url: 'redis://localhost:6379', pingInterval: 60000 }`).
+           * The object form is only supported for the Redis store.
            * @visibility secret
            */
-          connection: string;
+          connection:
+            | string
+            | {
+                /**
+                 * The Redis connection URL.
+                 */
+                url: string;
+                /**
+                 * Other connection settings
+                 */
+                [key: string]: unknown;
+              };
           /** An optional default TTL (in milliseconds, if given as a number). */
           defaultTtl?: number | HumanDuration | string;
           redis?: {
@@ -1128,6 +1173,82 @@ export interface Config {
     };
 
     /**
+     * Options for the metrics service.
+     */
+    metrics?: {
+      /**
+       * Plugin-specific metrics configuration. Each plugin can override meter metadata.
+       */
+      plugin?: {
+        [pluginId: string]: {
+          /**
+           * Meter configuration for this plugin.
+           */
+          meter?: {
+            /**
+             * Custom meter name. If not set, defaults to backstage-plugin-{pluginId}.
+             */
+            name?: string;
+            /**
+             * Version for the meter.
+             */
+            version?: string;
+            /**
+             * Schema URL for the meter.
+             */
+            schemaUrl?: string;
+          };
+        };
+      };
+    };
+
+    /**
+     * Tracing-related backend configuration. Honored by Backstage backend
+     * plugins that emit OpenTelemetry trace spans.
+     */
+    tracing?: {
+      /**
+       * Opt-in capture of attributes that may identify users or contain
+       * sensitive data on backend trace spans.
+       */
+      capture?: {
+        /**
+         * When true, backend plugins emitting trace spans for authenticated
+         * requests SHOULD include the authenticated principal's identity as
+         * `enduser.id` (the user entity ref for a user principal, or the
+         * service subject for a service principal). Defaults to false.
+         */
+        endUser?: boolean;
+      };
+      /**
+       * Plugin-specific tracing configuration. Each plugin can override
+       * tracer instrumentation scope metadata.
+       */
+      plugin?: {
+        [pluginId: string]: {
+          /**
+           * Tracer configuration for this plugin.
+           */
+          tracer?: {
+            /**
+             * Custom tracer name. If not set, defaults to
+             * backstage-plugin-{pluginId}.
+             */
+            name?: string;
+            /**
+             * Version for the tracer.
+             */
+            version?: string;
+            /**
+             * Schema URL for the tracer.
+             */
+            schemaUrl?: string;
+          };
+        };
+      };
+    };
+
+    /**
      * Options to configure the default RootLoggerService.
      */
     logger?: {
@@ -1149,7 +1270,7 @@ export interface Config {
       /**
        * List of logger overrides.
        *
-       * Can be used to configure a different level for logs matching certain criterias.
+       * Can be used to configure a different level for logs matching certain criteria.
        * For example, it can be used to ignore 'info' logs of given plugins.
        *
        * @example
@@ -1292,10 +1413,11 @@ export interface Config {
         host: string;
 
         /**
-         * An optional list of paths. In case they are present only targets matching
-         * any of them will are allowed. You can use trailing slashes to make sure only
-         * subdirectories are allowed, for example `/mydir/` will allow targets with
-         * paths like `/mydir/a` but will block paths like `/mydir2`.
+         * An optional list of paths. When present, only targets matching an exact path
+         * or a path below it at a segment boundary are allowed. For example, `/mydir`
+         * allows `/mydir` and `/mydir/a`, but blocks `/mydir2`. A trailing slash excludes
+         * the exact path without the slash, so `/mydir/` allows `/mydir/a` but not
+         * `/mydir`.
          */
         paths?: string[];
       }>;

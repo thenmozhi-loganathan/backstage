@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { screen, fireEvent } from '@testing-library/react';
 import { mockApis, TestApiProvider } from '@backstage/frontend-test-utils';
-import { useAnalytics } from '@backstage/frontend-plugin-api';
+import {
+  useAnalytics,
+  createRouteRef,
+  createExternalRouteRef,
+  useRouteRef,
+  identityApiRef,
+  useApi,
+} from '@backstage/frontend-plugin-api';
 import { Routes, Route } from 'react-router-dom';
 import { renderInTestApp } from './renderInTestApp';
 
@@ -107,5 +114,91 @@ describe('renderInTestApp', () => {
         }),
       ]),
     );
+  });
+
+  it('should allow mounting route refs', () => {
+    const testRouteRef = createRouteRef({
+      params: ['name'],
+    });
+
+    const LinkComponent = () => {
+      const link = useRouteRef(testRouteRef);
+      return <div>Link: {link?.({ name: 'test-name' }) ?? 'none'}</div>;
+    };
+
+    renderInTestApp(<LinkComponent />, {
+      mountedRoutes: {
+        '/test-path/:name': testRouteRef,
+      },
+    });
+
+    expect(screen.getByText('Link: /test-path/test-name')).toBeInTheDocument();
+  });
+
+  it('should allow mounting external route refs', () => {
+    const externalRef = createExternalRouteRef({ params: ['name'] });
+
+    const ExternalLinkComponent = () => {
+      const link = useRouteRef(externalRef);
+      return <div>Link: {link?.({ name: 'test' }) ?? 'none'}</div>;
+    };
+
+    renderInTestApp(<ExternalLinkComponent />, {
+      mountedRoutes: {
+        '/items/:name': externalRef,
+      },
+    });
+
+    expect(screen.getByText('Link: /items/test')).toBeInTheDocument();
+  });
+
+  describe('identity api', () => {
+    const IdentityPage = () => {
+      const identityApi = useApi(identityApiRef);
+      const [userEntityRef, setUserEntityRef] = useState<string>();
+
+      useEffect(() => {
+        identityApi
+          .getBackstageIdentity()
+          .then(identity => setUserEntityRef(identity.userEntityRef));
+      }, [identityApi]);
+
+      return <div>{userEntityRef ?? 'Loading...'}</div>;
+    };
+
+    it('should use the overridden identity API instead of the default proxy', async () => {
+      renderInTestApp(<IdentityPage />, {
+        apis: [
+          mockApis.identity({
+            userEntityRef: 'user:default/i-just-made-this-up',
+          }),
+        ],
+      });
+
+      expect(
+        await screen.findByText('user:default/i-just-made-this-up'),
+      ).toBeInTheDocument();
+    });
+
+    it('should render with test user entity when no custom value provided', async () => {
+      renderInTestApp(<IdentityPage />, {
+        apis: [mockApis.identity()],
+      });
+
+      expect(await screen.findByText('user:default/test')).toBeInTheDocument();
+    });
+
+    it('should not render guest user entity when custom identity is provided', async () => {
+      renderInTestApp(<IdentityPage />, {
+        apis: [
+          mockApis.identity({
+            userEntityRef: 'user:default/i-just-made-this-up',
+          }),
+        ],
+      });
+
+      await screen.findByText('user:default/i-just-made-this-up');
+      expect(screen.queryByText('user:default/guest')).not.toBeInTheDocument();
+    });
   });
 });

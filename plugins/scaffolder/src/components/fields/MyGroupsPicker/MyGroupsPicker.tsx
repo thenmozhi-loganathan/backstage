@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
-import { ChangeEvent, useEffect } from 'react';
+import {
+  type Key,
+  ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   errorApiRef,
   identityApiRef,
@@ -37,11 +44,16 @@ import { Entity, stringifyEntityRef } from '@backstage/catalog-model';
 import { VirtualizedListbox } from '../VirtualizedListbox';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { scaffolderTranslationRef } from '../../../translation';
-import { ScaffolderField } from '@backstage/plugin-scaffolder-react/alpha';
+import {
+  ScaffolderField,
+  useScaffolderTheme,
+} from '@backstage/plugin-scaffolder-react/alpha';
+import { Autocomplete as BuiAutocomplete } from '../Autocomplete';
 
 export { MyGroupsPickerSchema };
 
 export const MyGroupsPicker = (props: MyGroupsPickerProps) => {
+  const theme = useScaffolderTheme();
   const { t } = useTranslationRef(scaffolderTranslationRef);
   const {
     schema: {
@@ -53,6 +65,7 @@ export const MyGroupsPicker = (props: MyGroupsPickerProps) => {
     onChange,
     formData,
     uiSchema,
+    idSchema,
     errors,
   } = props;
 
@@ -70,12 +83,16 @@ export const MyGroupsPicker = (props: MyGroupsPickerProps) => {
       return { catalogEntities: [], entityRefToPresentation: new Map() };
     }
 
-    const { items } = await catalogApi.getEntities({
+    const items: Entity[] = [];
+    for await (const batch of catalogApi.streamEntities({
+      query: {},
       filter: {
         kind: 'Group',
         ['relations.hasMember']: [userEntityRef],
       },
-    });
+    })) {
+      items.push(...batch);
+    }
 
     const entityRefToPresentation = new Map<
       string,
@@ -96,6 +113,7 @@ export const MyGroupsPicker = (props: MyGroupsPickerProps) => {
     return { catalogEntities: items, entityRefToPresentation };
   });
 
+  // MUI: update handler
   const updateChange = (_: ChangeEvent<{}>, value: Entity | null) => {
     onChange(value ? stringifyEntityRef(value) : '');
   };
@@ -104,11 +122,75 @@ export const MyGroupsPicker = (props: MyGroupsPickerProps) => {
     groups?.catalogEntities.find(e => stringifyEntityRef(e) === formData) ||
     null;
 
+  // BUI: options
+  const buiOptions = useMemo(
+    () =>
+      (groups?.catalogEntities || []).map(entity => {
+        const entityRef = stringifyEntityRef(entity);
+        const presentation = groups?.entityRefToPresentation.get(entityRef);
+        return {
+          value: entityRef,
+          label: presentation?.primaryTitle || entityRef,
+        };
+      }),
+    [groups],
+  );
+
+  const [inputValue, setInputValue] = useState('');
+
+  useEffect(() => {
+    if (formData) {
+      const opt = buiOptions.find(o => o.value === formData);
+      setInputValue(opt?.label || formData);
+    } else {
+      setInputValue('');
+    }
+  }, [formData, buiOptions]);
+
+  const selectedKey =
+    formData && buiOptions.some(o => o.value === formData) ? formData : null;
+
+  const handleSelectionChange = useCallback(
+    (key: Key | null) => {
+      onChange(key !== null ? String(key) : '');
+    },
+    [onChange],
+  );
+
   useEffect(() => {
     if (required && groups?.catalogEntities.length === 1 && !selectedEntity) {
       onChange(stringifyEntityRef(groups.catalogEntities[0]));
     }
   }, [groups, onChange, selectedEntity, required]);
+
+  if (theme === 'bui') {
+    const isAutoSelected = required && groups?.catalogEntities.length === 1;
+
+    return (
+      <ScaffolderField
+        rawErrors={rawErrors}
+        rawDescription={uiSchema['ui:description'] ?? description}
+        required={required}
+        disabled={isDisabled}
+        errors={errors}
+      >
+        <BuiAutocomplete
+          id={idSchema?.$id}
+          label={title}
+          isRequired={required}
+          isDisabled={isDisabled || isAutoSelected}
+          selectedKey={selectedKey}
+          inputValue={inputValue}
+          onInputChange={setInputValue}
+          onSelectionChange={handleSelectionChange}
+          isLoading={loading}
+          options={buiOptions}
+          allowsCustomValue={false}
+          isInvalid={rawErrors && rawErrors.length > 0}
+        />
+      </ScaffolderField>
+    );
+  }
 
   return (
     <ScaffolderField

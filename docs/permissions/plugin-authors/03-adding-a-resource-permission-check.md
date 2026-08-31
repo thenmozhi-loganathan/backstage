@@ -4,10 +4,6 @@ title: 3. Adding a resource permission check
 description: Explains how to add a resource permission check to a Backstage plugin
 ---
 
-:::info
-This documentation is written for [the new backend system](../../backend-system/index.md) which is the default since Backstage [version 1.24](../../releases/v1.24.0.md). If you are still on the old backend system, you may want to read [its own article](https://github.com/backstage/backstage/blob/v1.37.0/docs/permissions/plugin-authors/03-adding-a-resource-permission-check--old.md) instead, and [consider migrating](../../backend-system/building-backends/08-migrating.md)!
-:::
-
 When performing updates (or other operations) on specific [resources](../../references/glossary.md#resource-permission-plugin), the permissions framework allows for the decision to be based on characteristics of the resource itself. This means that it's possible to write policies that (for example) allow the operation for users that own a resource, and deny the operation otherwise.
 
 ## Creating the update permission
@@ -119,7 +115,7 @@ This enables decisions based on characteristics of the resource, but it's import
 Install the missing module:
 
 ```bash
-$ yarn workspace @internal/plugin-todo-list-backend add zod
+$ yarn workspace @internal/plugin-todo-list-backend add zod@4
 ```
 
 Create a new `plugins/todo-list-backend/src/service/rules.ts` file and append the following code:
@@ -130,7 +126,7 @@ import {
   createPermissionRule,
 } from '@backstage/plugin-permission-node';
 import { TODO_LIST_RESOURCE_TYPE } from '@internal/plugin-todo-list-common';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Todo, TodoFilter } from './todos';
 
 export const todoListPermissionResourceRef = createPermissionResourceRef<
@@ -164,7 +160,7 @@ export const rules = { isOwner };
 
 The `todoListPermissionResourceRef` is a utility that encapsulates the types and constants related to the resource type. It ensures that the resource and query types are consistent across all rules created for this resource.
 
-:::note Note
+:::note
 
 To support custom rules defined by Backstage integrators, you must export `todoListPermissionResourceRef` from the backend package, or a `*-node` package if you want to enable the creation of third-party modules.
 
@@ -251,18 +247,20 @@ export { exampleTodoListPlugin } from './plugin';
 
 ## Test the authorized update endpoint
 
-Let's go back to the permission policy's handle function and try to authorize our new permission with an `isOwner` condition.
+Let's go back to the permission policy's handle function and try to authorize our new permission with an `isOwner` condition. Update the `CustomPolicy` class in the permission policy module created during the [Getting Started](../getting-started.md) steps:
 
-```ts title="packages/backend/src/plugins/permission.ts"
-import {
-  IdentityClient
-} from '@backstage/plugin-auth-node';
+```ts
 import {
   PermissionPolicy,
   PolicyQuery,
   PolicyQueryUser,
 } from '@backstage/plugin-permission-node';
-import { isPermission } from '@backstage/plugin-permission-common';
+import {
+  AuthorizeResult,
+  PolicyDecision,
+  isPermission,
+} from '@backstage/plugin-permission-common';
+import { UserInfoService } from '@backstage/backend-plugin-api';
 /* highlight-remove-next-line */
 import { todoListCreatePermission } from '@internal/plugin-todo-list-common';
 /* highlight-add-start */
@@ -276,33 +274,39 @@ import {
 } from '@internal/plugin-todo-list-backend';
 /* highlight-add-end */
 
+export class CustomPolicy implements PermissionPolicy {
+  constructor(private readonly userInfo: UserInfoService) {}
 
-async handle(
-  request: PolicyQuery,
-  /* highlight-remove-next-line */
-  _user?: PolicyQueryUser,
-  /* highlight-add-next-line */
-  user?: PolicyQueryUser,
-): Promise<PolicyDecision> {
-  if (isPermission(request.permission, todoListCreatePermission)) {
+  async handle(
+    request: PolicyQuery,
+    /* highlight-remove-next-line */
+    _user?: PolicyQueryUser,
+    /* highlight-add-next-line */
+    user?: PolicyQueryUser,
+  ): Promise<PolicyDecision> {
+    if (isPermission(request.permission, todoListCreatePermission)) {
+      return {
+        result: AuthorizeResult.ALLOW,
+      };
+    }
+    /* highlight-add-start */
+    if (isPermission(request.permission, todoListUpdatePermission)) {
+      const userEntityRef = user
+        ? (await this.userInfo.getUserInfo(user.credentials)).userEntityRef
+        : '';
+      return createTodoListConditionalDecision(
+        request.permission,
+        todoListConditions.isOwner({
+          userId: userEntityRef,
+        }),
+      );
+    }
+    /* highlight-add-end */
+
     return {
       result: AuthorizeResult.ALLOW,
     };
   }
-  /* highlight-add-start */
-  if (isPermission(request.permission, todoListUpdatePermission)) {
-    return createTodoListConditionalDecision(
-      request.permission,
-      todoListConditions.isOwner({
-        userId: user?.info.userEntityRef ?? '',
-      }),
-    );
-  }
-  /* highlight-add-end */
-
-  return {
-    result: AuthorizeResult.ALLOW,
-  };
 }
 ```
 

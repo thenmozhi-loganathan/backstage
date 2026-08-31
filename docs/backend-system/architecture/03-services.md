@@ -195,8 +195,8 @@ When declaring a service factory you may also want to make the export the buildi
 
 ```ts
 export class DefaultFooService {
-  static create(options: { transform: (foo: string) => string }) {
-    return new DefaultFooService(options.transform ?? ((foo) => foo);
+  static create(options: { transform?: (foo: string) => string }) {
+    return new DefaultFooService(options.transform ?? (foo => foo));
   }
 
   private constructor(private readonly transform: (foo: string) => string) {}
@@ -254,7 +254,7 @@ deps: {fooServices: fooServiceRef},
 
 ## Service Factory Options Pattern
 
-:::note Note
+:::note
 
 This pattern is discouraged, only use it when necessary. If possible you should prefer to make services configurable via static configuration or re-implementation instead.
 
@@ -264,7 +264,7 @@ In some cases it might be beneficial to allow users of your service factory to p
 
 ```ts
 const fooServiceFactoryWithOptions = (options?: {
-  transform: (foo: string) => string;
+  transform?: (foo: string) => string;
 }) =>
   createServiceFactory<FooService>({
     service: fooServiceRef,

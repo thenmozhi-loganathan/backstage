@@ -1,5 +1,147 @@
 # @backstage/plugin-kubernetes-node
 
+## 0.4.8-next.0
+
+### Patch Changes
+
+- d9a57de: Add `KubernetesWatcher` interface for streaming Kubernetes resource changes via an async iterator. The watcher is separated from `KubernetesFetcher` because watching is a long-lived streaming connection that only works with server-side auth providers. Watch supports all event types (ADDED, MODIFIED, DELETED, BOOKMARK, ERROR) with errors yielded as data rather than thrown.
+- Updated dependencies
+  - @backstage/plugin-kubernetes-common@0.9.13-next.0
+
+## 0.4.7
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/backend-plugin-api@1.10.0
+
+## 0.4.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0-next.0
+
+## 0.4.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3
+
+## 0.4.6-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3-next.0
+
+## 0.4.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.2
+
+## 0.4.5-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.4.4
+
+### Patch Changes
+
+- ab1cdbb: Removed a handful of internal imports that referenced the package by its own name. Value imports were switched to relative paths, and type-only imports to `import type`. These self-referential imports could trigger circular initialization errors in bundled ESM and when the package was loaded via `jest.requireActual` — most visibly `Cannot access '_AppRootElementBlueprintesm' before initialization` from `@backstage/frontend-plugin-api`. There are no user-facing API changes.
+- 0c5e41f: Removed unused dependencies that had no imports in source code.
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/plugin-kubernetes-common@0.9.12
+
+## 0.4.4-next.1
+
+### Patch Changes
+
+- ab1cdbb: Removed a handful of internal imports that referenced the package by its own name. Value imports were switched to relative paths, and type-only imports to `import type`. These self-referential imports could trigger circular initialization errors in bundled ESM and when the package was loaded via `jest.requireActual` — most visibly `Cannot access '_AppRootElementBlueprintesm' before initialization` from `@backstage/frontend-plugin-api`. There are no user-facing API changes.
+- Updated dependencies
+  - @backstage/catalog-model@1.8.1-next.1
+  - @backstage/plugin-kubernetes-common@0.9.12-next.1
+
+## 0.4.4-next.0
+
+### Patch Changes
+
+- 0c5e41f: Removed unused dependencies that had no imports in source code.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/types@1.2.2
+  - @backstage/plugin-kubernetes-common@0.9.12-next.0
+
+## 0.4.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/catalog-model@1.8.0
+  - @backstage/plugin-kubernetes-common@0.9.11
+
+## 0.4.3-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/catalog-model@1.7.8-next.0
+  - @backstage/plugin-kubernetes-common@0.9.11-next.0
+
+## 0.4.3-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+
+## 0.4.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-kubernetes-common@0.9.10
+
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/catalog-model@1.7.7
+
+## 0.4.2-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+
+## 0.4.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/types@1.2.2
+  - @backstage/plugin-kubernetes-common@0.9.10
+
 ## 0.4.1
 
 ### Patch Changes

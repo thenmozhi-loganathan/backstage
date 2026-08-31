@@ -4,6 +4,7 @@
 
 ```ts
 import { BasicPermission } from '@backstage/plugin-permission-common';
+import { CatalogModelLayer } from '@backstage/catalog-model/alpha';
 import { ResourcePermission } from '@backstage/plugin-permission-common';
 
 // @alpha
@@ -20,6 +21,9 @@ export const RESOURCE_TYPE_SCAFFOLDER_TEMPLATE = 'scaffolder-template';
 
 // @alpha
 export const scaffolderActionPermissions: ResourcePermission<'scaffolder-action'>[];
+
+// @alpha
+export const scaffolderCatalogModelLayer: CatalogModelLayer;
 
 // @alpha
 export const scaffolderPermissions: (
@@ -46,6 +50,9 @@ export const taskCreatePermission: BasicPermission;
 
 // @alpha
 export const taskReadPermission: ResourcePermission<'scaffolder-task'>;
+
+// @alpha
+export const templateDryRunPermission: BasicPermission;
 
 // @alpha
 export const templateManagementPermission: BasicPermission;

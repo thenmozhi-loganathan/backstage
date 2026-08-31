@@ -1,5 +1,258 @@
 # @backstage/plugin-scaffolder-node
 
+## 0.13.7-next.0
+
+### Patch Changes
+
+- e95b649: Added task recovery feature with new `scaffolder.taskRecovery` config section. When enabled, tasks that crash or timeout are automatically recovered and resume from the last completed step, task secrets are retained until the task reaches a terminal state so recovery can continue, and completed step outputs are persisted. Enabling recovery applies to all scaffolder tasks, so actions used by those tasks should be idempotent or use checkpoints. When recovery is disabled (the default), the previous behavior is unchanged: secrets are cleared as soon as a task is claimed and retries re-run every step. The new config consolidates previous experimental flags (`EXPERIMENTAL_recoverTasks`, `EXPERIMENTAL_workspaceSerialization`, `EXPERIMENTAL_recoverTasksTimeout`) which remain supported as fallbacks. The legacy workspace provider setting continues to select a provider only when `EXPERIMENTAL_workspaceSerialization` is `true`.
+
+  Workspace serialization for task recovery now requires installing a separate workspace provider module, including when you use the legacy configuration. For development, use `@backstage/plugin-scaffolder-backend-module-workspace-database` (50 MB limit, not recommended for production). On first startup, that module migrates existing database workspace snapshots from the legacy task storage. For production, use `@backstage/plugin-scaffolder-backend-module-gcp` or a similar external storage provider. The scaffolder rejects a configured provider that has not been installed and registered.
+
+  Enabling crash recovery does not keep completed task event streams open; normal task completion remains terminal for event-stream clients.
+
+- Updated dependencies
+  - @backstage/plugin-scaffolder-common@2.3.0-next.0
+
+## 0.13.6
+
+### Patch Changes
+
+- 78bf918: chore(deps): bump `tar` from 7.5.15 to 7.5.21
+- 4e8d763: Migrated tests from MSW v1 to MSW v2.
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/integration@2.1.0
+  - @backstage/plugin-permission-common@0.9.10
+  - @backstage/plugin-permission-node@0.11.3
+  - @backstage/plugin-scaffolder-common@2.2.2
+
+## 0.13.6-next.2
+
+### Patch Changes
+
+- 78bf918: chore(deps): bump `tar` from 7.5.15 to 7.5.21
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0-next.1
+
+## 0.13.6-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.1.0-next.0
+  - @backstage/plugin-scaffolder-common@2.2.2-next.0
+
+## 0.13.6-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0-next.0
+  - @backstage/backend-test-utils@1.11.6-next.0
+  - @backstage/plugin-permission-node@0.11.3-next.0
+
+## 0.13.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3
+  - @backstage/plugin-permission-node@0.11.2
+
+## 0.13.5-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-test-utils@1.11.5-next.0
+  - @backstage/plugin-permission-node@0.11.2-next.0
+  - @backstage/backend-plugin-api@1.9.3-next.0
+
+## 0.13.4
+
+### Patch Changes
+
+- 3d0ba59: Added retry with exponential back off to `Git.push()`. Scaffolder template actions that create a repository and immediately push to it (e.g., `publish:github`) can encounter transient failures when the repository is not yet fully provisioned. The push is now retried up to 5 times with increasing delays before failing. Authentication and permission errors (401, 403) fail immediately without retrying.
+- Updated dependencies
+  - @backstage/integration@2.0.3
+  - @backstage/backend-plugin-api@1.9.2
+  - @backstage/plugin-scaffolder-common@2.2.1
+  - @backstage/plugin-permission-node@0.11.1
+
+## 0.13.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.3-next.0
+  - @backstage/plugin-scaffolder-common@2.2.1-next.0
+  - @backstage/backend-test-utils@1.11.4-next.0
+  - @backstage/plugin-permission-node@0.11.1-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.13.3
+
+### Patch Changes
+
+- 77bee9f: Added optional `status` filter to `ScaffolderService.listTasks`, allowing callers to retrieve tasks matching a specific status.
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/errors@1.3.1
+  - @backstage/backend-test-utils@1.11.3
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/integration@2.0.2
+  - @backstage/plugin-permission-node@0.11.0
+  - @backstage/plugin-permission-common@0.9.9
+  - @backstage/plugin-scaffolder-common@2.2.0
+
+## 0.13.3-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-test-utils@1.11.3-next.2
+  - @backstage/backend-plugin-api@1.9.1-next.1
+  - @backstage/plugin-scaffolder-common@2.2.0-next.1
+
+## 0.13.3-next.1
+
+### Patch Changes
+
+- 77bee9f: Added optional `status` filter to `ScaffolderService.listTasks`, allowing callers to retrieve tasks matching a specific status.
+- Updated dependencies
+  - @backstage/catalog-model@1.8.1-next.1
+  - @backstage/backend-test-utils@1.11.3-next.1
+  - @backstage/plugin-permission-common@0.9.9-next.1
+
+## 0.13.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/integration@2.0.2-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/backend-test-utils@1.11.3-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/plugin-permission-common@0.9.9-next.0
+  - @backstage/plugin-permission-node@0.10.13-next.0
+  - @backstage/plugin-scaffolder-common@2.1.1-next.0
+  - @backstage/types@1.2.2
+
+## 0.13.2
+
+### Patch Changes
+
+- 5af48e7: Added `PermissionResourceRef` definitions for scaffolder resource types: `scaffolderTemplatePermissionResourceRef`, `scaffolderActionPermissionResourceRef`, and `scaffolderTaskPermissionResourceRef`. These are exported from `@backstage/plugin-scaffolder-node/alpha`.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/backend-test-utils@1.11.2
+  - @backstage/errors@1.3.0
+  - @backstage/catalog-model@1.8.0
+  - @backstage/plugin-scaffolder-common@2.1.0
+  - @backstage/integration@2.0.1
+  - @backstage/plugin-permission-node@0.10.12
+  - @backstage/plugin-permission-common@0.9.8
+
+## 0.13.2-next.2
+
+### Patch Changes
+
+- 5af48e7: Added `PermissionResourceRef` definitions for scaffolder resource types: `scaffolderTemplatePermissionResourceRef`, `scaffolderActionPermissionResourceRef`, and `scaffolderTaskPermissionResourceRef`. These are exported from `@backstage/plugin-scaffolder-node/alpha`.
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/integration@2.0.1-next.0
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/backend-test-utils@1.11.2-next.2
+  - @backstage/catalog-model@1.7.8-next.0
+  - @backstage/plugin-permission-common@0.9.8-next.0
+  - @backstage/plugin-permission-node@0.10.12-next.2
+  - @backstage/plugin-scaffolder-common@2.0.1-next.0
+
+## 0.13.1-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/backend-test-utils@1.11.2-next.1
+
+## 0.13.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/backend-test-utils@1.11.2-next.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/errors@1.2.7
+  - @backstage/integration@2.0.0
+  - @backstage/types@1.2.2
+  - @backstage/plugin-permission-common@0.9.7
+  - @backstage/plugin-scaffolder-common@2.0.0
+
+## 0.13.0
+
+### Minor Changes
+
+- e27bd4e: **BREAKING** Removed deprecated `bitbucket` integration from being used in the `parseRepoUrl` function. It will use the `bitbucketCloud` or `bitbucketServer` integrations instead.
+
+### Patch Changes
+
+- cd0ecc5: Added `removeFiles` helper function for staging file removals in Git.
+- f598909: Added `scaffolderServiceRef` and `ScaffolderService` interface for backend plugins that need to interact with the scaffolder API using `BackstageCredentials` instead of raw tokens.
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/backend-test-utils@1.11.1
+  - @backstage/integration@2.0.0
+  - @backstage/plugin-scaffolder-common@2.0.0
+  - @backstage/plugin-permission-common@0.9.7
+  - @backstage/catalog-model@1.7.7
+
+## 0.13.0-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-test-utils@1.11.1-next.2
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/integration@2.0.0-next.2
+  - @backstage/plugin-scaffolder-common@2.0.0-next.2
+
+## 0.13.0-next.1
+
+### Minor Changes
+
+- e27bd4e: **BREAKING** Removed deprecated `bitbucket` integration from being used in the `parseRepoUrl` function. It will use the `bitbucketCloud` or `bitbucketServer` integrations instead.
+
+### Patch Changes
+
+- f598909: Added `scaffolderServiceRef` and `ScaffolderService` interface for backend plugins that need to interact with the scaffolder API using `BackstageCredentials` instead of raw tokens.
+- Updated dependencies
+  - @backstage/backend-test-utils@1.11.1-next.1
+  - @backstage/integration@2.0.0-next.1
+  - @backstage/plugin-scaffolder-common@2.0.0-next.1
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-permission-common@0.9.6
+
+## 0.12.6-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.21.0-next.0
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-permission-common@0.9.6
+  - @backstage/plugin-scaffolder-common@1.7.7-next.0
+
 ## 0.12.5
 
 ### Patch Changes

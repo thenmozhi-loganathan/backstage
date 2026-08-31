@@ -271,6 +271,60 @@ describe('createOAuthRouteHandlers', () => {
         { ctx: 'authenticator' },
       );
     });
+
+    it('should reject malformed origin', async () => {
+      const app = wrapInApp(createOAuthRouteHandlers(baseConfig));
+      const res = await request(app)
+        .get('/my-provider/start')
+        .query({ env: 'development', origin: 'not-a-valid-url' });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({
+        error: {
+          name: 'InputError',
+          message: expect.stringContaining(
+            'App origin is invalid, failed to parse',
+          ),
+        },
+      });
+    });
+
+    it('should reject empty origin', async () => {
+      const app = wrapInApp(createOAuthRouteHandlers(baseConfig));
+      const res = await request(app)
+        .get('/my-provider/start')
+        .query({ env: 'development', origin: '' });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({
+        error: {
+          name: 'InputError',
+          message: expect.stringContaining(
+            'App origin is invalid, failed to parse',
+          ),
+        },
+      });
+    });
+
+    it('should reject disallowed origin', async () => {
+      const app = wrapInApp(
+        createOAuthRouteHandlers({
+          ...baseConfig,
+          isOriginAllowed: () => false,
+        }),
+      );
+      const res = await request(app)
+        .get('/my-provider/start')
+        .query({ env: 'development', origin: 'https://disallowed.com' });
+
+      expect(res.status).toBe(403);
+      expect(res.body).toMatchObject({
+        error: {
+          name: 'NotAllowedError',
+          message: "Origin 'https://disallowed.com' is not allowed",
+        },
+      });
+    });
   });
 
   describe('frameHandler', () => {
@@ -1262,6 +1316,135 @@ describe('createOAuthRouteHandlers', () => {
           message: 'Invalid X-Requested-With header',
         },
       });
+    });
+
+    it('should return logoutUrl as JSON when authenticator provides one', async () => {
+      (mockAuthenticator.logout as jest.Mock).mockResolvedValueOnce({
+        logoutUrl: 'https://example.auth0.com/v2/logout?federated',
+      });
+
+      const agent = request.agent(
+        wrapInApp(createOAuthRouteHandlers(baseConfig)),
+      );
+
+      agent.jar.setCookie(
+        'my-provider-refresh-token=my-refresh-token',
+        '127.0.0.1',
+        '/my-provider',
+      );
+
+      const res = await agent
+        .post('/my-provider/logout')
+        .set('X-Requested-With', 'XMLHttpRequest');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        logoutUrl: 'https://example.auth0.com/v2/logout?federated',
+      });
+
+      // Cookie should still be cleared even when logoutUrl is returned
+      expect(getRefreshTokenCookie(agent)).toBeUndefined();
+    });
+
+    it('should return empty body when authenticator logout returns void', async () => {
+      (mockAuthenticator.logout as jest.Mock).mockResolvedValueOnce(undefined);
+
+      const agent = request.agent(
+        wrapInApp(createOAuthRouteHandlers(baseConfig)),
+      );
+
+      const res = await agent
+        .post('/my-provider/logout')
+        .set('X-Requested-With', 'XMLHttpRequest');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({});
+    });
+
+    it('should reject logout from disallowed origin', async () => {
+      const app = wrapInApp(
+        createOAuthRouteHandlers({
+          ...baseConfig,
+          isOriginAllowed: origin => origin === 'http://allowed.example.com',
+        }),
+      );
+
+      const res = await request(app)
+        .post('/my-provider/logout')
+        .set('X-Requested-With', 'XMLHttpRequest')
+        .set('Origin', 'https://evil.com');
+
+      expect(res.status).toBe(403);
+      expect(res.body).toMatchObject({
+        error: {
+          name: 'NotAllowedError',
+          message: "Origin 'https://evil.com' is not allowed",
+        },
+      });
+    });
+
+    it('should strip logoutUrl with non-HTTPS protocol', async () => {
+      (mockAuthenticator.logout as jest.Mock).mockResolvedValueOnce({
+        logoutUrl: 'http://evil.com/redirect',
+      });
+
+      const app = wrapInApp(createOAuthRouteHandlers(baseConfig));
+
+      const res = await request(app)
+        .post('/my-provider/logout')
+        .set('X-Requested-With', 'XMLHttpRequest');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({});
+    });
+
+    it('should accept logoutUrl with HTTPS protocol', async () => {
+      (mockAuthenticator.logout as jest.Mock).mockResolvedValueOnce({
+        logoutUrl: 'https://auth.example.com/v2/logout',
+      });
+
+      const app = wrapInApp(createOAuthRouteHandlers(baseConfig));
+
+      const res = await request(app)
+        .post('/my-provider/logout')
+        .set('X-Requested-With', 'XMLHttpRequest');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        logoutUrl: 'https://auth.example.com/v2/logout',
+      });
+    });
+
+    it('should accept logoutUrl targeting localhost', async () => {
+      (mockAuthenticator.logout as jest.Mock).mockResolvedValueOnce({
+        logoutUrl: 'http://localhost:3000/logout-callback',
+      });
+
+      const app = wrapInApp(createOAuthRouteHandlers(baseConfig));
+
+      const res = await request(app)
+        .post('/my-provider/logout')
+        .set('X-Requested-With', 'XMLHttpRequest');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        logoutUrl: 'http://localhost:3000/logout-callback',
+      });
+    });
+
+    it('should handle malformed logoutUrl gracefully', async () => {
+      (mockAuthenticator.logout as jest.Mock).mockResolvedValueOnce({
+        logoutUrl: 'not-a-valid-url',
+      });
+
+      const app = wrapInApp(createOAuthRouteHandlers(baseConfig));
+
+      const res = await request(app)
+        .post('/my-provider/logout')
+        .set('X-Requested-With', 'XMLHttpRequest');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({});
     });
 
     it('should set error search param and redirect on caught error', async () => {

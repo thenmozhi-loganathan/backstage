@@ -19,7 +19,7 @@ import { ConflictError, NotFoundError } from '@backstage/errors';
 import { CronTime } from 'cron';
 import { Knex } from 'knex';
 import { DateTime, Duration } from 'luxon';
-import { v4 as uuid } from 'uuid';
+import { randomUUID as uuid } from 'node:crypto';
 import { DB_TASKS_TABLE, DbTasksRow } from '../database/tables';
 import {
   TaskSettingsV2,
@@ -104,11 +104,14 @@ export class TaskWorker {
           attemptNum = 0;
           break;
         } catch (e) {
+          if (options.signal.aborted) {
+            break;
+          }
           attemptNum += 1;
           this.logger.warn(
             `Task worker failed unexpectedly, attempt number ${attemptNum}, ${e}`,
           );
-          await sleep(Duration.fromObject({ seconds: 1 }));
+          await sleep(Duration.fromObject({ seconds: 1 }), options.signal);
         }
       }
     })();
@@ -149,6 +152,36 @@ export class TaskWorker {
       });
     if (updatedRows < 1) {
       throw new ConflictError(`Task ${taskId} is currently running`);
+    }
+  }
+
+  static async cancel(knex: Knex, taskId: string): Promise<void> {
+    const [row] = await knex<DbTasksRow>(DB_TASKS_TABLE)
+      .where('id', '=', taskId)
+      .select('settings_json', 'current_run_ticket');
+    if (!row) {
+      throw new NotFoundError(`Task ${taskId} does not exist`);
+    }
+    if (!row.current_run_ticket) {
+      throw new ConflictError(`Task ${taskId} is not running`);
+    }
+
+    const settings = taskSettingsV2Schema.parse(JSON.parse(row.settings_json));
+    const nextRun = TaskWorker.computeNextRunStartAt(knex, settings);
+
+    const updatedRows = await knex<DbTasksRow>(DB_TASKS_TABLE)
+      .where('id', '=', taskId)
+      .where('current_run_ticket', '=', row.current_run_ticket)
+      .update({
+        next_run_start_at: nextRun,
+        current_run_ticket: knex.raw('null'),
+        current_run_started_at: knex.raw('null'),
+        current_run_expires_at: knex.raw('null'),
+        last_run_ended_at: knex.fn.now(),
+        last_run_error_json: serializeError(new Error('Task was cancelled')),
+      });
+    if (updatedRows < 1) {
+      throw new ConflictError(`Task ${taskId} is not running`);
     }
   }
 
@@ -227,11 +260,22 @@ export class TaskWorker {
     }
 
     // Abort the task execution either if the worker is stopped, or if the
-    // task timeout is hit
+    // task timeout is hit, or if the task ticket was lost (e.g. due to
+    // cancellation from another host)
     const taskAbortController = delegateAbortController(signal);
     const timeoutHandle = setTimeout(() => {
       taskAbortController.abort();
     }, Duration.fromISO(taskSettings.timeoutAfterDuration).as('milliseconds'));
+    let livenessHandle: ReturnType<typeof setTimeout> | undefined;
+    const scheduleLivenessCheck = () => {
+      livenessHandle = setTimeout(async () => {
+        await this.checkLiveness(ticket, taskAbortController);
+        if (!taskAbortController.signal.aborted) {
+          scheduleLivenessCheck();
+        }
+      }, this.workCheckFrequency.as('milliseconds'));
+    };
+    scheduleLivenessCheck();
 
     try {
       this.#workerState = {
@@ -248,6 +292,7 @@ export class TaskWorker {
         status: 'idle',
       };
       clearTimeout(timeoutHandle);
+      clearTimeout(livenessHandle);
     }
 
     await this.tryReleaseTask(ticket, taskSettings);
@@ -283,7 +328,7 @@ export class TaskWorker {
       // We make a conversion here to make typescript happy, because the luxon versions of the cron library and here may not be the same
       const timeConverted = DateTime.fromJSDate(time.toJSDate());
 
-      nextStartAt = this.nextRunAtRaw(timeConverted);
+      nextStartAt = TaskWorker.nextRunAtRaw(this.knex, timeConverted);
       startAt ||= nextStartAt;
     } else if (isManual) {
       nextStartAt = this.knex.raw('null');
@@ -310,8 +355,9 @@ export class TaskWorker {
           ? {
               settings_json: settingsJson,
               next_run_start_at: this.knex.raw(
-                `CASE WHEN ?? < ?? THEN ?? ELSE ?? END`,
+                `CASE WHEN ?? IS NULL OR ?? < ?? THEN ?? ELSE ?? END`,
                 [
+                  'next_run_start_at',
                   nextStartAt,
                   'next_run_start_at',
                   nextStartAt,
@@ -322,8 +368,9 @@ export class TaskWorker {
           : {
               settings_json: this.knex.ref('excluded.settings_json'),
               next_run_start_at: this.knex.raw(
-                `CASE WHEN ?? < ?? THEN ?? ELSE ?? END`,
+                `CASE WHEN ?? IS NULL OR ?? < ?? THEN ?? ELSE ?? END`,
                 [
+                  `${DB_TASKS_TABLE}.next_run_start_at`,
                   nextStartAt,
                   `${DB_TASKS_TABLE}.next_run_start_at`,
                   nextStartAt,
@@ -332,6 +379,33 @@ export class TaskWorker {
               ),
             },
       );
+  }
+
+  /**
+   * Checks whether the current task ticket is still valid in the database.
+   * If the ticket has been cleared (e.g. by cancellation or janitor cleanup),
+   * aborts the task execution.
+   */
+  private async checkLiveness(
+    ticket: string,
+    taskAbortController: AbortController,
+  ): Promise<void> {
+    try {
+      const [row] = await this.knex<DbTasksRow>(DB_TASKS_TABLE)
+        .where('id', '=', this.taskId)
+        .select('current_run_ticket');
+
+      if (!row || row.current_run_ticket !== ticket) {
+        this.logger.info(
+          `Task ticket for "${this.taskId}" is no longer valid; aborting execution`,
+        );
+        taskAbortController.abort();
+      }
+    } catch (e) {
+      this.logger.warn(
+        `Failed to check liveness for task "${this.taskId}", ${e}`,
+      );
+    }
   }
 
   /**
@@ -407,48 +481,49 @@ export class TaskWorker {
     return rows === 1;
   }
 
+  private static computeNextRunStartAt(
+    knex: Knex,
+    settings: TaskSettingsV2,
+  ): Knex.Raw {
+    const isManual = settings?.cadence === 'manual';
+    const isDuration = settings?.cadence.startsWith('P');
+    const isCron = !isManual && !isDuration;
+
+    if (isCron) {
+      const time = new CronTime(settings.cadence).sendAt().toUTC();
+      const timeConverted = DateTime.fromJSDate(time.toJSDate());
+      return TaskWorker.nextRunAtRaw(knex, timeConverted);
+    }
+
+    if (isManual) {
+      return knex.raw('null');
+    }
+
+    const dt = Duration.fromISO(settings.cadence).as('seconds');
+
+    if (knex.client.config.client.includes('sqlite3')) {
+      return knex.raw(`max(datetime(next_run_start_at, ?), datetime('now'))`, [
+        `+${dt} seconds`,
+      ]);
+    }
+
+    if (knex.client.config.client.includes('mysql')) {
+      return knex.raw(
+        `greatest(next_run_start_at + interval ${dt} second, now())`,
+      );
+    }
+
+    return knex.raw(
+      `greatest(next_run_start_at + interval '${dt} seconds', now())`,
+    );
+  }
+
   async tryReleaseTask(
     ticket: string,
     settings: TaskSettingsV2,
     error?: Error,
   ): Promise<boolean> {
-    const isManual = settings?.cadence === 'manual';
-    const isDuration = settings?.cadence.startsWith('P');
-    const isCron = !isManual && !isDuration;
-
-    let nextRun: Knex.Raw;
-    if (isCron) {
-      const time = new CronTime(settings.cadence).sendAt().toUTC();
-      this.logger.debug(`task: ${this.taskId} will next occur around ${time}`);
-      // We make a conversion here to make typescript happy, because the luxon versions of the cron library and here may not be the same
-      const timeConverted = DateTime.fromJSDate(time.toJSDate());
-
-      nextRun = this.nextRunAtRaw(timeConverted);
-    } else if (isManual) {
-      nextRun = this.knex.raw('null');
-    } else {
-      const dt = Duration.fromISO(settings.cadence).as('seconds');
-      this.logger.debug(
-        `task: ${this.taskId} will next occur around ${DateTime.now().plus({
-          seconds: dt,
-        })}`,
-      );
-
-      if (this.knex.client.config.client.includes('sqlite3')) {
-        nextRun = this.knex.raw(
-          `max(datetime(next_run_start_at, ?), datetime('now'))`,
-          [`+${dt} seconds`],
-        );
-      } else if (this.knex.client.config.client.includes('mysql')) {
-        nextRun = this.knex.raw(
-          `greatest(next_run_start_at + interval ${dt} second, now())`,
-        );
-      } else {
-        nextRun = this.knex.raw(
-          `greatest(next_run_start_at + interval '${dt} seconds', now())`,
-        );
-      }
-    }
+    const nextRun = TaskWorker.computeNextRunStartAt(this.knex, settings);
 
     const rows = await this.knex<DbTasksRow>(DB_TASKS_TABLE)
       .where('id', '=', this.taskId)
@@ -467,12 +542,13 @@ export class TaskWorker {
     return rows === 1;
   }
 
-  private nextRunAtRaw(time: DateTime): Knex.Raw {
-    if (this.knex.client.config.client.includes('sqlite3')) {
-      return this.knex.raw('datetime(?)', [time.toISO()]);
-    } else if (this.knex.client.config.client.includes('mysql')) {
-      return this.knex.raw(`?`, [time.toSQL({ includeOffset: false })]);
+  private static nextRunAtRaw(knex: Knex, time: DateTime): Knex.Raw {
+    if (knex.client.config.client.includes('sqlite3')) {
+      return knex.raw('datetime(?)', [time.toISO()]);
     }
-    return this.knex.raw(`?`, [time.toISO()]);
+    if (knex.client.config.client.includes('mysql')) {
+      return knex.raw(`?`, [time.toSQL({ includeOffset: false })]);
+    }
+    return knex.raw(`?`, [time.toISO()]);
   }
 }

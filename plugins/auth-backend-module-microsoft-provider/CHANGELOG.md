@@ -1,5 +1,125 @@
 # @backstage/plugin-auth-backend-module-microsoft-provider
 
+## 0.3.18
+
+### Patch Changes
+
+- 7ccaf9d: Fixed an issue where acquiring tokens with non-Graph scopes (such as Azure Management API) would crash the sign-in resolver because the user profile was unavailable. This affected both the initial sign-in and later token refreshes. The Microsoft authenticator now makes a separate Graph API call to fetch the profile when the primary token targets a different resource. Setting the `skipUserProfile` configuration option to true disables this extra call.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/plugin-auth-node@0.7.4
+
+## 0.3.18-next.1
+
+### Patch Changes
+
+- 7ccaf9d: Fixed an issue where acquiring tokens with non-Graph scopes (such as Azure Management API) would crash the sign-in resolver because the user profile was unavailable. This affected both the initial sign-in and later token refreshes. The Microsoft authenticator now makes a separate Graph API call to fetch the profile when the primary token targets a different resource. Setting the `skipUserProfile` configuration option to true disables this extra call.
+
+## 0.3.18-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.4-next.0
+  - @backstage/backend-plugin-api@1.10.0-next.0
+
+## 0.3.17
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.3
+  - @backstage/backend-plugin-api@1.9.3
+
+## 0.3.17-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.3-next.0
+  - @backstage/backend-plugin-api@1.9.3-next.0
+
+## 0.3.16
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.2
+  - @backstage/plugin-auth-node@0.7.2
+
+## 0.3.16-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.2-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.3.15
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/plugin-auth-node@0.7.1
+
+## 0.3.15-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.1-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+
+## 0.3.14
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/plugin-auth-node@0.7.0
+
+## 0.3.14-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/plugin-auth-node@0.7.0-next.1
+
+## 0.3.14-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/plugin-auth-node@0.6.15-next.0
+
+## 0.3.13
+
+### Patch Changes
+
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/plugin-auth-node@0.6.14
+
+## 0.3.13-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/plugin-auth-node@0.6.14-next.2
+
+## 0.3.13-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/plugin-auth-node@0.6.14-next.0
+
 ## 0.3.12
 
 ### Patch Changes

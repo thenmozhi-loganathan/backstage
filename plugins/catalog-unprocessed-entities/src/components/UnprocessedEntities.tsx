@@ -13,46 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ChangeEvent, useState } from 'react';
-
 import { Page, Header, Content } from '@backstage/core-components';
-import Tab from '@material-ui/core/Tab';
-import { makeStyles } from '@material-ui/core/styles';
-import TabContext from '@material-ui/lab/TabContext';
-import TabList from '@material-ui/lab/TabList';
-import TabPanel from '@material-ui/lab/TabPanel';
+import {
+  Header as UiHeader,
+  Tabs,
+  Tab,
+  TabList,
+  TabPanel,
+} from '@backstage/ui';
 
 import { FailedEntities } from './FailedEntities';
 import { PendingEntities } from './PendingEntities';
 
-const useStyles = makeStyles(() => ({
-  tabPanel: {
-    paddingLeft: '0px',
-    paddingRight: '0px',
-  },
-}));
-
 /** @public */
 export const UnprocessedEntitiesContent = () => {
-  const classes = useStyles();
-  const [tab, setTab] = useState('failed');
-  const handleChange = (_event: ChangeEvent<{}>, tabValue: string) => {
-    setTab(tabValue);
-  };
-
   return (
-    <TabContext value={tab}>
-      <TabList onChange={handleChange}>
-        <Tab label="Failed" value="failed" />
-        <Tab label="Pending" value="pending" />
+    <Tabs defaultSelectedKey="failed">
+      <TabList>
+        <Tab id="failed">Failed</Tab>
+        <Tab id="pending">Pending</Tab>
       </TabList>
-      <TabPanel value="failed" className={classes.tabPanel}>
+      <TabPanel id="failed">
         <FailedEntities />
       </TabPanel>
-      <TabPanel value="pending" className={classes.tabPanel}>
+      <TabPanel id="pending">
         <PendingEntities />
       </TabPanel>
-    </TabContext>
+    </Tabs>
   );
 };
 
@@ -64,5 +51,16 @@ export const UnprocessedEntities = () => {
         <UnprocessedEntitiesContent />
       </Content>
     </Page>
+  );
+};
+
+export const NfsUnprocessedEntities = () => {
+  return (
+    <>
+      <UiHeader title="Unprocessed Entities" />
+      <Content>
+        <UnprocessedEntitiesContent />
+      </Content>
+    </>
   );
 };

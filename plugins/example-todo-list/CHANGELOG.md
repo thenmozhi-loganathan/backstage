@@ -1,5 +1,122 @@
 # @internal/plugin-todo-list
 
+## 1.0.55-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.14-next.0
+
+## 1.0.54
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.13
+  - @backstage/core-plugin-api@1.12.9
+
+## 1.0.54-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9-next.0
+  - @backstage/core-components@0.18.13-next.2
+
+## 1.0.54-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.13-next.0
+
+## 1.0.53
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.12
+  - @backstage/core-plugin-api@1.12.8
+
+## 1.0.53-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.12-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+
+## 1.0.52
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.11
+  - @backstage/core-plugin-api@1.12.7
+
+## 1.0.52-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.11-next.1
+  - @backstage/core-plugin-api@1.12.7-next.0
+
+## 1.0.52-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.11-next.0
+
+## 1.0.51
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.10
+  - @backstage/core-plugin-api@1.12.6
+
+## 1.0.51-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.10-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+
+## 1.0.50
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.9
+  - @backstage/core-plugin-api@1.12.5
+
+## 1.0.50-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+
+## 1.0.49
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/core-components@0.18.8
+
+## 1.0.49-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+
 ## 1.0.48
 
 ### Patch Changes

@@ -1,5 +1,216 @@
 # @backstage/core-compat-api
 
+## 0.5.15-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.2-next.0
+
+## 0.5.14
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/plugin-catalog-react@3.2.1
+  - @backstage/frontend-plugin-api@0.18.0
+  - @backstage/plugin-app-react@0.2.6
+
+## 0.5.14-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.1-next.2
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+  - @backstage/plugin-app-react@0.2.6-next.0
+  - @backstage/core-plugin-api@1.12.9-next.0
+
+## 0.5.14-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.1-next.0
+
+## 0.5.13
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/plugin-catalog-react@3.2.0
+  - @backstage/filter-predicates@0.1.4
+  - @backstage/core-plugin-api@1.12.8
+  - @backstage/plugin-app-react@0.2.5
+
+## 0.5.13-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.0-next.0
+  - @backstage/filter-predicates@0.1.4-next.0
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+  - @backstage/plugin-app-react@0.2.5-next.0
+
+## 0.5.12
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.1.0
+  - @backstage/frontend-plugin-api@0.17.2
+  - @backstage/core-plugin-api@1.12.7
+  - @backstage/plugin-app-react@0.2.4
+
+## 0.5.12-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+  - @backstage/core-plugin-api@1.12.7-next.0
+  - @backstage/plugin-app-react@0.2.4-next.0
+  - @backstage/plugin-catalog-react@3.0.1-next.1
+
+## 0.5.12-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.0.1-next.0
+
+## 0.5.11
+
+### Patch Changes
+
+- 744fa1f: Removed duplicated entries that appeared in both `dependencies` and `devDependencies`.
+- Updated dependencies
+  - @backstage/errors@1.3.1
+  - @backstage/frontend-plugin-api@0.17.0
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/filter-predicates@0.1.3
+  - @backstage/plugin-catalog-react@3.0.0
+  - @backstage/plugin-app-react@0.2.3
+
+## 0.5.11-next.0
+
+### Patch Changes
+
+- 744fa1f: Removed duplicated entries that appeared in both `dependencies` and `devDependencies`.
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/plugin-catalog-react@2.1.5-next.0
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/filter-predicates@0.1.3-next.0
+  - @backstage/plugin-app-react@0.2.3-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+
+## 0.5.10
+
+### Patch Changes
+
+- 77ab7d5: Hide the default page header for pages created through the compatibility wrappers, since legacy plugins already render their own headers.
+- 49397c1: Removed unnecessary type argument from internal `createRouteRef` call.
+- Updated dependencies
+  - @backstage/errors@1.3.0
+  - @backstage/plugin-catalog-react@2.1.2
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/filter-predicates@0.1.2
+  - @backstage/core-plugin-api@1.12.5
+  - @backstage/plugin-app-react@0.2.2
+
+## 0.5.10-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/plugin-catalog-react@2.1.2-next.2
+  - @backstage/core-plugin-api@1.12.5-next.2
+  - @backstage/filter-predicates@0.1.2-next.0
+  - @backstage/frontend-plugin-api@0.16.0-next.2
+
+## 0.5.10-next.1
+
+### Patch Changes
+
+- 77ab7d5: Hide the default page header for pages created through the compatibility wrappers, since legacy plugins already render their own headers.
+- 49397c1: Removed unnecessary type argument from internal `createRouteRef` call.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.2-next.1
+  - @backstage/frontend-plugin-api@0.16.0-next.1
+  - @backstage/core-plugin-api@1.12.5-next.1
+  - @backstage/plugin-app-react@0.2.2-next.1
+
+## 0.5.10-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.1-next.0
+  - @backstage/frontend-plugin-api@0.15.2-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+  - @backstage/plugin-app-react@0.2.2-next.0
+  - @backstage/errors@1.2.7
+  - @backstage/filter-predicates@0.1.1
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+
+## 0.5.9
+
+### Patch Changes
+
+- b15a685: Added `withApis`, which is a Higher-Order Component for providing APIs as props to a component via `useApiHolder`.
+- 8e09233: Added a missing dependency on `@backstage/filter-predicates` to `@backstage/core-compat-api`. This fixes package metadata for consumers that use compatibility helpers relying on filter predicate support.
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.0
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/frontend-plugin-api@0.15.0
+  - @backstage/plugin-app-react@0.2.1
+  - @backstage/filter-predicates@0.1.1
+
+## 0.5.9-next.2
+
+### Patch Changes
+
+- b15a685: Added `withApis`, which is a Higher-Order Component for providing APIs as props to a component via `useApiHolder`.
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.15.0-next.1
+  - @backstage/core-plugin-api@1.12.4-next.1
+  - @backstage/plugin-catalog-react@2.1.0-next.2
+  - @backstage/plugin-app-react@0.2.1-next.1
+
+## 0.5.9-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.0-next.1
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-app-react@0.2.1-next.0
+
+## 0.5.9-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/plugin-catalog-react@2.0.1-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-app-react@0.2.1-next.0
+
 ## 0.5.8
 
 ### Patch Changes

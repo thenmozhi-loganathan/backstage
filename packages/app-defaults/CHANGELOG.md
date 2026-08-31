@@ -1,5 +1,188 @@
 # @backstage/app-defaults
 
+## 1.7.12-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.20.5-next.0
+  - @backstage/core-components@0.18.14-next.0
+
+## 1.7.11
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.13
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/core-app-api@1.20.4
+  - @backstage/frontend-plugin-api@0.18.0
+  - @backstage/plugin-permission-react@0.5.4
+
+## 1.7.11-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+  - @backstage/core-plugin-api@1.12.9-next.0
+  - @backstage/core-app-api@1.20.4-next.1
+  - @backstage/core-components@0.18.13-next.2
+  - @backstage/plugin-permission-react@0.5.4-next.0
+
+## 1.7.11-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.13-next.0
+  - @backstage/core-app-api@1.20.4-next.0
+
+## 1.7.10
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/core-components@0.18.12
+  - @backstage/core-app-api@1.20.3
+  - @backstage/core-plugin-api@1.12.8
+  - @backstage/plugin-permission-react@0.5.3
+
+## 1.7.10-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.20.3-next.0
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+  - @backstage/core-components@0.18.12-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+  - @backstage/plugin-permission-react@0.5.3-next.0
+
+## 1.7.9
+
+### Patch Changes
+
+- 74ed625: Provide toastApi for old frontend system
+
+  Fixes 'No implementation available for apiRef{core.toast}' on old frontend system.
+
+- Updated dependencies
+  - @backstage/core-components@0.18.11
+  - @backstage/frontend-plugin-api@0.17.2
+  - @backstage/core-app-api@1.20.2
+  - @backstage/core-plugin-api@1.12.7
+  - @backstage/plugin-permission-react@0.5.2
+
+## 1.7.9-next.1
+
+### Patch Changes
+
+- 74ed625: Provide toastApi for old frontend system
+
+  Fixes 'No implementation available for apiRef{core.toast}' on old frontend system.
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+  - @backstage/core-components@0.18.11-next.1
+  - @backstage/core-plugin-api@1.12.7-next.0
+  - @backstage/core-app-api@1.20.2-next.0
+  - @backstage/plugin-permission-react@0.5.2-next.0
+
+## 1.7.9-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.11-next.0
+
+## 1.7.8
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.10
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/core-app-api@1.20.1
+  - @backstage/plugin-permission-react@0.5.1
+
+## 1.7.8-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.10-next.0
+  - @backstage/core-app-api@1.20.1-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/theme@0.7.3
+  - @backstage/plugin-permission-react@0.5.1-next.0
+
+## 1.7.7
+
+### Patch Changes
+
+- 400aa23: Added `FetchMiddlewares.clarifyFailures()` to the default fetch API middleware stack.
+- Updated dependencies
+  - @backstage/theme@0.7.3
+  - @backstage/core-app-api@1.20.0
+  - @backstage/core-components@0.18.9
+  - @backstage/plugin-permission-react@0.5.0
+  - @backstage/core-plugin-api@1.12.5
+
+## 1.7.7-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.7.3-next.0
+  - @backstage/core-app-api@1.20.0-next.2
+  - @backstage/core-components@0.18.9-next.1
+  - @backstage/core-plugin-api@1.12.5-next.2
+  - @backstage/plugin-permission-react@0.4.42-next.1
+
+## 1.7.7-next.1
+
+### Patch Changes
+
+- 400aa23: Added `FetchMiddlewares.clarifyFailures()` to the default fetch API middleware stack.
+- Updated dependencies
+  - @backstage/core-app-api@1.20.0-next.1
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/core-plugin-api@1.12.5-next.1
+
+## 1.7.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/core-app-api@1.19.7-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+  - @backstage/theme@0.7.2
+  - @backstage/plugin-permission-react@0.4.42-next.0
+
+## 1.7.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/core-components@0.18.8
+  - @backstage/core-app-api@1.19.6
+  - @backstage/plugin-permission-react@0.4.41
+
+## 1.7.6-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.19.6-next.0
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/theme@0.7.2
+  - @backstage/plugin-permission-react@0.4.41-next.0
+
 ## 1.7.5
 
 ### Patch Changes

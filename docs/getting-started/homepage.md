@@ -4,61 +4,55 @@ title: Backstage homepage - Setup and Customization
 description: Documentation on setting up and customizing Backstage homepage
 ---
 
+::::info
+This documentation is written for the new frontend system, which is the default
+in new Backstage apps. If your Backstage app still uses the old frontend system,
+read the [old frontend system version of this guide](./homepage--old.md)
+instead.
+::::
+
 ## Homepage
 
-Having a good Backstage homepage can significantly improve the discoverability of the platform. You want your users to find all the things they need right from the homepage and never have to remember direct URLs in Backstage. The [Home plugin](https://github.com/backstage/backstage/tree/master/plugins/home) introduces a system for composing a homepage for Backstage in order to surface relevant info and provide convenient shortcuts for common tasks. It's designed with composability in mind with an open ecosystem that allows anyone to contribute with any component, to be included in any homepage.
+The [Home plugin](https://github.com/backstage/backstage/tree/master/plugins/home)
+gives your Backstage app a homepage where users can find what they need without
+memorizing URLs. It ships with a drag-and-drop grid layout and a set of built-in
+widgets. Users can add, remove, rearrange, and resize widgets, and their layout
+is saved per user.
 
-For App Integrators, the system is designed to be composable to give total freedom in designing a Homepage that suits the needs of the organization. From the perspective of a Component Developer who wishes to contribute with building blocks to be included in Homepages, there's a convenient interface for bundling the different parts and exporting them with both error boundary and lazy loading handled under the surface.
+This guide covers:
 
-At the end of this tutorial, you can expect:
-
-- Your Backstage app to have a dedicated homepage instead of Software Catalog.
-- Understand the composability of homepage and how to start customizing it for your own organization.
+- Installing the home plugin and making it your landing page.
+- What widgets are available and how to configure them.
+- How to create your own widgets and layouts.
 
 ### Prerequisites
 
-Before we begin, make sure
+Before you begin, make sure:
 
-- You have created your own standalone Backstage app using [`@backstage/create-app`](./index.md#1-create-your-backstage-app) and not using a fork of the [backstage](https://github.com/backstage/backstage) repository.
-- You do not have an existing homepage, and by default you are redirected to Software Catalog when you open Backstage.
+- You have created your own standalone Backstage app using
+  [`@backstage/create-app`](./index.md#creating-and-running-a-backstage-application)
+  and not using a fork of the
+  [backstage](https://github.com/backstage/backstage) repository.
+- You do not have an existing homepage, and by default you are redirected to the
+  Software Catalog when you open Backstage.
 
-Now, let's get started by installing the home plugin and creating a simple homepage for your Backstage app.
+## Setup
 
-## Setup Methods
-
-There are two ways to set up the home plugin, depending on which frontend system your Backstage app uses:
-
-1. **New Frontend System (Recommended)** - For apps using the new plugin system with extensions and blueprints
-2. **Legacy Frontend System** - For existing apps using the legacy plugin architecture
-
-### New Frontend System Setup
-
-If your Backstage app uses the [new frontend system](../frontend-system/index.md), follow these steps:
-
-#### 1. Install the plugin
+### 1. Install the plugin
 
 ```bash title="From your Backstage root directory"
 yarn --cwd packages/app add @backstage/plugin-home
 ```
 
-#### 2. Add the plugin to your app configuration
+Once installed, the plugin is available in your app through default feature
+discovery. See
+[installing plugins](../frontend-system/building-apps/05-installing-plugins.md)
+for alternative installation methods.
 
-Update your `packages/app/src/app.tsx` to include the home plugin:
+### 2. Configure the homepage as your root route
 
-```tsx title="packages/app/src/app.tsx"
-import homePlugin from '@backstage/plugin-home/alpha';
-
-const app = createApp({
-  features: [
-    // ... other plugins
-    homePlugin,
-  ],
-});
-```
-
-#### 3. Configure the homepage as your root route
-
-By default, the homepage will be available at `/home`. To make it your app's landing page at `/`, add this configuration to your `app-config.yaml`:
+The homepage lives at `/home` by default. To make it your landing page at `/`,
+add this to your `app-config.yaml`:
 
 ```yaml title="app-config.yaml"
 app:
@@ -68,18 +62,20 @@ app:
           path: /
 ```
 
-The plugin will automatically add a "Home" navigation item to your sidebar and provide a basic homepage layout.
+The plugin adds a "Home" navigation item to your sidebar automatically.
 
-#### 4. Optional: Enable visit tracking
+### 3. Enable visit tracking (optional)
 
-Visit tracking is an optional feature that allows users to see their recently visited and most visited pages on the homepage. This feature is **disabled by default** to give you control over what data is collected and stored.
+Visit tracking records which pages users navigate to. The Most Visited and
+Recently Visited widgets use this data. It is **disabled by default**.
 
-Visit tracking requires a storage implementation to persist user data:
+When enabled, visit data is stored in one of two places:
 
-- **With UserSettings storage** (recommended): If you have the [UserSettings plugin](https://backstage.io/docs/features/software-catalog/external-integrations/#user-settings) configured with persistent storage, visit data will be stored there and synchronized across devices.
-- **Fallback to local storage**: If no persistent storage is available, the plugin will automatically fall back to browser local storage, which stores data locally per device.
+- UserSettings storage (recommended) if you have the UserSettings plugin with
+  persistent storage. Data syncs across devices.
+- Browser local storage as a fallback if no persistent storage is available.
 
-To enable visit tracking, add this configuration to your `app-config.yaml`:
+To enable it, add these extensions to your `app-config.yaml`:
 
 ```yaml title="app-config.yaml"
 app:
@@ -88,156 +84,319 @@ app:
     - app-root-element:home/visit-listener: true
 ```
 
-#### 5. Customizing your homepage
+## Available widgets
 
-The New Frontend System provides powerful customization options:
+The following widgets are available out of the box and appear in the
+**Add Widget** dialog when editing the homepage.
 
-**Custom Homepage Layouts**: Use the `HomePageLayoutBlueprint` from `@backstage/plugin-home-react/alpha` to create custom homepage layouts with your own design and widget arrangements. A layout receives the installed widgets and is responsible for rendering them. If no custom layout is installed, the plugin provides a built-in default.
+### Home plugin widgets
 
-**Adding Homepage Widgets**: Register custom widgets using the `HomePageWidgetBlueprint` from the `@backstage/plugin-home-react/alpha` package.
+These widgets come from `@backstage/plugin-home`:
 
-For detailed instructions on creating custom layouts, registering widgets, and advanced configuration options, see the [Home plugin documentation](https://github.com/backstage/backstage/tree/master/plugins/home#readme).
+| Widget           | Extension ID                             | Description                                                        |
+| :--------------- | :--------------------------------------- | :----------------------------------------------------------------- |
+| Starred Entities | `home-page-widget:home/starred-entities` | Shows entities you have starred in the catalog.                    |
+| Toolkit          | `home-page-widget:home/toolkit`          | A collection of configurable links and tools.                      |
+| World Clocks     | `home-page-widget:home/world-clock`      | Displays clocks for configured time zones.                         |
+| Most Visited     | `home-page-widget:home/most-visited`     | Shows your most frequently visited pages. Requires visit tracking. |
+| Recently Visited | `home-page-widget:home/recently-visited` | Shows pages you have recently visited. Requires visit tracking.    |
+| Random Joke      | `home-page-widget:home/random-joke`      | Shows a random programming joke.                                   |
 
-### Legacy Frontend System Setup
+### Search plugin widget
 
-If your Backstage app uses the legacy frontend system, follow these steps:
+This widget comes from `@backstage/plugin-search`:
 
-#### 1. Install the plugin
+| Widget     | Extension ID                         | Description                                               |
+| :--------- | :----------------------------------- | :-------------------------------------------------------- |
+| Search Bar | `home-page-widget:search/search-bar` | A search bar that navigates to the search page on submit. |
 
-```bash title="From your Backstage root directory"
-yarn --cwd packages/app add @backstage/plugin-home
+:::note
+The search bar widget requires `@backstage/plugin-search` to be installed.
+:::
+
+### Community widgets
+
+The [Backstage community-plugins repository](https://github.com/backstage/community-plugins)
+hosts additional plugins, some of which provide homepage widgets. Any plugin can
+contribute widgets to the homepage by using the `HomePageWidgetBlueprint` from
+`@backstage/plugin-home-react/alpha`.
+
+## Configuring widgets
+
+Some widgets accept configuration through `app-config.yaml`. Target a widget
+using its extension ID.
+
+### Toolkit
+
+The Toolkit widget shows a grid of links. You can configure the links and their
+icons:
+
+```yaml title="app-config.yaml"
+app:
+  extensions:
+    - home-page-widget:home/toolkit:
+        config:
+          tools:
+            - url: https://backstage.io/docs
+              label: Docs
+              icon: docs
+            - url: https://github.com/backstage/backstage
+              label: GitHub
+              icon: github
+            - url: https://backstage.io/plugins
+              label: Plugins Directory
+              icon: kind:component
 ```
 
-#### 2. Create a new HomePage component
+The `icon` field resolves through the app's icon API. You can use any registered
+icon, including `kind:` prefixed icons for catalog entity kinds.
 
-Inside your `packages/app` directory, create a new file where our new homepage component is going to live. Create `packages/app/src/components/home/HomePage.tsx` with the following initial code
+### World Clocks
+
+Configure which time zones to display and the time format:
+
+```yaml title="app-config.yaml"
+app:
+  extensions:
+    - home-page-widget:home/world-clock:
+        config:
+          customTimeFormat:
+            hour12: false
+          clockConfigs:
+            - label: NYC
+              timeZone: America/New_York
+            - label: UTC
+              timeZone: UTC
+            - label: STO
+              timeZone: Europe/Stockholm
+            - label: TYO
+              timeZone: Asia/Tokyo
+```
+
+### Disabling a widget
+
+To hide a widget from the **Add Widget** dialog, set it to `false`:
+
+```yaml title="app-config.yaml"
+app:
+  extensions:
+    - home-page-widget:home/random-joke: false
+```
+
+## Configuring the default layout
+
+The `defaultConfig` option on `page:home` defines the grid layout that users see
+before they have customized anything. Each entry places a widget at a specific
+position and size in the grid:
+
+```yaml title="app-config.yaml"
+app:
+  extensions:
+    - page:home:
+        config:
+          path: /
+          defaultConfig:
+            - component: HomePageSearchBar
+              column: 0
+              row: 0
+              width: 12
+              height: 2
+              deletable: false
+            - component: HomePageStarredEntities
+              column: 0
+              row: 2
+              width: 4
+              height: 4
+            - component: HomePageToolkit
+              column: 4
+              row: 2
+              width: 4
+              height: 3
+            - component: HomePageWorldClock
+              column: 8
+              row: 2
+              width: 4
+              height: 3
+```
+
+Each item in `defaultConfig` accepts these properties:
+
+| Property    | Type    | Description                                                            |
+| :---------- | :------ | :--------------------------------------------------------------------- |
+| `component` | string  | The widget's component name (the `name` parameter from the blueprint). |
+| `column`    | number  | The column position in the grid (0-based).                             |
+| `row`       | number  | The row position in the grid (0-based).                                |
+| `width`     | number  | The width in grid columns. The default grid has 12 columns.            |
+| `height`    | number  | The height in grid rows.                                               |
+| `movable`   | boolean | Whether the user can move the widget. Defaults to `true`.              |
+| `deletable` | boolean | Whether the user can remove the widget. Defaults to `true`.            |
+| `resizable` | boolean | Whether the user can resize the widget. Defaults to `true`.            |
+
+:::tip
+In edit mode, each widget displays its column, row, width, and height values.
+Use these to figure out the right numbers for your `defaultConfig`.
+:::
+
+## Creating custom widgets
+
+You can add your own widgets using the `HomePageWidgetBlueprint` from
+`@backstage/plugin-home-react/alpha`. Define the widget, wrap it in a frontend
+module, and register it in your app.
+
+### A basic widget
+
+```ts title="packages/app/src/modules/home/homeModule.tsx"
+import { createFrontendModule } from '@backstage/frontend-plugin-api';
+import { HomePageWidgetBlueprint } from '@backstage/plugin-home-react/alpha';
+
+const myWidget = HomePageWidgetBlueprint.make({
+  name: 'my-widget',
+  params: {
+    name: 'MyWidget',
+    title: 'My Custom Widget',
+    description: 'A short description shown in the Add Widget dialog',
+    components: () =>
+      import('./MyWidgetComponent').then(m => ({
+        Content: m.Content,
+      })),
+  },
+});
+
+export const homeModule = createFrontendModule({
+  pluginId: 'home',
+  extensions: [myWidget],
+});
+```
+
+Then register the module in your app:
+
+```ts title="packages/app/src/App.tsx"
+import { homeModule } from './modules/home';
+
+export default createApp({
+  features: [homeModule],
+});
+```
+
+### Widget with layout constraints
+
+Set minimum and maximum dimensions so the widget does not get too small or too
+large:
+
+```ts
+const myWidget = HomePageWidgetBlueprint.make({
+  name: 'my-widget',
+  params: {
+    name: 'MyWidget',
+    title: 'My Custom Widget',
+    description: 'A widget with size constraints',
+    components: () =>
+      import('./MyWidgetComponent').then(m => ({
+        Content: m.Content,
+      })),
+    layout: {
+      height: { minRows: 4 },
+      width: { minColumns: 3 },
+    },
+  },
+});
+```
+
+### Widget with user settings
+
+Widgets can expose per-user settings. The settings schema follows
+[react-jsonschema-form](https://rjsf-team.github.io/react-jsonschema-form/docs/)
+conventions:
+
+```ts
+const myWidget = HomePageWidgetBlueprint.make({
+  name: 'my-widget',
+  params: {
+    name: 'MyWidget',
+    title: 'My Custom Widget',
+    description: 'A widget with user-configurable settings',
+    components: () =>
+      import('./MyWidgetComponent').then(m => ({
+        Content: m.Content,
+        Settings: m.Settings,
+      })),
+    settings: {
+      schema: {
+        title: 'Widget Settings',
+        type: 'object',
+        properties: {
+          color: {
+            title: 'Color',
+            type: 'string',
+            default: 'blue',
+            enum: ['blue', 'red', 'green'],
+          },
+        },
+      },
+    },
+  },
+});
+```
+
+## Custom homepage layouts
+
+If the default grid does not fit your needs, you can replace it entirely. Use
+the `HomePageLayoutBlueprint` from `@backstage/plugin-home-react/alpha` to
+create a layout component that receives the installed widgets and renders them
+however you want.
+
+```ts title="packages/app/src/modules/home/homeModule.tsx"
+import { createFrontendModule } from '@backstage/frontend-plugin-api';
+import {
+  HomePageLayoutBlueprint,
+  type HomePageLayoutProps,
+} from '@backstage/plugin-home-react/alpha';
+import { CustomHomepageGrid } from '@backstage/plugin-home';
+import { Content, Header, Page } from '@backstage/core-components';
+import { Fragment } from 'react';
+
+const myLayout = HomePageLayoutBlueprint.make({
+  params: {
+    loader: async () =>
+      function MyHomePageLayout({ widgets }: HomePageLayoutProps) {
+        return (
+          <Page themeId="home">
+            <Header title="Welcome" />
+            <Content>
+              <CustomHomepageGrid>
+                {widgets.map((widget, index) => (
+                  <Fragment key={widget.name ?? index}>
+                    {widget.component}
+                  </Fragment>
+                ))}
+              </CustomHomepageGrid>
+            </Content>
+          </Page>
+        );
+      },
+  },
+});
+
+export const homeModule = createFrontendModule({
+  pluginId: 'home',
+  extensions: [myLayout],
+});
+```
+
+When no custom layout is installed, the plugin falls back to a built-in default
+that renders widgets inside `CustomHomepageGrid`.
+
+### Preventing duplicate widgets
+
+By default, users can add multiple instances of the same widget. If you are
+using a custom layout with `CustomHomepageGrid`, you can restrict each widget
+to a single instance by passing the `preventDuplicateWidgets` prop. This option
+requires a custom layout. It is not exposed as an app-config setting.
 
 ```tsx
-export const HomePage = () => (
-  /* We will shortly compose a pretty homepage here. */
-  <h1>Welcome to Backstage!</h1>
-);
-```
-
-#### 3. Update router for the root `/` route
-
-If you don't have a homepage already, most likely you have a redirect setup to use the Catalog homepage as a homepage.
-
-Inside your `packages/app/src/App.tsx`, look for
-
-```tsx title="packages/app/src/App.tsx"
-const routes = (
-  <FlatRoutes>
-    <Navigate key="/" to="catalog" />
-    {/* ... */}
-  </FlatRoutes>
-);
-```
-
-Let's replace the `<Navigate>` line and use the new component we created in the previous step as the new homepage.
-
-```tsx title="packages/app/src/App.tsx"
-/* highlight-add-start */
-import { HomepageCompositionRoot } from '@backstage/plugin-home';
-import { HomePage } from './components/home/HomePage';
-/* highlight-add-end */
-
-const routes = (
-  <FlatRoutes>
-    {/* highlight-remove-next-line */}
-    <Navigate key="/" to="catalog" />
-    {/* highlight-add-start */}
-    <Route path="/" element={<HomepageCompositionRoot />}>
-      <HomePage />
-    </Route>
-    {/* highlight-add-end */}
-    {/* ... */}
-  </FlatRoutes>
-);
-```
-
-#### 4. Update sidebar items
-
-Let's update the route for "Home" in the Backstage sidebar to point to the new homepage. We'll also add a Sidebar item to quickly open Catalog.
-
-| Before                                                                            | After                                                                       |
-| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| ![Sidebar without Catalog](../assets/getting-started/sidebar-without-catalog.png) | ![Sidebar with Catalog](../assets/getting-started/sidebar-with-catalog.png) |
-
-The code for the Backstage sidebar is most likely inside your [`packages/app-legacy/src/components/Root/Root.tsx`](https://github.com/backstage/backstage/blob/master/packages/app-legacy/src/components/Root/Root.tsx).
-
-Let's make the following changes
-
-```tsx title="packages/app/src/components/Root/Root.tsx"
-/* highlight-add-next-line */
-import CategoryIcon from '@material-ui/icons/Category';
-
-export const Root = ({ children }: PropsWithChildren<{}>) => (
-  <SidebarPage>
-    <Sidebar>
-      <SidebarLogo />
-      {/* ... */}
-      <SidebarGroup label="Menu" icon={<MenuIcon />}>
-        {/* Global nav, not org-specific */}
-        {/* highlight-remove-next-line */}
-        <SidebarItem icon={HomeIcon} to="catalog" text="Home" />
-        {/* highlight-add-start */}
-        <SidebarItem icon={HomeIcon} to="/" text="Home" />
-        <SidebarItem icon={CategoryIcon} to="catalog" text="Catalog" />
-        {/* highlight-add-end */}
-        <SidebarItem icon={ExtensionIcon} to="api-docs" text="APIs" />
-        <SidebarItem icon={LibraryBooks} to="docs" text="Docs" />
-        <SidebarItem icon={LayersIcon} to="explore" text="Explore" />
-        <SidebarItem icon={CreateComponentIcon} to="create" text="Create..." />
-        {/* End global nav */}
-        <SidebarDivider />
-        {/* ... */}
-      </SidebarGroup>
-    </Sidebar>
-  </SidebarPage>
-);
-```
-
-That's it! You should now have _(although slightly boring)_ a homepage!
-
-<!-- todo: Needs zoomable plugin -->
-
-![Screenshot of a blank homepage](../assets/getting-started/simple-homepage.png)
-
-In the next steps, we will make it interesting and useful!
-
-### Use the default template
-
-There is a default homepage template ([storybook link](https://backstage.io/storybook/?path=/story/plugins-home-templates--default-template)) which we will use to set up our homepage. Checkout the [blog post announcement](https://backstage.io/blog/2022/01/25/backstage-homepage-templates) about the Backstage homepage templates for more information.
-
-<!-- TODO for later: detailed instructions for using one of these templates. -->
-
-### Composing your homepage
-
-Composing a homepage is no different from creating a regular React Component,
-i.e. the App Integrator is free to include whatever content they like. However,
-there are components developed with the homepage in mind. If you are looking
-for components to use when composing your homepage, you can take a look at the
-[collection of Homepage components](https://backstage.io/storybook?path=/story/plugins-home-components)
-in storybook. If you don't find a component that suits your needs but want to
-contribute, check the
-[Contributing documentation](https://github.com/backstage/backstage/blob/master/plugins/home/README.md#contributing).
-
-> If you want to use one of the available homepage templates you can find the
-> [templates](https://backstage.io/storybook/?path=/story/plugins-home-templates)
-> in the storybook under the "Home" plugin. And if you would like to contribute
-> a template, please see the
-> [Contributing documentation](https://github.com/backstage/backstage/blob/master/plugins/home/README.md#contributing)
-
-```tsx
-import Grid from '@material-ui/core/Grid';
-import { HomePageCompanyLogo } from '@backstage/plugin-home';
-
-export const HomePage = () => (
-  <Grid container spacing={3}>
-    <Grid item xs={12} md={4}>
-      <HomePageCompanyLogo />
-    </Grid>
-  </Grid>
-);
+<CustomHomepageGrid preventDuplicateWidgets>
+  {widgets.map((widget, index) => (
+    <Fragment key={widget.name ?? index}>{widget.component}</Fragment>
+  ))}
+</CustomHomepageGrid>
 ```

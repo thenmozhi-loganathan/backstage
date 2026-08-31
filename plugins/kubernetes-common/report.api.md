@@ -5,10 +5,10 @@
 ```ts
 import { BasicPermission } from '@backstage/plugin-permission-common';
 import { Entity } from '@backstage/catalog-model';
-import { FetchResponse as FetchResponse_2 } from '@backstage/plugin-kubernetes-common';
+import type { FetchResponse as FetchResponse_2 } from '@backstage/plugin-kubernetes-common';
 import type { JsonObject } from '@backstage/types';
 import type { JsonValue } from '@backstage/types';
-import { ObjectsByEntityResponse as ObjectsByEntityResponse_2 } from '@backstage/plugin-kubernetes-common';
+import type { ObjectsByEntityResponse as ObjectsByEntityResponse_2 } from '@backstage/plugin-kubernetes-common';
 import type { PodStatus } from '@kubernetes/client-node';
 import type { V1ConfigMap } from '@kubernetes/client-node';
 import type { V1CronJob } from '@kubernetes/client-node';
@@ -370,6 +370,38 @@ export interface KubernetesRequestBody {
 
 // @public
 export const kubernetesResourcesReadPermission: BasicPermission;
+
+// @public
+export type KubernetesWatchEvent =
+  | {
+      type: Exclude<KubernetesWatchEventType, 'ERROR'>;
+      object: JsonObject;
+      resourceVersion?: string;
+    }
+  | {
+      type: 'ERROR';
+      error: KubernetesFetchError;
+    };
+
+// @public
+export type KubernetesWatchEventType =
+  | 'ADDED'
+  | 'MODIFIED'
+  | 'DELETED'
+  | 'BOOKMARK'
+  | 'ERROR';
+
+// @public
+export interface KubernetesWatchOptions {
+  allowWatchBookmarks?: boolean;
+  labelSelector?: string;
+  namespace?: string;
+  resourceVersion?: string;
+  resourceVersionMatch?: 'NotOlderThan' | 'Exact';
+  sendInitialEvents?: boolean;
+  signal?: AbortSignal;
+  timeoutSeconds?: number;
+}
 
 // @public (undocumented)
 export interface LimitRangeFetchResponse {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { resolveSafeChildPath } from '@backstage/backend-plugin-api';
 import { ScmIntegrations } from '@backstage/integration';
 import {
   ActionContext,
@@ -20,11 +21,9 @@ import {
   TemplateGlobal,
 } from '@backstage/plugin-scaffolder-node';
 import fs from 'fs-extra';
-import { createDefaultFilters } from '../../../../lib/templating/filters/createDefaultFilters';
-import { convertFiltersToRecord } from '../../../../util/templating';
-import { resolveSafeChildPath } from '@backstage/backend-plugin-api';
 import path from 'node:path';
-import { SecureTemplater } from '../../../../lib/templating/SecureTemplater';
+import { createTemplateRenderer, TemplateCapabilities } from 'nunjitsu';
+import { collectActionTemplateCapabilities } from './templateActionHandler';
 
 export type TemplateFileActionInput = {
   targetPath: string;
@@ -43,19 +42,11 @@ export async function createTemplateFileActionHandler<
   integrations: ScmIntegrations;
   additionalTemplateFilters?: Record<string, TemplateFilter>;
   additionalTemplateGlobals?: Record<string, TemplateGlobal>;
+  templateCapabilities?: TemplateCapabilities;
 }) {
-  const {
-    resolveTemplateFile,
-    integrations,
-    additionalTemplateFilters,
-    additionalTemplateGlobals: templateGlobals,
-    ctx,
-  } = options;
-
-  const templateFilters = {
-    ...convertFiltersToRecord(createDefaultFilters({ integrations })),
-    ...additionalTemplateFilters,
-  };
+  const { resolveTemplateFile, ctx } = options;
+  const templateCapabilities =
+    options.templateCapabilities ?? collectActionTemplateCapabilities(options);
 
   const outputPath = resolveSafeChildPath(
     ctx.workspacePath,
@@ -80,18 +71,16 @@ export async function createTemplateFileActionHandler<
     ctx.input.values,
   );
 
-  const renderTemplate = await SecureTemplater.loadRenderer({
+  const templateRenderer = createTemplateRenderer({
+    ...templateCapabilities,
+    allowRegexExecution: true,
     cookiecutterCompat,
-    templateFilters,
-    templateGlobals,
-    nunjucksConfigs: {
-      trimBlocks: ctx.input.trimBlocks,
-      lstripBlocks: ctx.input.lstripBlocks,
-    },
+    trimBlocks: ctx.input.trimBlocks,
+    lstripBlocks: ctx.input.lstripBlocks,
   });
 
   const contents = await fs.readFile(filePath, 'utf-8');
-  const result = renderTemplate(contents, context);
+  const result = templateRenderer.render(contents, context);
   await fs.ensureDir(path.dirname(outputPath));
   await fs.outputFile(outputPath, result);
 

@@ -1,5 +1,186 @@
 # @backstage/plugin-scaffolder-backend-module-gitlab
 
+## 0.11.10-next.0
+
+### Patch Changes
+
+- 3c7c082: Fixed `gitlab:repo:push` failing with `400 Bad request - Provide at least one action` when the workspace has no file changes to commit (e.g. re-running a template against an already up-to-date branch). The action now detects an empty action list, skips the commit API call, and logs a warning whenever `allowEmpty` is not true (covering both the default of unset and an explicit `false`). The `commitHash` output is omitted in this no-op case and is now declared optional. Pass `allowEmpty: true` to retain the previous behavior of forwarding an empty commit to GitLab.
+- Updated dependencies
+  - @backstage/plugin-scaffolder-node@0.13.7-next.0
+
+## 0.11.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-scaffolder-node@0.13.6
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/integration@2.1.0
+
+## 0.11.9-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.1.0-next.0
+  - @backstage/plugin-scaffolder-node@0.13.6-next.1
+
+## 0.11.9-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0-next.0
+  - @backstage/plugin-scaffolder-node@0.13.6-next.0
+
+## 0.11.8
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3
+  - @backstage/plugin-scaffolder-node@0.13.5
+
+## 0.11.8-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3-next.0
+  - @backstage/plugin-scaffolder-node@0.13.5-next.0
+
+## 0.11.7
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-scaffolder-node@0.13.4
+  - @backstage/integration@2.0.3
+  - @backstage/backend-plugin-api@1.9.2
+
+## 0.11.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.3-next.0
+  - @backstage/plugin-scaffolder-node@0.13.4-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.11.6
+
+### Patch Changes
+
+- 8474da5: Added `allowEmpty` input option to the `gitlab:repo:push` action, allowing empty commits. Required from GitLab 18.8 or later.
+- Updated dependencies
+  - @backstage/errors@1.3.1
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/integration@2.0.2
+  - @backstage/plugin-scaffolder-node@0.13.3
+  - @backstage/config@1.3.8
+
+## 0.11.6-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/integration@2.0.2-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/plugin-scaffolder-node@0.13.3-next.0
+
+## 0.11.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/errors@1.3.0
+  - @backstage/plugin-scaffolder-node@0.13.2
+  - @backstage/integration@2.0.1
+  - @backstage/config@1.3.7
+
+## 0.11.5-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/plugin-scaffolder-node@0.13.2-next.2
+  - @backstage/integration@2.0.1-next.0
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/config@1.3.7-next.0
+
+## 0.11.5-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/plugin-scaffolder-node@0.13.1-next.1
+
+## 0.11.5-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/plugin-scaffolder-node@0.13.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/integration@2.0.0
+
+## 0.11.4
+
+### Patch Changes
+
+- 5730c8e: Added `maskedAndHidden` option to `gitlab:projectVariable:create` and `publish:gitlab` action to support creating GitLab project variables that are both masked and hidden. Updated gitbeaker to version 43.8.0 for proper type support.
+- 0c1726a: Added new `gitlab:group:access` scaffolder action to add or remove users and groups as members of GitLab groups. The action supports specifying members via `userIds` and/or `groupIds` array parameters, configurable access levels (Guest, Reporter, Developer, Maintainer, Owner), and defaults to the 'add' action when not specified.
+- 4b8fcf0: Added two optional inputs to the `publish:gitlab` action:
+
+  - `settings.name`: set a custom human-readable project title that differs from the repository slug.
+  - `ownerUsername`: add a specific GitLab user as project owner (access level 50) of the newly created repository. Requires a privileged token in the integration configuration.
+
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/plugin-scaffolder-node@0.13.0
+  - @backstage/integration@2.0.0
+
+## 0.11.4-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/integration@2.0.0-next.2
+  - @backstage/plugin-scaffolder-node@0.13.0-next.2
+
+## 0.11.4-next.1
+
+### Patch Changes
+
+- 0c1726a: Added new `gitlab:group:access` scaffolder action to add or remove users and groups as members of GitLab groups. The action supports specifying members via `userIds` and/or `groupIds` array parameters, configurable access levels (Guest, Reporter, Developer, Maintainer, Owner), and defaults to the 'add' action when not specified.
+- Updated dependencies
+  - @backstage/integration@2.0.0-next.1
+  - @backstage/plugin-scaffolder-node@0.13.0-next.1
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+
+## 0.11.4-next.0
+
+### Patch Changes
+
+- 5730c8e: Added `maskedAndHidden` option to `gitlab:projectVariable:create` and `publish:gitlab` action to support creating GitLab project variables that are both masked and hidden. Updated gitbeaker to version 43.8.0 for proper type support.
+- Updated dependencies
+  - @backstage/integration@1.21.0-next.0
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/plugin-scaffolder-node@0.12.6-next.0
+
 ## 0.11.3
 
 ### Patch Changes

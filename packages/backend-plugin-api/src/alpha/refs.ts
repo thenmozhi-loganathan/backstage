@@ -47,12 +47,25 @@ export const actionsRegistryServiceRef = createServiceRef<
 });
 
 /**
- * Read information about your current Backstage deployment.
+ * Service for managing metrics.
+ *
  * @alpha
  */
-export const rootSystemMetadataServiceRef = createServiceRef<
-  import('./RootSystemMetadataService').RootSystemMetadataService
+export const metricsServiceRef = createServiceRef<
+  import('./MetricsService').MetricsService
 >({
-  id: 'alpha.core.rootSystemMetadata',
-  scope: 'root',
+  id: 'alpha.core.metrics',
+});
+
+/**
+ * Service for managing trace spans.
+ *
+ * See `TracingService` for the API surface.
+ *
+ * @alpha
+ */
+export const tracingServiceRef = createServiceRef<
+  import('./TracingService').TracingService
+>({
+  id: 'alpha.core.tracing',
 });

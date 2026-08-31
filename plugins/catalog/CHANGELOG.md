@@ -1,5 +1,518 @@
 # @backstage/plugin-catalog
 
+## 2.0.9-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-scaffolder-common@2.3.0-next.0
+  - @backstage/ui@0.17.2-next.0
+  - @backstage/plugin-catalog-react@3.2.2-next.0
+  - @backstage/core-components@0.18.14-next.0
+  - @backstage/core-compat-api@0.5.15-next.0
+  - @backstage/plugin-search-react@1.11.8-next.0
+  - @backstage/plugin-techdocs-react@1.3.15-next.0
+
+## 2.0.8
+
+### Patch Changes
+
+- 80b37b3: Fixed the `AboutField` label in the About card using `variant="inherit"` instead of `variant="h2"` to prevent theme typography overrides from changing the intended 10px label size.
+- 05aed2e: Fixed a brief "Entity not found" flash when navigating between catalog entity pages.
+- 1d026b0: Added explicit type annotations to `FilterContainer` and `EntityListContainer` re-exports for forward-compatibility with TypeScript 7.
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/core-components@0.18.13
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/plugin-catalog-react@3.2.1
+  - @backstage/ui@0.17.1
+  - @backstage/plugin-scaffolder-common@2.2.2
+  - @backstage/frontend-plugin-api@0.18.0
+  - @backstage/core-compat-api@0.5.14
+  - @backstage/integration-react@1.2.21
+  - @backstage/plugin-permission-react@0.5.4
+  - @backstage/plugin-search-react@1.11.7
+  - @backstage/plugin-techdocs-react@1.3.14
+
+## 2.0.8-next.3
+
+### Patch Changes
+
+- 05aed2e: Fixed a brief "Entity not found" flash when navigating between catalog entity pages.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9-next.1
+  - @backstage/plugin-catalog-react@3.2.1-next.3
+
+## 2.0.8-next.2
+
+### Patch Changes
+
+- 80b37b3: Fixed the `AboutField` label in the About card using `variant="inherit"` instead of `variant="h2"` to prevent theme typography overrides from changing the intended 10px label size.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.1-next.2
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+  - @backstage/core-compat-api@0.5.14-next.1
+  - @backstage/core-plugin-api@1.12.9-next.0
+  - @backstage/plugin-search-react@1.11.7-next.1
+  - @backstage/plugin-techdocs-react@1.3.14-next.1
+  - @backstage/core-components@0.18.13-next.2
+  - @backstage/integration-react@1.2.21-next.1
+  - @backstage/plugin-permission-react@0.5.4-next.0
+
+## 2.0.8-next.1
+
+### Patch Changes
+
+- 1d026b0: Added explicit type annotations to `FilterContainer` and `EntityListContainer` re-exports for forward-compatibility with TypeScript 7.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.1-next.1
+  - @backstage/core-components@0.18.13-next.1
+  - @backstage/integration-react@1.2.21-next.0
+  - @backstage/plugin-scaffolder-common@2.2.2-next.0
+
+## 2.0.8-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.13-next.0
+  - @backstage/ui@0.17.1-next.0
+  - @backstage/plugin-catalog-react@3.2.1-next.0
+  - @backstage/plugin-search-react@1.11.7-next.0
+  - @backstage/plugin-techdocs-react@1.3.14-next.0
+  - @backstage/core-compat-api@0.5.14-next.0
+
+## 2.0.7
+
+### Patch Changes
+
+- ba49e37: Migrated the new frontend system Catalog entity context menu to BUI and switched its built-in action icons to Remix icons. The old frontend system Catalog context menu remains unchanged.
+
+  **BREAKING ALPHA**: The new frontend system Catalog entity page now consumes data-driven context menu item extensions. Its `contextMenuItems` input expects the `EntityContextMenuItemBlueprint` data output rather than a rendered React element.
+
+  The default English value of the `entityContextMenu.moreButtonAriaLabel` translation changed from `more` to `More actions`. If you provide localized Catalog messages, update this label as appropriate for your locale.
+
+- 15719cc: **BREAKING ALPHA**: Migrated the new frontend system Catalog entity page to the automatic Catalog plugin header and a BUI page header with entity tags, title, metadata, favorite and context-menu actions, and Catalog-composed navigation.
+
+  Existing alpha opaque entity header customizations continue to render through a temporary per-entity legacy fallback with the previous MUI tabs and page shell. Migrate those customizations to the new BUI-ready entity header layout extension point to receive composed tabs and the active tab ID. The new extension point wins when both customization types match an entity.
+
+  The default BUI navigation does not render entity-content tab icons because the BUI Header tab API does not expose an icon slot. Legacy fallback pages retain their existing tab-icon behavior.
+
+  Added the translation keys `entityLabels.systemLabel`, `entityLabels.domainLabel`, and `entityLabels.partOfLabel`. Apps that provide Catalog translations should add translations for these new messages.
+
+- a00547f: Fix crash when exporting the catalog with unset filters.
+- 1217673: Fixed a crash in the catalog export when an entity list filter is `undefined`, which could occur if optional filters were not set.
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/ui@0.17.0
+  - @backstage/plugin-catalog-react@3.2.0
+  - @backstage/core-components@0.18.12
+  - @backstage/plugin-techdocs-react@1.3.13
+  - @backstage/catalog-client@1.16.1
+  - @backstage/core-compat-api@0.5.13
+  - @backstage/core-plugin-api@1.12.8
+  - @backstage/integration-react@1.2.20
+  - @backstage/plugin-permission-react@0.5.3
+  - @backstage/plugin-search-react@1.11.6
+
+## 2.0.7-next.0
+
+### Patch Changes
+
+- ba49e37: Migrated the new frontend system Catalog entity context menu to BUI and switched its built-in action icons to Remix icons. The old frontend system Catalog context menu remains unchanged.
+
+  **BREAKING ALPHA**: The new frontend system Catalog entity page now consumes data-driven context menu item extensions. Its `contextMenuItems` input expects the `EntityContextMenuItemBlueprint` data output rather than a rendered React element.
+
+  The default English value of the `entityContextMenu.moreButtonAriaLabel` translation changed from `more` to `More actions`. If you provide localized Catalog messages, update this label as appropriate for your locale.
+
+- 15719cc: **BREAKING ALPHA**: Migrated the new frontend system Catalog entity page to the automatic Catalog plugin header and a BUI page header with entity tags, title, metadata, favorite and context-menu actions, and Catalog-composed navigation.
+
+  Existing alpha opaque entity header customizations continue to render through a temporary per-entity legacy fallback with the previous MUI tabs and page shell. Migrate those customizations to the new BUI-ready entity header layout extension point to receive composed tabs and the active tab ID. The new extension point wins when both customization types match an entity.
+
+  The default BUI navigation does not render entity-content tab icons because the BUI Header tab API does not expose an icon slot. Legacy fallback pages retain their existing tab-icon behavior.
+
+  Added the translation keys `entityLabels.systemLabel`, `entityLabels.domainLabel`, and `entityLabels.partOfLabel`. Apps that provide Catalog translations should add translations for these new messages.
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.0-next.0
+  - @backstage/ui@0.17.0-next.0
+  - @backstage/core-compat-api@0.5.13-next.0
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+  - @backstage/plugin-search-react@1.11.6-next.0
+  - @backstage/catalog-client@1.16.1-next.0
+  - @backstage/core-components@0.18.12-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+  - @backstage/integration-react@1.2.20-next.0
+  - @backstage/plugin-permission-react@0.5.3-next.0
+  - @backstage/plugin-techdocs-react@1.3.13-next.0
+
+## 2.0.6
+
+### Patch Changes
+
+- 7172386: Updated the new frontend system Catalog index page to use the current Backstage UI page header and content container.
+- d8757b1: The entity list provider now fetches the entity list and the total count as two separate parallel requests when using cursor or offset pagination. The list query skips the expensive count computation (using `totalItems: 'exclude'`), so the table populates immediately. The count arrives asynchronously and updates the title. A new `totalItemsLoading` field is exposed on `EntityListContextProps` so consumers can distinguish a stale count from a fresh one.
+
+  The catalog table now keeps stale rows visible during filter changes and page navigation instead of replacing the entire table body with a spinner. The full-table spinner is only shown on the very first load when no data exists yet. The entity count in the title is dimmed while the count is refreshing, and a small spinner appears next to the title while rows are loading.
+
+- 82cf16f: Added `CatalogExportButton`, which adds CSV and JSON export support to the `CatalogIndexPage`.
+- d7c1dcf: Fixed a missing React key warning for context menu items on the entity page.
+- a07e6a3: Added the correctly-spelled `RelatedEntitiesCard.domainEntityColumns` static property and deprecated the previous typoed `RelatedEntitiesCard.domainEntityColums` property. Existing references to the old property continue to work; switch to `domainEntityColumns` to avoid future removal.
+- Updated dependencies
+  - @backstage/catalog-client@1.16.0
+  - @backstage/plugin-catalog-react@3.1.0
+  - @backstage/core-components@0.18.11
+  - @backstage/plugin-search-react@1.11.5
+  - @backstage/frontend-plugin-api@0.17.2
+  - @backstage/ui@0.16.0
+  - @backstage/plugin-scaffolder-common@2.2.1
+  - @backstage/core-compat-api@0.5.12
+  - @backstage/core-plugin-api@1.12.7
+  - @backstage/integration-react@1.2.19
+  - @backstage/plugin-permission-react@0.5.2
+  - @backstage/plugin-techdocs-react@1.3.12
+
+## 2.0.6-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-client@1.16.0-next.1
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+  - @backstage/core-components@0.18.11-next.1
+  - @backstage/ui@0.15.1-next.0
+  - @backstage/core-compat-api@0.5.12-next.1
+  - @backstage/core-plugin-api@1.12.7-next.0
+  - @backstage/plugin-catalog-react@3.0.1-next.1
+  - @backstage/plugin-search-react@1.11.5-next.1
+  - @backstage/plugin-techdocs-react@1.3.12-next.1
+  - @backstage/integration-react@1.2.19-next.1
+  - @backstage/plugin-permission-react@0.5.2-next.0
+
+## 2.0.6-next.0
+
+### Patch Changes
+
+- d8757b1: The entity list provider now fetches the entity list and the total count as two separate parallel requests when using cursor or offset pagination. The list query skips the expensive count computation (using `totalItems: 'exclude'`), so the table populates immediately. The count arrives asynchronously and updates the title. A new `totalItemsLoading` field is exposed on `EntityListContextProps` so consumers can distinguish a stale count from a fresh one.
+
+  The catalog table now keeps stale rows visible during filter changes and page navigation instead of replacing the entire table body with a spinner. The full-table spinner is only shown on the very first load when no data exists yet. The entity count in the title is dimmed while the count is refreshing, and a small spinner appears next to the title while rows are loading.
+
+- 82cf16f: Added `CatalogExportButton`, which adds CSV and JSON export support to the `CatalogIndexPage`.
+- a07e6a3: Added the correctly-spelled `RelatedEntitiesCard.domainEntityColumns` static property and deprecated the previous typoed `RelatedEntitiesCard.domainEntityColums` property. Existing references to the old property continue to work; switch to `domainEntityColumns` to avoid future removal.
+- Updated dependencies
+  - @backstage/catalog-client@1.16.0-next.0
+  - @backstage/plugin-catalog-react@3.0.1-next.0
+  - @backstage/core-components@0.18.11-next.0
+  - @backstage/plugin-search-react@1.11.5-next.0
+  - @backstage/core-compat-api@0.5.12-next.0
+  - @backstage/integration-react@1.2.19-next.0
+  - @backstage/plugin-techdocs-react@1.3.12-next.0
+  - @backstage/plugin-scaffolder-common@2.2.1-next.0
+
+## 2.0.5
+
+### Patch Changes
+
+- 728629c: Fixed an issue where navigating to an unknown sub-path on an entity page (for example `/catalog/default/component/foo/blob`) would silently render the first available route. Unknown paths now show the standard not-found page instead.
+- 44d77e9: Removed separate nav item extensions. Sidebar entries are now provided via `title` and `icon` on each plugin's page extension.
+- 0c5e41f: Removed unused dependencies that had no imports in source code.
+- cad156e: Replaced old config schema values from existing extensions and blueprints.
+- 085133f: The `zod` dependency has been bumped from `^3.25.76 || ^4.0.0` to `^4.0.0`, since `configSchema` requires the full Zod v4 package for JSON Schema support.
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/core-components@0.18.10
+  - @backstage/ui@0.15.0
+  - @backstage/errors@1.3.1
+  - @backstage/frontend-plugin-api@0.17.0
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/plugin-catalog-react@3.0.0
+  - @backstage/core-compat-api@0.5.11
+  - @backstage/plugin-techdocs-react@1.3.11
+  - @backstage/plugin-search-react@1.11.4
+  - @backstage/plugin-scaffolder-common@2.2.0
+  - @backstage/catalog-client@1.15.1
+  - @backstage/integration-react@1.2.18
+  - @backstage/plugin-catalog-common@1.1.10
+  - @backstage/plugin-permission-react@0.5.1
+  - @backstage/plugin-search-common@1.2.24
+
+## 2.0.5-next.1
+
+### Patch Changes
+
+- 728629c: Fixed an issue where navigating to an unknown sub-path on an entity page (for example `/catalog/default/component/foo/blob`) would silently render the first available route. Unknown paths now show the standard not-found page instead.
+- Updated dependencies
+  - @backstage/ui@0.15.0-next.3
+  - @backstage/plugin-scaffolder-common@2.2.0-next.1
+  - @backstage/plugin-catalog-react@2.1.5-next.1
+
+## 2.0.5-next.0
+
+### Patch Changes
+
+- 0c5e41f: Removed unused dependencies that had no imports in source code.
+- cad156e: Replaced old config schema values from existing extensions and blueprints.
+- 085133f: The `zod` dependency has been bumped from `^3.25.76 || ^4.0.0` to `^4.0.0`, since `configSchema` requires the full Zod v4 package for JSON Schema support.
+- Updated dependencies
+  - @backstage/core-components@0.18.10-next.0
+  - @backstage/ui@0.15.0-next.0
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/core-compat-api@0.5.11-next.0
+  - @backstage/plugin-catalog-react@2.1.5-next.0
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/plugin-techdocs-react@1.3.11-next.0
+  - @backstage/plugin-search-react@1.11.4-next.0
+  - @backstage/integration-react@1.2.18-next.0
+  - @backstage/catalog-client@1.15.1-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/plugin-scaffolder-common@2.1.1-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-catalog-common@1.1.10-next.0
+  - @backstage/plugin-permission-react@0.5.1-next.0
+  - @backstage/plugin-search-common@1.2.24-next.0
+  - @backstage/plugin-techdocs-common@0.1.1
+
+## 2.0.2
+
+### Patch Changes
+
+- e4804ab: Migrated the unregister entity context menu item from the deprecated `DialogApi.showModal` to the new `DialogApi.open` method.
+- d7b6077: Disabled the default page layout header for the catalog entity page in the new frontend system. The entity page already renders its own header through the `EntityHeader` extension, so the page layout header was redundant.
+- ee1531d: Exported the NFS variant of the catalog index page as `CatalogIndexPage` from the `./alpha` entry point, along with supporting types `CatalogIndexPageProps`, `CatalogTableRow`, and `CatalogTableColumnsFunc`. This allows adopters to use and customize the catalog index page within a `PageBlueprint` in the new frontend system.
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- 744f904: Fixed the catalog table briefly showing an empty loading state when changing filters. The table now keeps displaying stale results until new data arrives.
+- c193ef1: Added Kind field to the About Card. Tags moved before Type and Lifecycle, Kind placed after them. A new `aboutCard.kindField.label` translation key was added.
+- e5af44c: Replaced deprecated `humanizeEntityRef` usage with the Catalog Presentation API.
+- Updated dependencies
+  - @backstage/ui@0.14.0
+  - @backstage/errors@1.3.0
+  - @backstage/catalog-model@1.8.0
+  - @backstage/plugin-catalog-react@2.1.2
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/core-components@0.18.9
+  - @backstage/core-compat-api@0.5.10
+  - @backstage/catalog-client@1.15.0
+  - @backstage/plugin-scaffolder-common@2.1.0
+  - @backstage/plugin-permission-react@0.5.0
+  - @backstage/core-plugin-api@1.12.5
+  - @backstage/integration-react@1.2.17
+  - @backstage/plugin-catalog-common@1.1.9
+  - @backstage/plugin-search-common@1.2.23
+  - @backstage/plugin-search-react@1.11.1
+  - @backstage/plugin-techdocs-react@1.3.10
+
+## 2.0.2-next.2
+
+### Patch Changes
+
+- ee1531d: Exported the NFS variant of the catalog index page as `CatalogIndexPage` from the `./alpha` entry point, along with supporting types `CatalogIndexPageProps`, `CatalogTableRow`, and `CatalogTableColumnsFunc`. This allows adopters to use and customize the catalog index page within a `PageBlueprint` in the new frontend system.
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- c193ef1: Added Kind field to the About Card. Tags moved before Type and Lifecycle, Kind placed after them. A new `aboutCard.kindField.label` translation key was added.
+- e5af44c: Replaced deprecated `humanizeEntityRef` usage with the Catalog Presentation API.
+- Updated dependencies
+  - @backstage/ui@0.14.0-next.2
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/core-components@0.18.9-next.1
+  - @backstage/plugin-catalog-react@2.1.2-next.2
+  - @backstage/catalog-client@1.14.1-next.0
+  - @backstage/catalog-model@1.7.8-next.0
+  - @backstage/core-compat-api@0.5.10-next.2
+  - @backstage/core-plugin-api@1.12.5-next.2
+  - @backstage/frontend-plugin-api@0.16.0-next.2
+  - @backstage/plugin-scaffolder-common@2.0.1-next.0
+  - @backstage/plugin-search-react@1.11.1-next.2
+  - @backstage/plugin-techdocs-react@1.3.10-next.2
+  - @backstage/integration-react@1.2.17-next.1
+  - @backstage/plugin-catalog-common@1.1.9-next.0
+  - @backstage/plugin-permission-react@0.4.42-next.1
+  - @backstage/plugin-search-common@1.2.23-next.0
+
+## 2.0.2-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.14.0-next.1
+  - @backstage/plugin-catalog-react@2.1.2-next.1
+  - @backstage/frontend-plugin-api@0.16.0-next.1
+  - @backstage/core-compat-api@0.5.10-next.1
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/core-plugin-api@1.12.5-next.1
+  - @backstage/plugin-search-react@1.11.1-next.1
+  - @backstage/plugin-techdocs-react@1.3.10-next.1
+
+## 2.0.2-next.0
+
+### Patch Changes
+
+- d7b6077: Disabled the default page layout header for the catalog entity page in the new frontend system. The entity page already renders its own header through the `EntityHeader` extension, so the page layout header was redundant.
+- 744f904: Fixed the catalog table briefly showing an empty loading state when changing filters. The table now keeps displaying stale results until new data arrives.
+- Updated dependencies
+  - @backstage/ui@0.14.0-next.0
+  - @backstage/plugin-catalog-react@2.1.1-next.0
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/frontend-plugin-api@0.15.2-next.0
+  - @backstage/core-compat-api@0.5.10-next.0
+  - @backstage/integration-react@1.2.17-next.0
+  - @backstage/plugin-search-react@1.11.1-next.0
+  - @backstage/plugin-techdocs-react@1.3.10-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+  - @backstage/catalog-client@1.14.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-catalog-common@1.1.8
+  - @backstage/plugin-permission-react@0.4.42-next.0
+  - @backstage/plugin-scaffolder-common@2.0.0
+  - @backstage/plugin-search-common@1.2.22
+  - @backstage/plugin-techdocs-common@0.1.1
+
+## 2.0.0
+
+### Major Changes
+
+- 5fc35bb: Migrated `EntityAboutCard`, `EntityLinksCard`, `EntityLabelsCard`, `GroupProfileCard`, and `UserProfileCard` from MUI/InfoCard to use the new BUI card layout and BUI components where possible.
+
+  **BREAKING**: Removed `variant` prop from EntityAboutCard, EntityUserProfileCard, EntityGroupProfileCard, EntityLabelsCard, EntityLinksCard. Removed `gridSizes` prop from `AboutField`.
+
+  **Migration:**
+
+  Simply delete the obsolete `variant` and `gridSizes` props, e.g:
+
+  ```diff
+  -      <EntityAboutCard variant="gridItem" />
+  +      <EntityAboutCard />
+  ```
+
+  ```diff
+  -      <AboutField label="Owner" gridSizes={{ xs: 12, sm: 6, lg: 4 }} />
+  +      <AboutField label="Owner" />
+  ```
+
+### Minor Changes
+
+- 4d58894: Added support for group alias IDs and configurable content ordering on the entity page. Groups can now declare `aliases` so that content targeting an aliased group is included in the group. A new `defaultContentOrder` option (default `title`) controls how content items within each group are sorted, with support for both a page-level default and per-group overrides.
+- c548a0f: Migrated entity table cards (`HasComponentsCard`, `HasResourcesCard`, `HasSubcomponentsCard`, `HasSubdomainsCard`, `HasSystemsCard`, `DependsOnComponentsCard`, `DependsOnResourcesCard`, `DependencyOfComponentsCard`) to use BUI when no legacy props are passed. The old `variant`, `columns`, and `tableOptions` props are deprecated but still supported — passing any of them triggers the legacy MUI-based rendering. The new `columnConfig` prop accepts `EntityColumnConfig[]` for BUI-based rendering.
+
+  `RelatedEntitiesCard` is deprecated — use `EntityRelationCard` from `@backstage/plugin-catalog-react/alpha` instead.
+
+- 0be2541: Promoted the plugin's translation ref to the stable package entry point. It was previously only available through the alpha entry point.
+
+### Patch Changes
+
+- 538c985: Updated installation documentation to use feature discovery as the default.
+- 07ba746: Fixed entity page tab groups not respecting the ordering from the `groups` configuration.
+- aa29b50: New frontend system pages now use the default plugin header together with `HeaderPage` instead of the legacy core page header pattern.
+- 3f36ce1: Updated alpha plugin icons to follow the new frontend icon sizing rules when rendered in plugin and navigation surfaces.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.0
+  - @backstage/ui@0.13.0
+  - @backstage/core-compat-api@0.5.9
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/core-components@0.18.8
+  - @backstage/frontend-plugin-api@0.15.0
+  - @backstage/plugin-search-react@1.11.0
+  - @backstage/catalog-client@1.14.0
+  - @backstage/plugin-permission-react@0.4.41
+  - @backstage/plugin-scaffolder-common@2.0.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/integration-react@1.2.16
+  - @backstage/plugin-techdocs-react@1.3.9
+
+## 2.0.0-next.2
+
+### Major Changes
+
+- 5fc35bb: Migrated `EntityAboutCard`, `EntityLinksCard`, `EntityLabelsCard`, `GroupProfileCard`, and `UserProfileCard` from MUI/InfoCard to use the new BUI card layout and BUI components where possible.
+
+  **BREAKING**: Removed `variant` prop from EntityAboutCard, EntityUserProfileCard, EntityGroupProfileCard, EntityLabelsCard, EntityLinksCard. Removed `gridSizes` prop from `AboutField`.
+
+  **Migration:**
+
+  Simply delete the obsolete `variant` and `gridSizes` props, e.g:
+
+  ```diff
+  -      <EntityAboutCard variant="gridItem" />
+  +      <EntityAboutCard />
+  ```
+
+  ```diff
+  -      <AboutField label="Owner" gridSizes={{ xs: 12, sm: 6, lg: 4 }} />
+  +      <AboutField label="Owner" />
+  ```
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-compat-api@0.5.9-next.2
+  - @backstage/ui@0.13.0-next.2
+  - @backstage/frontend-plugin-api@0.15.0-next.1
+  - @backstage/core-plugin-api@1.12.4-next.1
+  - @backstage/catalog-client@1.14.0-next.2
+  - @backstage/plugin-catalog-react@2.1.0-next.2
+  - @backstage/core-components@0.18.8-next.1
+  - @backstage/plugin-scaffolder-common@2.0.0-next.2
+  - @backstage/plugin-search-react@1.10.5-next.1
+  - @backstage/plugin-techdocs-react@1.3.9-next.1
+
+## 1.34.0-next.1
+
+### Minor Changes
+
+- 4d58894: Added support for group alias IDs and configurable content ordering on the entity page. Groups can now declare `aliases` so that content targeting an aliased group is included in the group. A new `defaultContentOrder` option (default `title`) controls how content items within each group are sorted, with support for both a page-level default and per-group overrides.
+
+### Patch Changes
+
+- 07ba746: Fixed entity page tab groups not respecting the ordering from the `groups` configuration.
+- Updated dependencies
+  - @backstage/ui@0.13.0-next.1
+  - @backstage/catalog-client@1.14.0-next.1
+  - @backstage/plugin-catalog-react@2.1.0-next.1
+  - @backstage/plugin-scaffolder-common@2.0.0-next.1
+  - @backstage/catalog-model@1.7.6
+  - @backstage/core-compat-api@0.5.9-next.1
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/errors@1.2.7
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/integration-react@1.2.16-next.1
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-catalog-common@1.1.8
+  - @backstage/plugin-permission-react@0.4.41-next.0
+  - @backstage/plugin-search-common@1.2.22
+  - @backstage/plugin-search-react@1.10.5-next.0
+  - @backstage/plugin-techdocs-common@0.1.1
+  - @backstage/plugin-techdocs-react@1.3.9-next.0
+
+## 1.33.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.12.1-next.0
+  - @backstage/plugin-search-react@1.10.5-next.0
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/catalog-client@1.13.1-next.0
+  - @backstage/plugin-catalog-react@2.0.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/core-compat-api@0.5.9-next.0
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/errors@1.2.7
+  - @backstage/integration-react@1.2.16-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-catalog-common@1.1.8
+  - @backstage/plugin-permission-react@0.4.41-next.0
+  - @backstage/plugin-scaffolder-common@1.7.7-next.0
+  - @backstage/plugin-search-common@1.2.22
+  - @backstage/plugin-techdocs-common@0.1.1
+  - @backstage/plugin-techdocs-react@1.3.9-next.0
+
 ## 1.33.0
 
 ### Minor Changes

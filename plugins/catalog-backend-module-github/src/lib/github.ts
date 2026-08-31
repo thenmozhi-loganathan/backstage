@@ -15,8 +15,13 @@
  */
 
 import { Entity } from '@backstage/catalog-model';
-import { GithubCredentialType } from '@backstage/integration';
+import {
+  GithubCredentials,
+  GithubCredentialsProvider,
+  GithubCredentialType,
+} from '@backstage/integration';
 import { graphql } from '@octokit/graphql';
+import { OctokitResponse, RequestParameters } from '@octokit/types';
 import {
   defaultOrganizationTeamTransformer,
   defaultUserTransformer,
@@ -28,8 +33,10 @@ import { withLocations } from './withLocations';
 
 import { DeferredEntity } from '@backstage/plugin-catalog-node';
 import { Octokit } from '@octokit/core';
-import { LoggerService } from '@backstage/backend-plugin-api';
-import { throttling } from '@octokit/plugin-throttling';
+import { CacheService, LoggerService } from '@backstage/backend-plugin-api';
+import { throttling, ThrottlingOptions } from '@octokit/plugin-throttling';
+import { retry } from '@octokit/plugin-retry';
+import { JsonValue } from '@backstage/types';
 
 /**
  * Configuration for GitHub GraphQL API page sizes.
@@ -184,6 +191,7 @@ export type Connection<T> = {
  * @param userTransformer - Optional transformer for user entities
  * @param pageSizes - Optional page sizes configuration
  * @param excludeSuspendedUsers - Optional flag to exclude suspended users (only for GitHub Enterprise instances)
+ * @param restClient - Optional Octokit REST client; when provided alongside excludeSuspendedUsers, the REST API is used instead of the GraphQL suspendedAt field
  */
 export async function getOrganizationUsers(
   client: typeof graphql,
@@ -192,8 +200,11 @@ export async function getOrganizationUsers(
   userTransformer: UserTransformer = defaultUserTransformer,
   pageSizes: GithubPageSizes = DEFAULT_PAGE_SIZES,
   excludeSuspendedUsers: boolean = false,
+  restClient?: Octokit,
 ): Promise<{ users: Entity[] }> {
-  const suspendedAtField = excludeSuspendedUsers ? 'suspendedAt,' : '';
+  const useRestForSuspension = excludeSuspendedUsers && !!restClient;
+  const suspendedAtField =
+    excludeSuspendedUsers && !useRestForSuspension ? 'suspendedAt,' : '';
   const query = `
     query users($org: String!, $email: Boolean!, $cursor: String, $organizationMembersPageSize: Int!) {
       organization(login: $org) {
@@ -213,6 +224,18 @@ export async function getOrganizationUsers(
       }
     }`;
 
+  let restFilter:
+    | ((user: GithubUser) => Promise<boolean> | boolean)
+    | undefined;
+
+  if (useRestForSuspension) {
+    const isEnterprise = await isGitHubEnterprise(restClient);
+    if (isEnterprise) {
+      restFilter = async (user: GithubUser) =>
+        !(await isSuspended(user.login, restClient, { org }));
+    }
+  }
+
   // There is no user -> teams edge, so we leave the memberships empty for
   // now and let the team iteration handle it instead
 
@@ -227,7 +250,9 @@ export async function getOrganizationUsers(
       email: tokenType === 'token',
       organizationMembersPageSize: pageSizes.organizationMembers,
     },
-    filter: u => (excludeSuspendedUsers ? !u.suspendedAt : true),
+    filter: useRestForSuspension
+      ? restFilter
+      : u => (excludeSuspendedUsers ? !u.suspendedAt : true),
   });
 
   return { users };
@@ -594,6 +619,7 @@ export async function getOrganizationRepositories(
   org: string,
   catalogPath: string,
   pageSizes: GithubPageSizes = DEFAULT_PAGE_SIZES,
+  branch?: string,
 ): Promise<{ repositories: RepositoryResponse[] }> {
   let relativeCatalogPathRef: string;
   // We must strip the leading slash or the query for objects does not work
@@ -602,7 +628,8 @@ export async function getOrganizationRepositories(
   } else {
     relativeCatalogPathRef = catalogPath;
   }
-  const catalogPathRef = `HEAD:${relativeCatalogPathRef}`;
+  const branchRef = branch ?? 'HEAD';
+  const catalogPathRef = `${branchRef}:${relativeCatalogPathRef}`;
   const query = `
     query repositories($org: String!, $catalogPathRef: String!, $cursor: String, $repositoriesPageSize: Int!) {
       repositoryOwner(login: $org) {
@@ -663,6 +690,7 @@ export async function getOrganizationRepository(
   org: string,
   repoName: string,
   catalogPath: string,
+  branch?: string,
 ): Promise<RepositoryResponse | null> {
   let relativeCatalogPathRef: string;
   // We must strip the leading slash or the query for objects does not work
@@ -671,7 +699,8 @@ export async function getOrganizationRepository(
   } else {
     relativeCatalogPathRef = catalogPath;
   }
-  const catalogPathRef = `HEAD:${relativeCatalogPathRef}`;
+  const branchRef = branch ?? 'HEAD';
+  const catalogPathRef = `${branchRef}:${relativeCatalogPathRef}`;
   const query = `
     query repository($org: String!, $repoName: String!, $catalogPathRef: String!) {
       repositoryOwner(login: $org) {
@@ -788,7 +817,7 @@ export async function queryWithPaging<
     ctx: TransformerContext,
   ) => Promise<OutputType | undefined>;
   variables: Variables;
-  filter?: (item: GraphqlType) => boolean;
+  filter?: (item: GraphqlType) => Promise<boolean> | boolean;
 }): Promise<OutputType[]> {
   const { client, query, org, connection, transformer, variables, filter } =
     params;
@@ -808,7 +837,7 @@ export async function queryWithPaging<
     }
 
     for (const node of conn.nodes) {
-      if (filter && !filter(node)) {
+      if (filter && !(await filter(node))) {
         continue;
       }
       const transformedNode = await transformer(node, {
@@ -816,7 +845,6 @@ export async function queryWithPaging<
         query,
         org,
       });
-
       if (transformedNode) {
         result.push(transformedNode);
       }
@@ -870,7 +898,7 @@ export const createReplaceEntitiesOperation =
   };
 
 /**
- * Creates a GraphQL Client with Throttling
+ * Creates a GraphQL Client with Throttling and Retries
  */
 export const createGraphqlClient = (args: {
   headers:
@@ -882,7 +910,7 @@ export const createGraphqlClient = (args: {
   logger: LoggerService;
 }): typeof graphql => {
   const { headers, baseUrl, logger } = args;
-  const ThrottledOctokit = Octokit.plugin(throttling);
+  const ThrottledOctokit = Octokit.plugin(throttling, retry);
   const octokit = new ThrottledOctokit({
     throttle: {
       onRateLimit: (retryAfter, rateLimitData, _, retryCount) => {
@@ -923,3 +951,200 @@ export const createGraphqlClient = (args: {
 
   return client;
 };
+
+function octokitThrottlingOptions(logger: LoggerService): ThrottlingOptions {
+  return {
+    onRateLimit: (retryAfter, rateLimitData, _, retryCount) => {
+      logger.warn(
+        `Request quota exhausted for request ${rateLimitData?.method} ${rateLimitData?.url}`,
+      );
+
+      if (retryCount < 2) {
+        logger.warn(
+          `Retrying after ${retryAfter} seconds for the ${retryCount} time due to Rate Limit!`,
+        );
+        return true;
+      }
+
+      return false;
+    },
+    onSecondaryRateLimit: (retryAfter, rateLimitData, _, retryCount) => {
+      logger.warn(
+        `Secondary Rate Limit Exhausted for request ${rateLimitData?.method} ${rateLimitData?.url}`,
+      );
+
+      if (retryCount < 2) {
+        logger.warn(
+          `Retrying after ${retryAfter} seconds for the ${retryCount} time due to Secondary Rate Limit!`,
+        );
+        return true;
+      }
+
+      return false;
+    },
+  };
+}
+
+/**
+ * Creates an Octokit REST client with throttling, retry, and optional
+ * conditional request caching.
+ *
+ * @public
+ */
+export function createRestClient(options: {
+  baseUrl: string | undefined;
+  orgUrl: string;
+  credentialsProvider: GithubCredentialsProvider;
+  logger: LoggerService;
+  cache?: CacheService;
+}): Octokit & { auth: () => Promise<GithubCredentials> } {
+  const getCredentials = () =>
+    options.credentialsProvider.getCredentials({
+      url: options.orgUrl,
+    });
+
+  const authStrategy = () => {
+    const auth = () => getCredentials();
+    auth.hook = async (
+      request: (
+        requestOptions: RequestParameters,
+      ) => Promise<OctokitResponse<unknown>>,
+      hookOptions: RequestParameters,
+    ) => {
+      const { headers } = await getCredentials();
+      return request({
+        ...hookOptions,
+        headers: { ...hookOptions.headers, ...headers },
+      });
+    };
+    return auth;
+  };
+
+  const ThrottledOctokit = Octokit.plugin(throttling, retry);
+
+  const octokit = new ThrottledOctokit({
+    baseUrl: options.baseUrl,
+    authStrategy,
+    throttle: octokitThrottlingOptions(options.logger),
+  });
+
+  if (options.cache) {
+    installConditionalRequestCache(octokit, options.cache);
+  }
+
+  return octokit as Octokit & { auth: () => Promise<GithubCredentials> };
+}
+
+type CachedGitHubResponse = {
+  lastModified?: string;
+  etag?: string;
+  headers: JsonValue;
+  data: JsonValue;
+};
+
+function installConditionalRequestCache(
+  octokit: Octokit,
+  cache: CacheService,
+): void {
+  octokit.hook.wrap('request', async (request, wrappedOptions) => {
+    const resolvedUrl = (wrappedOptions.url || '').replace(
+      /\{([^}]+)\}/g,
+      (_, key) => encodeURIComponent((wrappedOptions as any)[key]),
+    );
+    const cacheKey = `catalog-backend-module-github:${wrappedOptions.method}:${wrappedOptions.baseUrl}${resolvedUrl}`;
+    const cached = await cache
+      .get<CachedGitHubResponse>(cacheKey)
+      .catch(() => undefined);
+
+    if (cached?.lastModified) {
+      wrappedOptions.headers['if-modified-since'] = cached.lastModified;
+    } else if (cached?.etag) {
+      wrappedOptions.headers['if-none-match'] = cached.etag;
+    }
+
+    try {
+      const response = await request(wrappedOptions);
+
+      const lastModified = response.headers['last-modified'];
+      const etag = response.headers.etag;
+
+      if (lastModified || etag) {
+        cache
+          .set(
+            cacheKey,
+            {
+              lastModified,
+              etag,
+              headers: JSON.parse(JSON.stringify(response.headers)),
+              data: JSON.parse(JSON.stringify(response.data)),
+            },
+            // The TTL can be long here, since we only use the cache for
+            // conditional GitHub requests - it's never returned unless we get a
+            // 304 back from GitHub indicating that it's still correct.
+            { ttl: { years: 1 } },
+          )
+          .catch(() => {});
+      }
+      return response;
+    } catch (error: any) {
+      if (error?.status === 304 && cached) {
+        return {
+          ...error.response,
+          headers: cached.headers,
+          data: cached.data,
+        };
+      }
+      throw error;
+    }
+  });
+}
+
+/**
+ * Checks whether a user is suspended via the REST API.
+ */
+export async function isSuspended(
+  username: string,
+  octokit: Octokit,
+  options: { org: string },
+): Promise<boolean> {
+  const [userResponse, membershipResponse] = await Promise.all([
+    octokit.request('GET /users/{username}', { username }),
+    octokit.request('GET /orgs/{org}/memberships/{username}', {
+      org: options.org,
+      username,
+    }),
+  ]);
+
+  // Octokit types are based on the public GitHub API, and since public GitHub
+  // doesn't include the ability to suspend users, there's no "suspended_at"
+  // field on the type, nor a "suspended" role on org memberships. However these
+  // fields are present for GitHub Enterprise, so we augment the types to
+  // include them.
+  const userSuspendedAt = (
+    userResponse.data as typeof userResponse.data & { suspended_at?: string }
+  ).suspended_at;
+  const membershipRole = (
+    membershipResponse.data as
+      | typeof membershipResponse.data
+      | {
+          role?: 'suspended';
+        }
+  ).role;
+
+  const userSuspended = !!userSuspendedAt;
+  const orgMembershipSuspended = membershipRole === 'suspended';
+
+  return userSuspended || orgMembershipSuspended;
+}
+
+/**
+ * Checks whether the GitHub instance is a GitHub Enterprise server.
+ */
+export async function isGitHubEnterprise(octokit: Octokit): Promise<boolean> {
+  try {
+    const response = await octokit.request('GET /versions');
+    return !!response.headers['x-github-enterprise-version'];
+  } catch {
+    return false;
+  }
+}

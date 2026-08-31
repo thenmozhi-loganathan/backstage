@@ -18,18 +18,40 @@ import yaml from 'js-yaml';
 import { ParsedLocationAnnotation } from '../../helpers';
 import {
   ALLOWED_MKDOCS_KEYS,
+  ALLOWED_THEME_KEYS,
+  DANGEROUS_EXTENSION_CONFIG_KEYS,
   getRepoUrlFromLocationAnnotation,
   MKDOCS_SCHEMA,
 } from './helpers';
-import { assertError } from '@backstage/errors';
+import { toError } from '@backstage/errors';
 import { ScmIntegrationRegistry } from '@backstage/integration';
 import { LoggerService } from '@backstage/backend-plugin-api';
+
+const MATERIAL_THEME = 'material';
+const PYMDOWNX_SNIPPETS_EXTENSION = 'pymdownx.snippets';
+
+function isPymdownxSnippetsExtension(extensionName: string): boolean {
+  return (
+    extensionName === PYMDOWNX_SNIPPETS_EXTENSION ||
+    extensionName === `${PYMDOWNX_SNIPPETS_EXTENSION}:SnippetExtension`
+  );
+}
+
+type MkDocsThemeObject = {
+  name?: string;
+  font?: boolean;
+};
+
+function isThemeObject(theme: unknown): theme is MkDocsThemeObject {
+  return typeof theme === 'object' && theme !== null && !Array.isArray(theme);
+}
 
 type MkDocsObject = {
   plugins?: string[];
   docs_dir: string;
   repo_url?: string;
   edit_uri?: string;
+  theme?: MkDocsThemeObject;
 };
 
 const patchMkdocsFile = async (
@@ -45,9 +67,10 @@ const patchMkdocsFile = async (
   try {
     mkdocsYmlFileString = await fs.readFile(mkdocsYmlPath, 'utf8');
   } catch (error) {
-    assertError(error);
     logger.warn(
-      `Could not read MkDocs YAML config file ${mkdocsYmlPath} before running the generator: ${error.message}`,
+      `Could not read MkDocs YAML config file ${mkdocsYmlPath} before running the generator: ${
+        toError(error).message
+      }`,
     );
     return;
   }
@@ -62,9 +85,10 @@ const patchMkdocsFile = async (
       throw new Error('Bad YAML format.');
     }
   } catch (error) {
-    assertError(error);
     logger.warn(
-      `Error in parsing YAML at ${mkdocsYmlPath} before running the generator. ${error.message}`,
+      `Error in parsing YAML at ${mkdocsYmlPath} before running the generator. ${
+        toError(error).message
+      }`,
     );
     return;
   }
@@ -80,9 +104,10 @@ const patchMkdocsFile = async (
       );
     }
   } catch (error) {
-    assertError(error);
     logger.warn(
-      `Could not write to ${mkdocsYmlPath} after updating it before running the generator. ${error.message}`,
+      `Could not write to ${mkdocsYmlPath} after updating it before running the generator. ${
+        toError(error).message
+      }`,
     );
     return;
   }
@@ -186,6 +211,43 @@ export const patchMkdocsYmlWithPlugins = async (
 };
 
 /**
+ * Disable external font download for the material theme.
+ * @param mkdocsYmlPath - Absolute path to mkdocs.yml or equivalent of a docs site
+ * @param logger
+ */
+export const patchMkdocsYmlWithFontDisabled = async (
+  mkdocsYmlPath: string,
+  logger: LoggerService,
+) => {
+  await patchMkdocsFile(mkdocsYmlPath, logger, mkdocsYml => {
+    if (!('theme' in mkdocsYml)) {
+      // No theme section exists, create it with font disabled
+      mkdocsYml.theme = {
+        name: MATERIAL_THEME,
+        font: false,
+      };
+      return true;
+    }
+
+    const theme = mkdocsYml.theme;
+    if (isThemeObject(theme)) {
+      // Theme section exists. Only modify it when the configured theme is Material
+      if (theme.name === MATERIAL_THEME && !('font' in theme)) {
+        theme.font = false;
+        return true;
+      }
+      if (theme.name !== MATERIAL_THEME) {
+        logger.debug(
+          'mkdocs.yml theme is not "material"; skipping font disabling patch',
+        );
+      }
+    }
+
+    return false;
+  });
+};
+
+/**
  * Sanitize mkdocs.yml by keeping only allowed configuration keys.
  *
  * TechDocs only supports a subset of MkDocs configuration options.
@@ -198,15 +260,28 @@ export const patchMkdocsYmlWithPlugins = async (
  *
  * @param mkdocsYmlPath - Absolute path to mkdocs.yml or equivalent of a docs site
  * @param logger - A logger instance
+ * @param additionalAllowedKeys - Optional array of additional keys to allow beyond the default allowlist
  */
 export const sanitizeMkdocsYml = async (
   mkdocsYmlPath: string,
   logger: LoggerService,
+  additionalAllowedKeys?: string[],
 ) => {
   await patchMkdocsFile(mkdocsYmlPath, logger, mkdocsYml => {
+    // Combine default allowed keys with additional keys
+    const allowedKeys = new Set(ALLOWED_MKDOCS_KEYS);
+    if (additionalAllowedKeys && additionalAllowedKeys.length > 0) {
+      logger.warn(
+        `DANGEROUS: Allowing additional MkDocs configuration keys beyond the default safe allowlist: ${additionalAllowedKeys.join(
+          ', ',
+        )}. This may introduce security vulnerabilities. Only use in trusted environments.`,
+      );
+      additionalAllowedKeys.forEach(key => allowedKeys.add(key));
+    }
+
     // Identify keys that will be removed for logging
     const removedKeys = Object.keys(mkdocsYml).filter(
-      key => !ALLOWED_MKDOCS_KEYS.has(key),
+      key => !allowedKeys.has(key),
     );
 
     if (removedKeys.length > 0) {
@@ -220,9 +295,89 @@ export const sanitizeMkdocsYml = async (
 
     // Build a new object with only allowed keys
     const sanitized: Record<string, unknown> = {};
-    for (const key of ALLOWED_MKDOCS_KEYS) {
+    for (const key of allowedKeys) {
       if (key in mkdocsYml) {
         sanitized[key] = (mkdocsYml as Record<string, unknown>)[key];
+      }
+    }
+
+    // Sanitize markdown_extensions
+    const extensions = sanitized.markdown_extensions;
+    if (Array.isArray(extensions)) {
+      const removedEntries: string[] = [];
+
+      sanitized.markdown_extensions = extensions.filter(ext => {
+        if (typeof ext === 'string') {
+          if (isPymdownxSnippetsExtension(ext)) {
+            return true;
+          }
+
+          if (ext.includes(':')) {
+            removedEntries.push(ext);
+            return false;
+          }
+          return true;
+        }
+
+        if (!ext || typeof ext !== 'object' || Array.isArray(ext)) {
+          return true;
+        }
+
+        // Check every key, not just the first, so that a multi-key mapping
+        // cannot smuggle a dangerous name past the filter.
+        const extensionEntries = Object.entries(ext as Record<string, unknown>);
+        const dangerousNames = extensionEntries
+          .map(([extensionName]) => extensionName)
+          .filter(
+            extensionName =>
+              extensionName.includes(':') &&
+              !isPymdownxSnippetsExtension(extensionName),
+          );
+        if (dangerousNames.length > 0) {
+          removedEntries.push(...dangerousNames);
+          return false;
+        }
+
+        for (const [extensionName, extensionConfig] of extensionEntries) {
+          if (!isPymdownxSnippetsExtension(extensionName)) {
+            continue;
+          }
+
+          if (
+            extensionConfig !== null &&
+            (typeof extensionConfig !== 'object' ||
+              Object.keys(extensionConfig).length > 0)
+          ) {
+            removedEntries.push(`${extensionName} configuration`);
+          }
+          Object.assign(ext, { [extensionName]: {} });
+        }
+
+        // Strip dangerous keys from the extension's own configuration.
+        for (const extConfig of Object.values(ext as Record<string, unknown>)) {
+          if (
+            extConfig &&
+            typeof extConfig === 'object' &&
+            !Array.isArray(extConfig)
+          ) {
+            for (const dangerousKey of DANGEROUS_EXTENSION_CONFIG_KEYS) {
+              if (dangerousKey in extConfig) {
+                delete (extConfig as Record<string, unknown>)[dangerousKey];
+                removedEntries.push(dangerousKey);
+              }
+            }
+          }
+        }
+
+        return true;
+      });
+
+      if (removedEntries.length > 0) {
+        logger.warn(
+          `Removed the following dangerous entries from markdown_extensions in mkdocs.yml: ${removedEntries.join(
+            ', ',
+          )}.`,
+        );
       }
     }
 
@@ -231,6 +386,24 @@ export const sanitizeMkdocsYml = async (
       delete (mkdocsYml as Record<string, unknown>)[key];
     }
     Object.assign(mkdocsYml, sanitized);
+
+    // Sanitize theme sub-keys
+    const theme = (mkdocsYml as Record<string, unknown>).theme;
+    if (isThemeObject(theme)) {
+      const removedThemeKeys = Object.keys(theme).filter(
+        key => !ALLOWED_THEME_KEYS.has(key),
+      );
+      if (removedThemeKeys.length > 0) {
+        for (const key of removedThemeKeys) {
+          delete (theme as Record<string, unknown>)[key];
+        }
+        logger.warn(
+          `Removed the following unsupported keys from theme configuration in mkdocs.yml: ${removedThemeKeys.join(
+            ', ',
+          )}.`,
+        );
+      }
+    }
 
     // Always rewrite to ensure clean YAML output (resolves merge keys, anchors, etc.)
     return true;

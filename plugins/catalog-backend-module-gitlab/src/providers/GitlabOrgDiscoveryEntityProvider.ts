@@ -31,7 +31,7 @@ import {
 } from '@backstage/plugin-catalog-node';
 import { EventsService } from '@backstage/plugin-events-node';
 import { merge } from 'lodash';
-import * as uuid from 'uuid';
+import { randomUUID } from 'node:crypto';
 
 import {
   GitLabClient,
@@ -340,7 +340,7 @@ export class GitlabOrgDiscoveryEntityProvider implements EntityProvider {
           const logger = this.logger.child({
             class: GitlabOrgDiscoveryEntityProvider.prototype.constructor.name,
             taskId,
-            taskInstanceId: uuid.v4(),
+            taskInstanceId: randomUUID(),
           });
 
           try {
@@ -704,6 +704,15 @@ export class GitlabOrgDiscoveryEntityProvider implements EntityProvider {
     }
 
     if (!this.shouldProcessUser(user)) {
+      this.logger.debug(`Skipped user ${user.username}.`);
+      return;
+    }
+
+    if (
+      event.event_name === 'user_create' &&
+      this.config.restrictUsersToGroup &&
+      !(await this.gitLabClient.getGroupMemberById(this.config.group, user.id))
+    ) {
       this.logger.debug(`Skipped user ${user.username}.`);
       return;
     }

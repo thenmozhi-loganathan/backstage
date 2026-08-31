@@ -1,5 +1,165 @@
 # @backstage/plugin-permission-backend
 
+## 0.7.15
+
+### Patch Changes
+
+- b754e32: Migrated tests from MSW v1 to MSW v2.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/plugin-auth-node@0.7.4
+  - @backstage/plugin-permission-common@0.9.10
+  - @backstage/plugin-permission-node@0.11.3
+
+## 0.7.15-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.4-next.0
+  - @backstage/backend-plugin-api@1.10.0-next.0
+  - @backstage/plugin-permission-node@0.11.3-next.0
+
+## 0.7.14
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.3
+  - @backstage/backend-plugin-api@1.9.3
+  - @backstage/plugin-permission-node@0.11.2
+
+## 0.7.14-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.3-next.0
+  - @backstage/plugin-permission-node@0.11.2-next.0
+  - @backstage/backend-plugin-api@1.9.3-next.0
+
+## 0.7.13
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.2
+  - @backstage/plugin-auth-node@0.7.2
+  - @backstage/plugin-permission-node@0.11.1
+
+## 0.7.13-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.2-next.0
+  - @backstage/plugin-permission-node@0.11.1-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.7.12
+
+### Patch Changes
+
+- 2f0519c: The permission backend no longer populates the removed `token` and `identity` fields on `PolicyQueryUser`, and no longer calls `auth.getPluginRequestToken()` during policy evaluation. This removes one internal round-trip per authorize request.
+- 0c5e41f: Removed unused dependencies that had no imports in source code.
+- Updated dependencies
+  - @backstage/errors@1.3.1
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/plugin-permission-node@0.11.0
+  - @backstage/plugin-auth-node@0.7.1
+  - @backstage/plugin-permission-common@0.9.9
+  - @backstage/config@1.3.8
+
+## 0.7.12-next.0
+
+### Patch Changes
+
+- 0c5e41f: Removed unused dependencies that had no imports in source code.
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/plugin-auth-node@0.7.1-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/plugin-permission-common@0.9.9-next.0
+  - @backstage/plugin-permission-node@0.10.13-next.0
+
+## 0.7.11
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/errors@1.3.0
+  - @backstage/plugin-auth-node@0.7.0
+  - @backstage/plugin-permission-node@0.10.12
+  - @backstage/config@1.3.7
+  - @backstage/plugin-permission-common@0.9.8
+
+## 0.7.11-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/plugin-auth-node@0.7.0-next.2
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/config@1.3.7-next.0
+  - @backstage/plugin-permission-common@0.9.8-next.0
+  - @backstage/plugin-permission-node@0.10.12-next.2
+
+## 0.7.11-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/plugin-auth-node@0.7.0-next.1
+  - @backstage/plugin-permission-node@0.10.12-next.1
+
+## 0.7.11-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/plugin-auth-node@0.6.15-next.0
+  - @backstage/plugin-permission-node@0.10.12-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/plugin-permission-common@0.9.7
+
+## 0.7.10
+
+### Patch Changes
+
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/plugin-permission-common@0.9.7
+  - @backstage/plugin-permission-node@0.10.11
+  - @backstage/plugin-auth-node@0.6.14
+
+## 0.7.10-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/plugin-auth-node@0.6.14-next.2
+  - @backstage/plugin-permission-node@0.10.11-next.1
+
+## 0.7.10-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/plugin-auth-node@0.6.14-next.0
+  - @backstage/plugin-permission-common@0.9.6
+  - @backstage/plugin-permission-node@0.10.11-next.0
+
 ## 0.7.9
 
 ### Patch Changes

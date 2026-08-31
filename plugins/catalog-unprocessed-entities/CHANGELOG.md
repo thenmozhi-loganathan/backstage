@@ -1,5 +1,234 @@
 # @backstage/plugin-catalog-unprocessed-entities
 
+## 0.2.35-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.17.2-next.0
+  - @backstage/core-components@0.18.14-next.0
+  - @backstage/core-compat-api@0.5.15-next.0
+
+## 0.2.34
+
+### Patch Changes
+
+- 531495a: Migrated the Unprocessed Entities UI to the Backstage UI component library. The page, dialogs, and action buttons now use the new design system, and the raw entity definition and delete confirmation dialogs have an updated look and feel. The pending entities tab now also has a search box, matching the failed entities tab.
+- Updated dependencies
+  - @backstage/core-components@0.18.13
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/ui@0.17.1
+  - @backstage/frontend-plugin-api@0.18.0
+  - @backstage/core-compat-api@0.5.14
+
+## 0.2.34-next.1
+
+### Patch Changes
+
+- 531495a: Migrated the Unprocessed Entities UI to the Backstage UI component library. The page, dialogs, and action buttons now use the new design system, and the raw entity definition and delete confirmation dialogs have an updated look and feel. The pending entities tab now also has a search box, matching the failed entities tab.
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+  - @backstage/core-compat-api@0.5.14-next.1
+  - @backstage/core-plugin-api@1.12.9-next.0
+  - @backstage/core-components@0.18.13-next.2
+
+## 0.2.34-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.13-next.0
+  - @backstage/ui@0.17.1-next.0
+  - @backstage/core-compat-api@0.5.14-next.0
+
+## 0.2.33
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/ui@0.17.0
+  - @backstage/core-components@0.18.12
+  - @backstage/core-compat-api@0.5.13
+  - @backstage/core-plugin-api@1.12.8
+
+## 0.2.33-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.17.0-next.0
+  - @backstage/core-compat-api@0.5.13-next.0
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+  - @backstage/core-components@0.18.12-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+
+## 0.2.32
+
+### Patch Changes
+
+- 80b4370: Updated instructions for enabling the `catalog-unprocessed-entities` page
+- Updated dependencies
+  - @backstage/core-components@0.18.11
+  - @backstage/frontend-plugin-api@0.17.2
+  - @backstage/ui@0.16.0
+  - @backstage/core-compat-api@0.5.12
+  - @backstage/core-plugin-api@1.12.7
+
+## 0.2.32-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+  - @backstage/core-components@0.18.11-next.1
+  - @backstage/ui@0.15.1-next.0
+  - @backstage/core-compat-api@0.5.12-next.1
+  - @backstage/core-plugin-api@1.12.7-next.0
+
+## 0.2.32-next.0
+
+### Patch Changes
+
+- 80b4370: Updated instructions for enabling the `catalog-unprocessed-entities` page
+- Updated dependencies
+  - @backstage/core-components@0.18.11-next.0
+  - @backstage/core-compat-api@0.5.12-next.0
+
+## 0.2.31
+
+### Patch Changes
+
+- 44d77e9: Removed separate nav item extensions. Sidebar entries are now provided via `title` and `icon` on each plugin's page extension.
+- Updated dependencies
+  - @backstage/core-components@0.18.10
+  - @backstage/ui@0.15.0
+  - @backstage/errors@1.3.1
+  - @backstage/frontend-plugin-api@0.17.0
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/core-compat-api@0.5.11
+  - @backstage/plugin-catalog-unprocessed-entities-common@0.0.16
+
+## 0.2.30-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.10-next.0
+  - @backstage/ui@0.15.0-next.0
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/core-compat-api@0.5.11-next.0
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/plugin-catalog-unprocessed-entities-common@0.0.15-next.0
+
+## 0.2.29
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- b6f1fae: The unprocessed entities view is now primarily intended for use as a tab within the DevTools plugin. The standalone page is still available but disabled by default. To re-enable it, add the following to your `app-config.yaml`:
+
+  ```yaml
+  app:
+    extensions:
+      - page:catalog-unprocessed-entities
+  ```
+
+- Updated dependencies
+  - @backstage/ui@0.14.0
+  - @backstage/errors@1.3.0
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/core-components@0.18.9
+  - @backstage/core-compat-api@0.5.10
+  - @backstage/core-plugin-api@1.12.5
+  - @backstage/plugin-catalog-unprocessed-entities-common@0.0.14
+
+## 0.2.29-next.2
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- Updated dependencies
+  - @backstage/ui@0.14.0-next.2
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/core-components@0.18.9-next.1
+  - @backstage/core-compat-api@0.5.10-next.2
+  - @backstage/core-plugin-api@1.12.5-next.2
+  - @backstage/frontend-plugin-api@0.16.0-next.2
+  - @backstage/plugin-catalog-unprocessed-entities-common@0.0.14-next.0
+
+## 0.2.29-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.14.0-next.1
+  - @backstage/frontend-plugin-api@0.16.0-next.1
+  - @backstage/core-compat-api@0.5.10-next.1
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/core-plugin-api@1.12.5-next.1
+
+## 0.2.29-next.0
+
+### Patch Changes
+
+- b6f1fae: The unprocessed entities view is now primarily intended for use as a tab within the DevTools plugin. The standalone page is still available but disabled by default. To re-enable it, add the following to your `app-config.yaml`:
+
+  ```yaml
+  app:
+    extensions:
+      - page:catalog-unprocessed-entities
+  ```
+
+- Updated dependencies
+  - @backstage/ui@0.14.0-next.0
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/frontend-plugin-api@0.15.2-next.0
+  - @backstage/core-compat-api@0.5.10-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+  - @backstage/errors@1.2.7
+  - @backstage/plugin-catalog-unprocessed-entities-common@0.0.13
+
+## 0.2.27
+
+### Patch Changes
+
+- 538c985: Updated installation documentation to use feature discovery as the default.
+- aa29b50: New frontend system pages now use the default plugin header together with `HeaderPage` instead of the legacy core page header pattern.
+- 3f36ce1: Updated alpha plugin icons to follow the new frontend icon sizing rules when rendered in plugin and navigation surfaces.
+- f4a1edd: Removed the deprecated `DevToolsContentBlueprint` from `@backstage/plugin-devtools-react`. DevTools pages in the new frontend system now use `SubPageBlueprint` tabs instead, and the catalog unprocessed entities alpha extension now attaches to DevTools as a subpage.
+- Updated dependencies
+  - @backstage/ui@0.13.0
+  - @backstage/core-compat-api@0.5.9
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/core-components@0.18.8
+  - @backstage/frontend-plugin-api@0.15.0
+
+## 0.2.27-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-compat-api@0.5.9-next.2
+  - @backstage/frontend-plugin-api@0.15.0-next.1
+  - @backstage/core-plugin-api@1.12.4-next.1
+  - @backstage/core-components@0.18.8-next.1
+  - @backstage/plugin-devtools-react@0.1.2-next.1
+
+## 0.2.27-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/core-compat-api@0.5.9-next.0
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/errors@1.2.7
+  - @backstage/plugin-catalog-unprocessed-entities-common@0.0.13
+  - @backstage/plugin-devtools-react@0.1.2-next.0
+
 ## 0.2.26
 
 ### Patch Changes

@@ -37,8 +37,9 @@ import { RepositoryTreeSchema } from '@gitbeaker/rest';
  */
 export const createGitlabRepoPushAction = (options: {
   integrations: ScmIntegrationRegistry;
+  requireScmUserCredentials?: boolean;
 }) => {
-  const { integrations } = options;
+  const { integrations, requireScmUserCredentials } = options;
 
   return createTemplateAction({
     id: 'gitlab:repo:push',
@@ -83,6 +84,12 @@ export const createGitlabRepoPushAction = (options: {
                 'The action to be used for git commit. Defaults to create, but can be set to update or delete',
             })
             .optional(),
+        allowEmpty: z =>
+          z
+            .boolean({
+              description: 'Allow an empty commit to be created.',
+            })
+            .optional(),
       },
       output: {
         projectid: z =>
@@ -94,9 +101,12 @@ export const createGitlabRepoPushAction = (options: {
             description: 'Gitlab Project path',
           }),
         commitHash: z =>
-          z.string({
-            description: 'The git commit hash of the commit',
-          }),
+          z
+            .string({
+              description:
+                'The git commit hash of the commit, or omitted when there were no file changes to commit and `allowEmpty` is not true (covers both the default of unset and an explicit `false`).',
+            })
+            .optional(),
       },
     },
     async handler(ctx) {
@@ -107,6 +117,7 @@ export const createGitlabRepoPushAction = (options: {
         sourcePath,
         token,
         commitAction,
+        allowEmpty,
       } = ctx.input;
 
       const { owner, repo, project } = parseRepoUrl(repoUrl, integrations);
@@ -116,6 +127,7 @@ export const createGitlabRepoPushAction = (options: {
         integrations,
         token,
         repoUrl,
+        requireScmUserCredentials,
       });
 
       let fileRoot: string;
@@ -208,16 +220,34 @@ export const createGitlabRepoPushAction = (options: {
         }
       }
 
+      if (actions.length === 0 && !allowEmpty) {
+        ctx.logger.warn(
+          `No file changes to commit to ${repoID} on branch '${branchName}'; skipping commit. Set 'allowEmpty: true' to create an empty commit.`,
+        );
+        ctx.output('projectid', repoID);
+        ctx.output('projectPath', repoID);
+        return;
+      }
+
       try {
         const commitId = await ctx.checkpoint({
           key: `commit.create.${repoID}.${branchName}`,
           fn: async () => {
-            const commit = await api.Commits.create(
-              repoID,
-              branchName,
-              ctx.input.commitMessage,
-              actions,
-            );
+            const commit =
+              allowEmpty !== undefined
+                ? await api.Commits.create(
+                    repoID,
+                    branchName,
+                    ctx.input.commitMessage,
+                    actions,
+                    { allowEmpty } as any,
+                  )
+                : await api.Commits.create(
+                    repoID,
+                    branchName,
+                    ctx.input.commitMessage,
+                    actions,
+                  );
             return commit.id;
           },
         });

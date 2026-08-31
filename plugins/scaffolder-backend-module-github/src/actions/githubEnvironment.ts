@@ -35,8 +35,9 @@ import { CatalogService } from '@backstage/plugin-catalog-node';
 export function createGithubEnvironmentAction(options: {
   integrations: ScmIntegrationRegistry;
   catalog: CatalogService;
+  requireScmUserCredentials?: boolean;
 }) {
-  const { integrations, catalog } = options;
+  const { integrations, catalog, requireScmUserCredentials } = options;
   // For more information on how to define custom actions, see
   //   https://backstage.io/docs/features/software-templates/writing-custom-actions
   return createTemplateAction({
@@ -111,7 +112,7 @@ Wildcard characters will not match \`/\`. For example, to match tags that begin 
           z
             .number({
               description:
-                'The time to wait before creating or updating the environment (in milliseconds)',
+                'The time to wait before creating or updating the environment (in minutes)',
             })
             .optional(),
         preventSelfReview: z =>
@@ -157,6 +158,7 @@ Wildcard characters will not match \`/\`. For example, to match tags that begin 
 
       const octokitOptions = await getOctokitOptions({
         integrations,
+        requireScmUserCredentials,
         token: providedToken,
         host,
         owner,

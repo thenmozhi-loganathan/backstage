@@ -23,7 +23,7 @@ PR is merged. This is typically done every Tuesday around noon CET.
 - Check [`Version Packages (next)` Pull Request](https://github.com/backstage/backstage/pulls?q=is%3Aopen+is%3Apr+in%3Atitle+%22Version+Packages+%28next%29%22)
   - Verify the version we are shipping is correct, by looking at the version packages PR title. It should be "Version Packages (next)"
   - Check `pre.json` in [the `.changeset` folder](https://github.com/backstage/backstage/blob/master/.changeset) - it should have `"mode": "pre"` near the top. If you encounter `"mode": "exit"` or if the file doesn't exist, it indicates a mainline release.
-- Verify that there are no active/unfinished `sync_version-packages` actions running (https://github.com/backstage/backstage/actions/workflows/sync_version-packages.yml)
+- Verify that there are no active/unfinished `sync_version-packages` actions running (<https://github.com/backstage/backstage/actions/workflows/sync_version-packages.yml>)
   - Locking the main branch will prevent new ones to be created, but be sure to check for running actions again after unlocking, since it may cause pending auto-merge PRs to be merged.
 - Check [`Version Packages (next)` Pull Request](https://github.com/backstage/backstage/pulls?q=is%3Aopen+is%3Apr+in%3Atitle+%22Version+Packages+%28next%29%22) for sufficient approval to be merged
   - Check generated `changelog` in the changed files of the pull request under `docs/releases` to see if there are any unexpected major bumps e.g. by searching the file
@@ -47,12 +47,12 @@ Additional steps for the main line release
   - Check for mentions of "major" & "breaking" and if they are expected in the current release
   - Verify the version we are shipping is correct
 - Create Release Notes
-  - There exists a [release notes template](./.release-notes-template.md) for creating the release notes. It can already be created after the last main line release to keep track of major changes during the month
+  - There exists a release notes template (`.release-notes-template.md`) for creating the release notes. It can already be created after the last main line release to keep track of major changes during the month
   - The content is picked by relevancy showcasing the work of the community during the month of the release
   - Mention newly added packages or features
   - Mention any security fixes
 - Create Release Notes PR
-  - Add the release note file as [`/docs/releases/vx.y.0.md`](./releases)
+  - Add the release note file as [`/docs/releases/vx.y.0.md`](https://backstage.io/docs/releases/)
   - Finally copy the content, without the metadata header, into the description of the [`Version Packages` Pull Request](https://github.com/backstage/backstage/pulls?q=is%3Aopen+is%3Apr+in%3Atitle+%22Version+Packages)
 
 Once the release has been published edit the newly created release in the [GitHub repository](https://github.com/backstage/backstage/releases) and replace the text content with the release notes.

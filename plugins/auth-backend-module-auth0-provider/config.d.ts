@@ -32,7 +32,18 @@ export interface Config {
           audience?: string;
           connection?: string;
           connectionScope?: string;
+          /**
+           * Controls the prompt sent to Auth0. Set to `auto` to omit the
+           * parameter and let Auth0 determine whether to prompt the user.
+           * Defaults to `consent`.
+           */
+          prompt?: string;
           organization?: string;
+          /**
+           * Whether to perform federated logout, clearing both the Auth0
+           * session and any upstream IdP session. Defaults to false.
+           */
+          federatedLogout?: boolean;
           sessionDuration?: HumanDuration | string;
         };
       };

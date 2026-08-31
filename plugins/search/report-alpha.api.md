@@ -10,7 +10,8 @@ import { ConfigurableExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { ExtensionBlueprintParams } from '@backstage/frontend-plugin-api';
 import { ExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { ExtensionInput } from '@backstage/frontend-plugin-api';
-import { IconComponent } from '@backstage/frontend-plugin-api';
+import { HomePageWidgetBlueprintParams } from '@backstage/plugin-home-react/alpha';
+import { HomePageWidgetData } from '@backstage/plugin-home-react/alpha';
 import { IconElement } from '@backstage/frontend-plugin-api';
 import { JSX as JSX_2 } from 'react';
 import { OverridableExtensionDefinition } from '@backstage/frontend-plugin-api';
@@ -44,26 +45,14 @@ const _default: OverridableFrontendPlugin<
         params: ApiFactory<TApi, TImpl, TDeps>,
       ) => ExtensionBlueprintParams<AnyApiFactory>;
     }>;
-    'nav-item:search': OverridableExtensionDefinition<{
-      kind: 'nav-item';
-      name: undefined;
+    'home-page-widget:search/search-bar': OverridableExtensionDefinition<{
+      kind: 'home-page-widget';
+      name: 'search-bar';
       config: {};
       configInput: {};
-      output: ExtensionDataRef<
-        {
-          title: string;
-          icon: IconComponent;
-          routeRef: RouteRef<undefined>;
-        },
-        'core.nav-item.target',
-        {}
-      >;
+      output: ExtensionDataRef<HomePageWidgetData, 'home.widget.data', {}>;
       inputs: {};
-      params: {
-        title: string;
-        icon: IconComponent;
-        routeRef: RouteRef<undefined>;
-      };
+      params: HomePageWidgetBlueprintParams;
     }>;
     'page:search': OverridableExtensionDefinition<{
       config: {
@@ -73,8 +62,8 @@ const _default: OverridableFrontendPlugin<
       };
       configInput: {
         noTrack?: boolean | undefined;
-        title?: string | undefined;
         path?: string | undefined;
+        title?: string | undefined;
       };
       output:
         | ExtensionDataRef<string, 'core.routing.path', {}>
@@ -181,7 +170,6 @@ const _default: OverridableFrontendPlugin<
       kind: 'page';
       name: undefined;
       params: {
-        defaultPath?: [Error: `Use the 'path' param instead`];
         path: string;
         title?: string;
         icon?: IconElement;
@@ -212,29 +200,6 @@ export const searchApi: OverridableExtensionDefinition<{
 }>;
 
 // @alpha (undocumented)
-export const searchNavItem: OverridableExtensionDefinition<{
-  kind: 'nav-item';
-  name: undefined;
-  config: {};
-  configInput: {};
-  output: ExtensionDataRef<
-    {
-      title: string;
-      icon: IconComponent;
-      routeRef: RouteRef<undefined>;
-    },
-    'core.nav-item.target',
-    {}
-  >;
-  inputs: {};
-  params: {
-    title: string;
-    icon: IconComponent;
-    routeRef: RouteRef<undefined>;
-  };
-}>;
-
-// @alpha (undocumented)
 export const searchPage: OverridableExtensionDefinition<{
   config: {
     noTrack: boolean;
@@ -243,8 +208,8 @@ export const searchPage: OverridableExtensionDefinition<{
   };
   configInput: {
     noTrack?: boolean | undefined;
-    title?: string | undefined;
     path?: string | undefined;
+    title?: string | undefined;
   };
   output:
     | ExtensionDataRef<string, 'core.routing.path', {}>
@@ -351,7 +316,6 @@ export const searchPage: OverridableExtensionDefinition<{
   kind: 'page';
   name: undefined;
   params: {
-    defaultPath?: [Error: `Use the 'path' param instead`];
     path: string;
     title?: string;
     icon?: IconElement;
@@ -361,7 +325,7 @@ export const searchPage: OverridableExtensionDefinition<{
   };
 }>;
 
-// @alpha (undocumented)
+// @alpha @deprecated (undocumented)
 export const searchTranslationRef: TranslationRef<
   'search',
   {

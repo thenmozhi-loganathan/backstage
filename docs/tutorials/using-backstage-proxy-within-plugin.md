@@ -21,15 +21,16 @@ If your plugin requires access to an API, backstage offers
 
 - [Setting up the backstage proxy](#setting-up-the-backstage-proxy)
 - [Calling an API using the backstage proxy](#calling-an-api-using-the-backstage-proxy)
-  - [Option 1: Calling the proxy directly from the frontend plugin](#option-1-calling-the-proxy-directly-from-the-frontend-plugin)
-  - [Option 2: Defining the API client interface](#defining-the-api-client-interface)
-    - [Creating the API client](#creating-the-api-client)
-    - [Bundling your ApiRef with your plugin](#bundling-your-apiref-with-your-plugin)
-    - [Using the API in your components](#using-your-plugin-in-your-components)
+- [Option 1: Calling the proxy directly from the frontend plugin](#option-1-calling-the-proxy-directly-from-the-frontend-plugin)
+- [Option 2: Defining the API client interface](#option-2-defining-the-api-client-interface)
+  - [Defining the API client interface](#defining-the-api-client-interface)
+  - [Creating the API client](#creating-the-api-client)
+  - [Bundling your ApiRef with your plugin](#bundling-your-apiref-with-your-plugin)
+  - [Using the API in your components](#using-the-api-in-your-components)
 
 ## Setting up the backstage proxy
 
-Let's say your plugin's API is hosted at _https://api.myawesomeservice.com/v1_,
+Let's say your plugin's API is hosted at _<https://api.myawesomeservice.com/v1>_,
 and you want to be able to access it within backstage at
 `/api/proxy/<your-proxy-uri>`, and add a default header called
 `X-Custom-Source`. You will need to add the following to `app-config.yaml`:
@@ -46,7 +47,7 @@ proxy:
 You can find more details about the proxy config options in the
 [proxying section](../plugins/proxying.md).
 
-# Calling an API using the backstage proxy
+## Calling an API using the backstage proxy
 
 If you followed the previous steps, you should now be able to access your API by
 calling `${backend-url}/api/proxy/<your-proxy-uri>`. The reason why
@@ -71,20 +72,22 @@ import {
   fetchApiRef,
 } from '@backstage/core-plugin-api';
 import { Progress, Alert } from '@backstage/core-components';
-import useAsync from 'react-use/esm/useAsync';
+import { useAsync, useMountEffect } from '@react-hookz/web';
 import { myAwesomeApiRef } from '../../api';
 
 export const AwesomeUsersTable = () => {
   const fetchApi = useApi(fetchApiRef);
   const discoveryApi = useApi(discoveryApiRef);
 
-  const { value, loading, error } = useAsync(async () => {
+  const [{ status, result, error }, { execute }] = useAsync(async () => {
     const baseUrl = await discoveryApi.getBaseUrl('proxy');
     // As configured previously for the backend proxy
     const resp = await fetchApi.fetch(`${baseUrl}/<your-proxy-uri>`);
     if (!resp.ok) throw new Error(resp.statusText);
     return resp.json();
-  }, [fetchApi, discoveryApi]);
+  });
+
+  useMountEffect(execute);
 
   // ...
 };
@@ -94,20 +97,20 @@ export const AwesomeUsersTable = () => {
 
 This section describes the steps to wrap your API client in a [Utility API](../api/utility-apis.md), which are:
 
-- use [`createApiRef`](https://backstage.io/api/stable/functions/_backstage_frontend-plugin-api.createApiRef.html) to create a
-  new [`ApiRef`](https://backstage.io/api/stable/types/_backstage_frontend-plugin-api.ApiRef.html)
-- register an [`ApiFactory`](https://backstage.io/api/stable/types/_backstage_frontend-plugin-api.ApiFactory.html) with
+- use [`createApiRef`](https://backstage.io/api/stable/functions/_backstage_frontend-plugin-api.index.createApiRef.html) to create a
+  new [`ApiRef`](https://backstage.io/api/stable/types/_backstage_frontend-plugin-api.index.ApiRef.html)
+- register an [`ApiFactory`](https://backstage.io/api/stable/types/_backstage_frontend-plugin-api.index.ApiFactory.html) with
   your plugin using
-  [`createApiFactory`](https://backstage.io/api/stable/functions/_backstage_frontend-plugin-api.createApiFactory.html). This
+  [`createApiFactory`](https://backstage.io/api/stable/functions/_backstage_frontend-plugin-api.index.createApiFactory.html). This
   will wrap your API implementation, associate your `ApiRef` with your
   implementation and tell backstage how to instantiate it
 - finally, you can use your API in your components by calling
-  [`useApi`](https://backstage.io/api/stable/functions/_backstage_frontend-plugin-api.useApi.html)
+  [`useApi`](https://backstage.io/api/stable/functions/_backstage_frontend-plugin-api.index.useApi.html)
 
 ### Defining the API client interface
 
 Continuing from the previous example, let's assume that
-_https://api.myawesomeservice.com/v1_ has the following endpoints:
+_<https://api.myawesomeservice.com/v1>_ has the following endpoints:
 
 | Method                   | Description             |
 | :----------------------- | :---------------------- |
@@ -187,8 +190,8 @@ export class MyAwesomeApiClient implements MyAwesomeApi {
 ```
 
 > Check out the docs for more information on the
-> [DiscoveryApi](https://backstage.io/api/stable/types/_backstage_frontend-plugin-api.DiscoveryApi.html) or the
-> [FetchApi](https://backstage.io/api/stable/types/_backstage_frontend-plugin-api.FetchApi.html)
+> [DiscoveryApi](https://backstage.io/api/stable/types/_backstage_frontend-plugin-api.index.DiscoveryApi.html) or the
+> [FetchApi](https://backstage.io/api/stable/types/_backstage_frontend-plugin-api.index.FetchApi.html)
 
 ### Bundling your ApiRef with your plugin
 
@@ -233,20 +236,22 @@ export const myCustomPlugin = createPlugin({
 ### Using the API in your components
 
 Now you should be able to access your API using the backstage hook
-[`useApi`](https://backstage.io/api/stable/functions/_backstage_frontend-plugin-api.useApi.html) from within your plugin code.
+[`useApi`](https://backstage.io/api/stable/functions/_backstage_frontend-plugin-api.index.useApi.html) from within your plugin code.
 
 ```ts title="plugins/my-awesome-plugin/src/components/AwesomeUsersTable.tsx"
 import { useApi } from '@backstage/core-plugin-api';
 import { myAwesomeApiRef } from '../../api';
-import useAsync from 'react-use/esm/useAsync';
+import { useAsync, useMountEffect } from '@react-hookz/web';
 
 export const AwesomeUsersTable = () => {
   const apiClient = useApi(myAwesomeApiRef);
 
-  const { value, loading, error } = useAsync(async () => {
+  const [{ status, result, error }, { execute }] = useAsync(async () => {
     const users = await apiClient.listUsers();
     return users;
   }, [apiClient]);
+
+  useMountEffect(execute);
 
   // ...
 };

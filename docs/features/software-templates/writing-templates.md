@@ -325,6 +325,57 @@ spec:
         token: ${{ each.value.token }}
 ```
 
+### Defining a Secrets Schema
+
+You can define a JSON Schema for secrets that will be validated when a task is created. This is useful when secrets are passed programmatically (e.g., via CI/CD pipelines or API calls) rather than through the UI form. The schema ensures that required secrets are provided before task execution begins.
+
+```yaml
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: publish-to-npm
+  title: Publish to NPM
+spec:
+  owner: backstage/techdocs-core
+  type: service
+
+  # Define required secrets with a JSON Schema
+  secrets:
+    schema:
+      required:
+        - NPM_TOKEN
+      properties:
+        NPM_TOKEN:
+          type: string
+          description: NPM authentication token for publishing
+
+  parameters:
+    - title: Package Details
+      properties:
+        packageName:
+          type: string
+          title: Package Name
+
+  steps:
+    - id: publish
+      action: npm:publish
+      input:
+        packageName: ${{ parameters.packageName }}
+        token: ${{ secrets.NPM_TOKEN }}
+```
+
+When a task is created without the required secrets, the API returns a `400` error with a descriptive message:
+
+```json
+{
+  "errors": [
+    {
+      "message": "secrets.NPM_TOKEN is required"
+    }
+  ]
+}
+```
+
 ### Custom step layouts
 
 If you find that the default layout of the form used in a particular step does not meet your needs then you can supply your own [custom step layout](./writing-custom-step-layouts.md).
@@ -525,7 +576,7 @@ token from the user, which you can do on a per-provider basis, in case your
 template can be published to multiple providers.
 
 Note, that you will need to configure an [authentication provider](../../auth/index.md#configuring-authentication-providers), alongside the
-[`ScmAuthApi`](../../auth/index.md#scaffolder-configuration-software-templates) for your source code management (SCM) service to make this feature work.
+[`ScmAuthApi`](../../auth/index.md#custom-scmauthapi-implementation) for your source code management (SCM) service to make this feature work.
 
 ### The Repository Branch Picker
 
@@ -662,7 +713,7 @@ template. These follow the same standard format:
       name: ${{ parameters.name }}
 ```
 
-:::warning Action ID Naming
+:::warning[Action ID Naming]
 
 When using custom actions, **use camelCase for action IDs** to avoid issues with template expressions. Action IDs with dashes will cause expressions like `${{ steps.my-action.output.value }}` to return `NaN` instead of the expected value.
 
@@ -674,7 +725,8 @@ By default we ship some [built in actions](./builtin-actions.md) that you can
 take a look at, or you can
 [create your own custom actions](./writing-custom-actions.md).
 
-When `each` is provided, the current iteration value is available in the `${{ each }}` input.
+The `each` value must resolve to an array or object. The current iteration value
+is available in the `${{ each }}` input.
 
 Examples:
 
@@ -695,6 +747,75 @@ input:
 
 When `each` is used, the outputs of a repeated step are returned as an array of outputs from each iteration.
 
+### Status Check Functions - `always()` and `failure()`
+
+By default, when a step fails during a scaffolder run, all subsequent steps are skipped and the task is marked as failed. This can be problematic when your template creates external resources (repositories, cloud infrastructure, deployments) that need to be cleaned up if a later step fails.
+
+Status check functions give you control over which steps run even after a failure. You use them inside a `${{ ... }}` template expression in the `if` field of a step.
+
+| Function    | Description                                                                  |
+| ----------- | ---------------------------------------------------------------------------- |
+| `always()`  | Always runs the step, regardless of whether previous steps passed or failed. |
+| `failure()` | Runs the step only when a previous step has failed.                          |
+
+These functions must be used as template expressions such as `${{ always() }}` or `${{ failure() }}`.
+
+After a step has failed, the scaffolder only attempts later steps whose `if` expression invokes one of these status check functions.
+
+#### Usage
+
+```yaml
+steps:
+  - id: cleanup
+    name: Cleanup Resources
+    action: my:cleanup:action
+    if: ${{ always() }}
+```
+
+#### Example: Cleanup on failure
+
+A common pattern is to create resources in early steps and add cleanup steps
+that only run if something goes wrong:
+
+```yaml
+steps:
+  - id: create-repo
+    name: Create Repository
+    action: publish:github
+    input:
+      repoUrl: ${{ parameters.repoUrl }}
+
+  - id: deploy
+    name: Deploy to Kubernetes
+    action: deploy:kubernetes
+    input:
+      manifest: ./k8s/deployment.yaml
+
+  # Only runs when a previous step failed — cleans up the repository
+  - id: cleanup-repo
+    name: Delete Repository
+    action: github:repo:delete
+    if: ${{ failure() }}
+    input:
+      repoUrl: ${{ parameters.repoUrl }}
+
+  # Always runs — post an audit event regardless of outcome
+  - id: audit
+    name: Post Audit Event
+    action: debug:log
+    if: ${{ always() }}
+    input:
+      message: 'Scaffolder run completed for ${{ parameters.repoUrl }}'
+
+  # Does not run after a failure, because it does not invoke a status check function
+  - id: plain-truthy-condition
+    name: Plain Truthy Condition
+    action: debug:log
+    if: ${{ true }}
+    input:
+      message: 'This step is skipped after a previous failure'
+```
+
 ## Outputs
 
 Each individual step can output some variables that can be used in the
@@ -714,6 +835,26 @@ output:
     - title: More information
       content: |
         **Entity URL:** `${{ steps['publish'].output.remoteUrl }}`
+```
+
+Output `links` and `text` items support an optional `if` condition, using the same syntax as step conditions. Items where the condition evaluates to false are excluded from the output:
+
+```yaml
+output:
+  links:
+    - title: Repository
+      url: ${{ steps['publish'].output.remoteUrl }}
+    - if: ${{ parameters.enableCI === "Yes" }}
+      title: CI Dashboard
+      url: https://ci.example.com/${{ parameters.name }}
+  text:
+    - title: Summary
+      content: |
+        **Component:** `${{ parameters.name }}`
+    - if: ${{ parameters.showDetails }}
+      title: Details
+      content: |
+        **CI enabled:** ${{ parameters.enableCI }}
 ```
 
 ## The templating syntax
@@ -773,8 +914,10 @@ spec:
 ```
 
 Afterwards, if you are using the builtin templating action, you can start using
-the variables in your code. You can use also any other templating functions from
-[Nunjucks](https://mozilla.github.io/nunjucks/templating.html#tags) as well.
+the variables in your code. You can also use the template tags and functions
+supported by [Nunjitsu](https://github.com/Rugvip/nunjitsu). Check the
+[Nunjitsu compatibility guide](https://github.com/Rugvip/nunjitsu/blob/main/docs/compatibility.md)
+before using syntax from the Nunjucks documentation.
 
 ```bash
 #!/bin/bash
@@ -794,9 +937,12 @@ code part of the `JSONSchema`, or you can read more about our
 ### More about expressions
 
 The `${{ }}` constructs in your template are evaluated using the
-powerful [Nunjucks templating engine](https://mozilla.github.io/nunjucks/).
-To learn more about basic Nunjucks templating please see
-[templating documentation](https://mozilla.github.io/nunjucks/templating.html).
+[Nunjitsu template engine](https://github.com/Rugvip/nunjitsu), which supports a
+focused subset of Nunjucks syntax. Use the
+[Nunjucks templating documentation](https://mozilla.github.io/nunjucks/templating.html)
+as a general syntax reference, and check the
+[Nunjitsu compatibility guide](https://github.com/Rugvip/nunjitsu/blob/main/docs/compatibility.md)
+for the supported features.
 
 Information about Backstage's built-in templating extensions, as well as how to
 create your own customizations, may be found at

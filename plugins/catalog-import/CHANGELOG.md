@@ -1,5 +1,310 @@
 # @backstage/plugin-catalog-import
 
+## 0.13.17-next.0
+
+### Patch Changes
+
+- 5d6a62b: Fixed the owner selected in the import stepper being written to the generated `catalog-info.yaml` as a display name instead of an entity reference. Groups are still suggested by their display name, but selecting one now sets a valid `spec.owner`, for example picking `My Team` results in `my-team`.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.2-next.0
+  - @backstage/core-components@0.18.14-next.0
+
+## 0.13.16
+
+### Patch Changes
+
+- 74fb85d: Remove obsolete location import error handling in StepReviewLocation.
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/core-components@0.18.13
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/plugin-catalog-react@3.2.1
+  - @backstage/integration@2.1.0
+  - @backstage/frontend-plugin-api@0.18.0
+  - @backstage/integration-react@1.2.21
+  - @backstage/plugin-permission-react@0.5.4
+
+## 0.13.16-next.2
+
+### Patch Changes
+
+- 74fb85d: Remove obsolete location import error handling in StepReviewLocation.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.1-next.2
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+  - @backstage/core-plugin-api@1.12.9-next.0
+  - @backstage/core-components@0.18.13-next.2
+  - @backstage/integration-react@1.2.21-next.1
+  - @backstage/plugin-permission-react@0.5.4-next.0
+
+## 0.13.16-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.1-next.1
+  - @backstage/core-components@0.18.13-next.1
+  - @backstage/integration@2.1.0-next.0
+  - @backstage/integration-react@1.2.21-next.0
+
+## 0.13.16-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.13-next.0
+  - @backstage/plugin-catalog-react@3.2.1-next.0
+
+## 0.13.15
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/plugin-catalog-react@3.2.0
+  - @backstage/core-components@0.18.12
+  - @backstage/catalog-client@1.16.1
+  - @backstage/core-plugin-api@1.12.8
+  - @backstage/integration-react@1.2.20
+  - @backstage/plugin-permission-react@0.5.3
+
+## 0.13.15-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.0-next.0
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+  - @backstage/catalog-client@1.16.1-next.0
+  - @backstage/core-components@0.18.12-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+  - @backstage/integration-react@1.2.20-next.0
+  - @backstage/plugin-permission-react@0.5.3-next.0
+
+## 0.13.14
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-client@1.16.0
+  - @backstage/plugin-catalog-react@3.1.0
+  - @backstage/core-components@0.18.11
+  - @backstage/integration@2.0.3
+  - @backstage/frontend-plugin-api@0.17.2
+  - @backstage/core-plugin-api@1.12.7
+  - @backstage/integration-react@1.2.19
+  - @backstage/plugin-permission-react@0.5.2
+
+## 0.13.14-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.3-next.1
+  - @backstage/catalog-client@1.16.0-next.1
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+  - @backstage/core-components@0.18.11-next.1
+  - @backstage/core-plugin-api@1.12.7-next.0
+  - @backstage/plugin-catalog-react@3.0.1-next.1
+  - @backstage/integration-react@1.2.19-next.1
+  - @backstage/plugin-permission-react@0.5.2-next.0
+
+## 0.13.14-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-client@1.16.0-next.0
+  - @backstage/plugin-catalog-react@3.0.1-next.0
+  - @backstage/core-components@0.18.11-next.0
+  - @backstage/integration@2.0.3-next.0
+  - @backstage/integration-react@1.2.19-next.0
+
+## 0.13.13
+
+### Patch Changes
+
+- f635139: Limited `@remixicon/react` dependency to versions below 4.9.0 due to a license change in that release.
+- 39eb61b: Internal refactor
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/core-components@0.18.10
+  - @backstage/errors@1.3.1
+  - @backstage/frontend-plugin-api@0.17.0
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/integration@2.0.2
+  - @backstage/plugin-catalog-react@3.0.0
+  - @backstage/catalog-client@1.15.1
+  - @backstage/config@1.3.8
+  - @backstage/integration-react@1.2.18
+  - @backstage/plugin-catalog-common@1.1.10
+  - @backstage/plugin-permission-react@0.5.1
+
+## 0.13.13-next.1
+
+### Patch Changes
+
+- f635139: Limited `@remixicon/react` dependency to versions below 4.9.0 due to a license change in that release.
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.0-next.1
+  - @backstage/catalog-model@1.8.1-next.1
+  - @backstage/core-plugin-api@1.12.6-next.1
+  - @backstage/plugin-catalog-react@2.1.5-next.1
+
+## 0.13.13-next.0
+
+### Patch Changes
+
+- 39eb61b: Internal refactor
+- Updated dependencies
+  - @backstage/core-components@0.18.10-next.0
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/integration@2.0.2-next.0
+  - @backstage/plugin-catalog-react@2.1.5-next.0
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/integration-react@1.2.18-next.0
+  - @backstage/catalog-client@1.15.1-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/plugin-catalog-common@1.1.10-next.0
+  - @backstage/plugin-permission-react@0.5.1-next.0
+
+## 0.13.12
+
+### Patch Changes
+
+- fa0593e: Added `title` and `icon` to the new frontend system plugin definition.
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- e5af44c: Replaced deprecated `humanizeEntityRef` usage with the Catalog Presentation API.
+- Updated dependencies
+  - @backstage/errors@1.3.0
+  - @backstage/catalog-model@1.8.0
+  - @backstage/plugin-catalog-react@2.1.2
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/core-components@0.18.9
+  - @backstage/catalog-client@1.15.0
+  - @backstage/plugin-permission-react@0.5.0
+  - @backstage/integration@2.0.1
+  - @backstage/config@1.3.7
+  - @backstage/core-plugin-api@1.12.5
+  - @backstage/integration-react@1.2.17
+  - @backstage/plugin-catalog-common@1.1.9
+
+## 0.13.12-next.2
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- e5af44c: Replaced deprecated `humanizeEntityRef` usage with the Catalog Presentation API.
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/core-components@0.18.9-next.1
+  - @backstage/plugin-catalog-react@2.1.2-next.2
+  - @backstage/integration@2.0.1-next.0
+  - @backstage/catalog-client@1.14.1-next.0
+  - @backstage/catalog-model@1.7.8-next.0
+  - @backstage/config@1.3.7-next.0
+  - @backstage/core-plugin-api@1.12.5-next.2
+  - @backstage/frontend-plugin-api@0.16.0-next.2
+  - @backstage/integration-react@1.2.17-next.1
+  - @backstage/plugin-catalog-common@1.1.9-next.0
+  - @backstage/plugin-permission-react@0.4.42-next.1
+
+## 0.13.12-next.1
+
+### Patch Changes
+
+- fa0593e: Added `title` and `icon` to the new frontend system plugin definition.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.2-next.1
+  - @backstage/frontend-plugin-api@0.16.0-next.1
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/core-plugin-api@1.12.5-next.1
+
+## 0.13.12-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.1-next.0
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/frontend-plugin-api@0.15.2-next.0
+  - @backstage/integration-react@1.2.17-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+  - @backstage/catalog-client@1.14.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/integration@2.0.0
+  - @backstage/plugin-catalog-common@1.1.8
+  - @backstage/plugin-permission-react@0.4.42-next.0
+
+## 0.13.11
+
+### Patch Changes
+
+- 538c985: Updated installation documentation to use feature discovery as the default.
+- 0be2541: Promoted the plugin's translation ref to the stable package entry point. It was previously only available through the alpha entry point.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.0
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/core-components@0.18.8
+  - @backstage/frontend-plugin-api@0.15.0
+  - @backstage/catalog-client@1.14.0
+  - @backstage/integration@2.0.0
+  - @backstage/plugin-permission-react@0.4.41
+  - @backstage/catalog-model@1.7.7
+  - @backstage/integration-react@1.2.16
+
+## 0.13.11-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.15.0-next.1
+  - @backstage/core-plugin-api@1.12.4-next.1
+  - @backstage/catalog-client@1.14.0-next.2
+  - @backstage/plugin-catalog-react@2.1.0-next.2
+  - @backstage/integration@2.0.0-next.2
+  - @backstage/core-components@0.18.8-next.1
+
+## 0.13.11-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-client@1.14.0-next.1
+  - @backstage/plugin-catalog-react@2.1.0-next.1
+  - @backstage/integration@2.0.0-next.1
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/errors@1.2.7
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/integration-react@1.2.16-next.1
+  - @backstage/plugin-catalog-common@1.1.8
+  - @backstage/plugin-permission-react@0.4.41-next.0
+
+## 0.13.11-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/integration@1.21.0-next.0
+  - @backstage/catalog-client@1.13.1-next.0
+  - @backstage/plugin-catalog-react@2.0.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/errors@1.2.7
+  - @backstage/integration-react@1.2.16-next.0
+  - @backstage/plugin-catalog-common@1.1.8
+  - @backstage/plugin-permission-react@0.4.41-next.0
+
 ## 0.13.10
 
 ### Patch Changes

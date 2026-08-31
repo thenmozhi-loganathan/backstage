@@ -22,7 +22,7 @@ import {
   createTemplateAction,
   parseRepoUrl,
 } from '@backstage/plugin-scaffolder-node';
-import { assertError, InputError } from '@backstage/errors';
+import { InputError, toError } from '@backstage/errors';
 import { Octokit } from 'octokit';
 import { getOctokitOptions } from '../util';
 import { examples } from './githubIssuesCreate.examples';
@@ -34,8 +34,10 @@ import { examples } from './githubIssuesCreate.examples';
 export function createGithubIssuesCreateAction(options: {
   integrations: ScmIntegrationRegistry;
   githubCredentialsProvider?: GithubCredentialsProvider;
+  requireScmUserCredentials?: boolean;
 }) {
-  const { integrations, githubCredentialsProvider } = options;
+  const { integrations, githubCredentialsProvider, requireScmUserCredentials } =
+    options;
 
   return createTemplateAction({
     id: 'github:issues:create',
@@ -119,6 +121,7 @@ export function createGithubIssuesCreateAction(options: {
 
       const octokitOptions = await getOctokitOptions({
         integrations,
+        requireScmUserCredentials,
         credentialsProvider: githubCredentialsProvider,
         host,
         owner,
@@ -171,11 +174,11 @@ export function createGithubIssuesCreateAction(options: {
           `Successfully created issue #${issue.number}: ${issue.html_url}`,
         );
       } catch (e) {
-        assertError(e);
+        const error = toError(e);
         ctx.logger.warn(
-          `Failed: creating issue '${title}' on repo: '${repo}', ${e.message}`,
+          `Failed: creating issue '${title}' on repo: '${repo}', ${error.message}`,
         );
-        throw e;
+        throw error;
       }
     },
   });

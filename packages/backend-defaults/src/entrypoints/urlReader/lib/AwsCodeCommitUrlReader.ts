@@ -32,11 +32,7 @@ import {
   AwsCodeCommitIntegration,
   ScmIntegrations,
 } from '@backstage/integration';
-import {
-  assertError,
-  ForwardedError,
-  NotModifiedError,
-} from '@backstage/errors';
+import { toError, ForwardedError, NotModifiedError } from '@backstage/errors';
 import { fromTemporaryCredentials } from '@aws-sdk/credential-providers';
 import {
   CodeCommitClient,
@@ -50,6 +46,7 @@ import { Readable } from 'node:stream';
 import { ReadUrlResponseFactory } from './ReadUrlResponseFactory';
 import { relative } from 'node:path/posix';
 import { AbortController } from '@aws-sdk/abort-controller';
+import { hasDotPathSegments } from './util';
 
 export function parseUrl(
   url: string,
@@ -366,6 +363,9 @@ export class AwsCodeCommitUrlReader implements UrlReaderService {
       const responses = [];
 
       for (let i = 0; i < allFiles.length; i++) {
+        if (hasDotPathSegments(String(allFiles[i]))) {
+          continue;
+        }
         const getFileCommand = new GetFileCommand({
           repositoryName: repositoryName,
           filePath: String(allFiles[i]),
@@ -418,8 +418,8 @@ export class AwsCodeCommitUrlReader implements UrlReaderService {
         ],
         etag: data.etag ?? '',
       };
-    } catch (error) {
-      assertError(error);
+    } catch (e) {
+      const error = toError(e);
       if (error.name === 'NotFoundError') {
         return {
           files: [],

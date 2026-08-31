@@ -128,6 +128,7 @@ export class MicrosoftGraphClient {
     path: string,
     query?: ODataQuery,
     queryMode?: 'basic' | 'advanced',
+    signal?: AbortSignal,
   ): AsyncIterable<T> {
     // upgrade to advanced query mode transparently when "search" is used
     // to stay backwards compatible.
@@ -151,7 +152,7 @@ export class MicrosoftGraphClient {
           }
         : {};
 
-    let response = await this.requestApi(path, query, headers);
+    let response = await this.requestApi(path, query, headers, signal);
 
     for (;;) {
       if (response.status !== 200) {
@@ -170,7 +171,12 @@ export class MicrosoftGraphClient {
         return;
       }
 
-      response = await this.requestRaw(result['@odata.nextLink'], headers);
+      response = await this.requestRaw(
+        result['@odata.nextLink'],
+        headers,
+        2,
+        signal,
+      );
     }
   }
 
@@ -186,6 +192,7 @@ export class MicrosoftGraphClient {
     path: string,
     query?: ODataQuery,
     headers?: Record<string, string>,
+    signal?: AbortSignal,
   ): Promise<Response> {
     const queryString = qs.stringify(
       {
@@ -205,6 +212,8 @@ export class MicrosoftGraphClient {
     return await this.requestRaw(
       `${this.baseUrl}/${path}${queryString}`,
       headers,
+      2,
+      signal,
     );
   }
 
@@ -218,6 +227,7 @@ export class MicrosoftGraphClient {
     url: string,
     headers?: Record<string, string>,
     retryCount = 2,
+    signal?: AbortSignal,
   ): Promise<Response> {
     // Make sure that we always have a valid access token (might be cached)
     const urlObj = new URL(url);
@@ -235,10 +245,21 @@ export class MicrosoftGraphClient {
           ...headers,
           Authorization: `Bearer ${token.token}`,
         },
+        // Deliberately not `signal` itself. undici registers an abort listener
+        // on whatever signal it is handed and only releases it once that
+        // request's internal controller is garbage collected. Since
+        // `requestCollection` reuses one signal for an entire paged walk, and
+        // callers such as `getGroupMembers` run that walk per group, a single
+        // long-lived signal would accumulate one listener per request until GC
+        // — crossing undici's listener cap on large directories and retaining
+        // memory for the length of the walk. A per-request dependent signal
+        // aborts identically, forwarding the same reason, and leaves nothing
+        // behind on the caller's signal.
+        signal: signal ? AbortSignal.any([signal]) : undefined,
       });
     } catch (e: any) {
       if (e?.code === 'ETIMEDOUT' && retryCount > 0) {
-        return this.requestRaw(url, headers, retryCount - 1);
+        return this.requestRaw(url, headers, retryCount - 1, signal);
       }
       throw e;
     }
@@ -280,8 +301,14 @@ export class MicrosoftGraphClient {
     query?: ODataQuery,
     queryMode?: 'basic' | 'advanced',
     path: string = 'users',
+    signal?: AbortSignal,
   ): AsyncIterable<MicrosoftGraph.User> {
-    yield* this.requestCollection<MicrosoftGraph.User>(path, query, queryMode);
+    yield* this.requestCollection<MicrosoftGraph.User>(
+      path,
+      query,
+      queryMode,
+      signal,
+    );
   }
 
   /**
@@ -320,8 +347,14 @@ export class MicrosoftGraphClient {
     query?: ODataQuery,
     queryMode?: 'basic' | 'advanced',
     path: string = 'groups',
+    signal?: AbortSignal,
   ): AsyncIterable<MicrosoftGraph.Group> {
-    yield* this.requestCollection<MicrosoftGraph.Group>(path, query, queryMode);
+    yield* this.requestCollection<MicrosoftGraph.Group>(
+      path,
+      query,
+      queryMode,
+      signal,
+    );
   }
 
   /**
@@ -336,11 +369,13 @@ export class MicrosoftGraphClient {
     groupId: string,
     query?: ODataQuery,
     queryMode?: 'basic' | 'advanced',
+    signal?: AbortSignal,
   ): AsyncIterable<GroupMember> {
     yield* this.requestCollection<GroupMember>(
       `groups/${groupId}/members`,
       query,
       queryMode,
+      signal,
     );
   }
 
@@ -357,11 +392,13 @@ export class MicrosoftGraphClient {
     groupId: string,
     query?: ODataQuery,
     queryMode?: 'basic' | 'advanced',
+    signal?: AbortSignal,
   ): AsyncIterable<MicrosoftGraph.User> {
     yield* this.requestCollection<MicrosoftGraph.User>(
       `groups/${groupId}/members/microsoft.graph.user/`,
       query,
       queryMode,
+      signal,
     );
   }
 
@@ -374,8 +411,14 @@ export class MicrosoftGraphClient {
    */
   async getOrganization(
     tenantId: string,
+    signal?: AbortSignal,
   ): Promise<MicrosoftGraph.Organization> {
-    const response = await this.requestApi(`organization/${tenantId}`);
+    const response = await this.requestApi(
+      `organization/${tenantId}`,
+      undefined,
+      undefined,
+      signal,
+    );
 
     if (response.status !== 200) {
       await this.handleError(`organization/${tenantId}`, response);

@@ -24,7 +24,11 @@ test('the results are rendered as expected', async ({ page }) => {
   await enterButton.click();
 
   // Wait for sign-in to complete before navigating
-  await expect(page.getByRole('link', { name: 'Catalog' })).toBeVisible();
+  await expect(
+    page
+      .getByRole('navigation', { name: 'sidebar nav' })
+      .getByRole('link', { name: 'Catalog' }),
+  ).toBeVisible();
 
   // Set up route interception BEFORE navigating to the search page
   await page.route(`**/api/search/query?term=*`, async route => {

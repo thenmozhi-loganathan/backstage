@@ -1,5 +1,136 @@
 # @backstage/plugin-auth-backend-module-oauth2-proxy-provider
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/plugin-auth-node@0.7.4
+
+## 0.3.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.4-next.0
+  - @backstage/backend-plugin-api@1.10.0-next.0
+
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.3
+  - @backstage/backend-plugin-api@1.9.3
+
+## 0.3.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.3-next.0
+  - @backstage/backend-plugin-api@1.9.3-next.0
+
+## 0.3.0
+
+### Minor Changes
+
+- 9822a2a: Added forwardedPreferredUsernameMatchingUserEntityName sign-in resolver
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.2
+  - @backstage/plugin-auth-node@0.7.2
+
+## 0.2.21-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.2-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.2.20
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/plugin-auth-node@0.7.1
+
+## 0.2.20-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/plugin-auth-node@0.7.1-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+
+## 0.2.19
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/errors@1.3.0
+  - @backstage/plugin-auth-node@0.7.0
+
+## 0.2.19-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/plugin-auth-node@0.7.0-next.2
+  - @backstage/backend-plugin-api@1.9.0-next.2
+
+## 0.2.19-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/plugin-auth-node@0.7.0-next.1
+
+## 0.2.19-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/plugin-auth-node@0.6.15-next.0
+  - @backstage/errors@1.2.7
+
+## 0.2.18
+
+### Patch Changes
+
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/plugin-auth-node@0.6.14
+
+## 0.2.18-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/plugin-auth-node@0.6.14-next.2
+
+## 0.2.18-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/errors@1.2.7
+  - @backstage/plugin-auth-node@0.6.14-next.0
+
 ## 0.2.17
 
 ### Patch Changes

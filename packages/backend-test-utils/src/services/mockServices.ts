@@ -35,6 +35,7 @@ import {
   DiscoveryService,
   HttpAuthService,
   RootInstanceMetadataService,
+  RootSystemMetadataService,
   PermissionsService,
   RootConfigService,
   SchedulerService,
@@ -526,6 +527,7 @@ export namespace mockServices {
       getScheduledTasks: jest.fn(),
       scheduleTask: jest.fn(),
       triggerTask: jest.fn(),
+      cancelTask: jest.fn(),
     }));
   }
 
@@ -577,6 +579,24 @@ export namespace mockServices {
     export const factory = simpleFactoryWithOptions(
       coreServices.rootInstanceMetadata,
       rootInstanceMetadata,
+    );
+  }
+
+  export function rootSystemMetadata(): RootSystemMetadataService {
+    return {
+      getInstalledPlugins: () => Promise.resolve([]),
+    };
+  }
+  export namespace rootSystemMetadata {
+    export const mock = createServiceMock(
+      coreServices.rootSystemMetadata,
+      () => ({
+        getInstalledPlugins: jest.fn(),
+      }),
+    );
+    export const factory = simpleFactoryWithOptions(
+      coreServices.rootSystemMetadata,
+      rootSystemMetadata,
     );
   }
 }

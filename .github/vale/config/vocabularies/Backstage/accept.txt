@@ -1,4 +1,5 @@
 abc
+accessor
 accessors
 ACLs
 addon
@@ -11,7 +12,9 @@ ajv
 Alaria
 Alef
 allowedHosts
+allowlist
 allowlisted
+allowlists
 Anddddd
 Apdex
 api
@@ -27,9 +30,11 @@ autoscaling
 autoselect
 Avro
 backend's
+backoff
 backported
 backporting
 BEPs
+bg
 bigint
 Bigtable
 Billett
@@ -42,11 +47,13 @@ breakpoint
 Brex
 broadcasted
 bugfixes
+BUIProvider
 builtins
 bundler
 bundlers
 bursty
 callout
+callouts
 camelCase
 CDNs
 Chai
@@ -57,6 +64,7 @@ chanwit
 Chanwit
 CI/CD
 classname
+cleye
 cli
 CLIs
 cloudbuild
@@ -71,6 +79,7 @@ codemod
 codemods
 codeowners
 codescene
+Combobox
 composability
 composable
 config
@@ -98,6 +107,7 @@ dayjs
 debounce
 debounced
 debounces
+debouncing
 debuggability
 declaratively
 deduplicate
@@ -136,6 +146,7 @@ dyno
 ecco
 elasticsearch
 Entra
+enums
 env
 Env
 esbuild
@@ -146,6 +157,7 @@ etag
 Expedia
 facto
 failover
+falsy
 faq
 Fargate
 faqs
@@ -245,10 +257,13 @@ Levenshtein
 lightbox
 Lightsail
 limitranges
+liveness
+LLMs
 LocalStack
 lockdown
 lockfile
 lockfiles
+loopback
 lookbehind
 lookup
 lookups
@@ -280,6 +295,8 @@ misconfigured
 mkdocs
 Mkdocs
 modularization
+monopackage
+monopackages
 monorepo
 monorepos
 monospace
@@ -300,6 +317,7 @@ neuro
 newrelic
 nginx
 nodegit
+nodemailer
 nodejs
 nohoist
 nonces
@@ -307,6 +325,7 @@ noop
 npm
 nullable
 nunjucks
+nunjitsu
 nvarchar
 nvm
 OAuth
@@ -318,10 +337,12 @@ Oldsberg
 onboarded
 onboarding
 onelogin
+oasdiff
 openapi
 OpenSearch
 OpenShift
 openssl
+opentelemetry
 orgs
 overridable
 padding
@@ -335,6 +356,7 @@ params
 parseable
 passthrough
 passwordless
+patcher
 Patrik
 pattison
 Peloton
@@ -377,6 +399,7 @@ readonly
 rebase
 rebasing
 Recharts
+recurse
 redactions
 Redash
 redis
@@ -390,6 +413,7 @@ repos
 requestors
 rerender
 rerenders
+resizable
 resourcequotas
 retryable
 reusability
@@ -424,6 +448,7 @@ scrollable
 scrollbar
 scrollbars
 sdks
+SearchField
 seb
 semlas
 semver
@@ -472,6 +497,7 @@ subpath
 subpaths
 subroute
 subroutes
+subquery
 substring
 subtree
 superfences
@@ -493,6 +519,7 @@ templater
 Templater
 templaters
 Templaters
+TextField
 TFRecord
 theia
 Themer
@@ -509,6 +536,7 @@ toolsets
 tooltip
 tooltips
 touchpoint
+touchpoints
 transpilation
 transpile
 transpiled
@@ -521,24 +549,29 @@ TTLs
 Turbopack
 TSDoc
 typeahead
+typoed
 ui
 unassign
 unbreak
 Unconference
 undici
+ungrouped
 unicode
 unmanaged
 unmount
 unregister
 unregistering
+unregisters
 unregistration
 unreviewed
 unstarred
 untemplated
 untracked
+untrusted
 upsert
 upstreams
 upvote
+UIs
 URIs
 url
 URLs
@@ -549,11 +582,14 @@ validators
 Valkey
 varchar
 viewport
+virtualized
 vite
 VMware
 Vodafone
 VPCs
 VSCode
+walkthrough
+walkthroughs
 Wayfair
 Weaveworks
 Webpack
@@ -572,6 +608,3 @@ zod
 Zolotusky
 zoomable
 zsh
-resizable
-enums
-LLMs

@@ -23,7 +23,7 @@ jobs:
       comment-cache-key: ${{ steps.hash.outputs.COMMENT_FILE_HASH }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           disable-sudo: true
           egress-policy: block
@@ -74,7 +74,7 @@ jobs:
 
       - name: Cache Comment
         if: ${{ steps.event.outputs.ACTION != 'closed' }}
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: comment.md
           key: ${{ steps.hash.outputs.COMMENT_FILE_HASH }}
@@ -99,11 +99,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Fetch cached Manifests File
         id: cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: comment.md
           key: ${{ needs.setup.outputs.comment-cache-key }}

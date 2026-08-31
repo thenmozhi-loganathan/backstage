@@ -1,5 +1,159 @@
 # @backstage/plugin-auth-backend-module-oidc-provider
 
+## 0.4.20-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-backend@0.30.1-next.0
+
+## 0.4.19
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-backend@0.30.0
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/plugin-auth-node@0.7.4
+
+## 0.4.19-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.4-next.0
+  - @backstage/plugin-auth-backend@0.30.0-next.0
+  - @backstage/backend-plugin-api@1.10.0-next.0
+
+## 0.4.18
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-backend@0.29.2
+  - @backstage/plugin-auth-node@0.7.3
+  - @backstage/backend-plugin-api@1.9.3
+
+## 0.4.18-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.3-next.0
+  - @backstage/plugin-auth-backend@0.29.2-next.0
+  - @backstage/backend-plugin-api@1.9.3-next.0
+
+## 0.4.17
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.2
+  - @backstage/plugin-auth-backend@0.29.1
+  - @backstage/plugin-auth-node@0.7.2
+
+## 0.4.17-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.2-next.0
+  - @backstage/plugin-auth-backend@0.29.1-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.4.16
+
+### Patch Changes
+
+- 744fa1f: Removed duplicated entries that appeared in both `dependencies` and `devDependencies`.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/plugin-auth-backend@0.29.0
+  - @backstage/plugin-auth-node@0.7.1
+  - @backstage/config@1.3.8
+
+## 0.4.16-next.0
+
+### Patch Changes
+
+- 744fa1f: Removed duplicated entries that appeared in both `dependencies` and `devDependencies`.
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.1-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/plugin-auth-backend@0.28.1-next.0
+  - @backstage/types@1.2.2
+
+## 0.4.15
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/plugin-auth-node@0.7.0
+  - @backstage/plugin-auth-backend@0.28.0
+  - @backstage/config@1.3.7
+
+## 0.4.15-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.0-next.2
+  - @backstage/plugin-auth-backend@0.28.0-next.2
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/config@1.3.7-next.0
+
+## 0.4.15-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/plugin-auth-node@0.7.0-next.1
+  - @backstage/plugin-auth-backend@0.28.0-next.1
+
+## 0.4.15-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-backend@0.28.0-next.0
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/plugin-auth-node@0.6.15-next.0
+  - @backstage/config@1.3.6
+  - @backstage/types@1.2.2
+
+## 0.4.14
+
+### Patch Changes
+
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/plugin-auth-backend@0.27.2
+  - @backstage/plugin-auth-node@0.6.14
+
+## 0.4.14-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/plugin-auth-backend@0.27.1-next.2
+  - @backstage/plugin-auth-node@0.6.14-next.2
+
+## 0.4.14-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-backend@0.27.1-next.0
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/types@1.2.2
+  - @backstage/plugin-auth-node@0.6.14-next.0
+
 ## 0.4.13
 
 ### Patch Changes

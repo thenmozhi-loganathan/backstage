@@ -21,13 +21,21 @@ import {
   createPgDatabaseClient,
   getPgConnectionConfig,
   parsePgConnectionString,
+  PgConnector,
 } from './postgres';
 import { type Knex } from 'knex';
+import { mockServices } from '@backstage/backend-test-utils';
 
 jest.mock('@google-cloud/cloud-sql-connector');
 jest.mock('@azure/identity');
+jest.mock('@aws-sdk/rds-signer');
 
 describe('postgres', () => {
+  const deps = {
+    logger: mockServices.logger.mock(),
+    lifecycle: mockServices.lifecycle.mock(),
+  };
+
   const createMockConnection = () => ({
     host: 'acme',
     user: 'foo',
@@ -587,6 +595,221 @@ describe('postgres', () => {
       });
     });
 
+    it('uses the correct config when using rds IAM auth', async () => {
+      const { Signer } = jest.requireMock('@aws-sdk/rds-signer') as jest.Mocked<
+        typeof import('@aws-sdk/rds-signer')
+      >;
+
+      Signer.prototype.getAuthToken.mockResolvedValue('mock-iam-token');
+
+      const configResult = await buildPgDatabaseConfig(
+        new ConfigReader({
+          client: 'pg',
+          connection: {
+            type: 'rds',
+            host: 'mydb.cluster.eu-west-1.rds.amazonaws.com',
+            port: 5432,
+            user: 'postgres',
+            region: 'eu-west-1',
+          },
+        }),
+      );
+
+      expect(Signer).toHaveBeenCalledWith({
+        hostname: 'mydb.cluster.eu-west-1.rds.amazonaws.com',
+        port: 5432,
+        username: 'postgres',
+        region: 'eu-west-1',
+      });
+      expect(configResult).toMatchObject({
+        client: 'pg',
+        connection: expect.any(Function),
+        useNullAsDefault: true,
+      });
+
+      const connectionResult = await (
+        configResult.connection as () => Promise<any>
+      )();
+
+      expect(connectionResult).toMatchObject({
+        host: 'mydb.cluster.eu-west-1.rds.amazonaws.com',
+        port: 5432,
+        user: 'postgres',
+        password: 'mock-iam-token',
+      });
+      expect(connectionResult).not.toHaveProperty('type');
+      expect(connectionResult).not.toHaveProperty('region');
+    });
+
+    it('generates a fresh IAM token on each connection factory call', async () => {
+      const { Signer } = jest.requireMock('@aws-sdk/rds-signer') as jest.Mocked<
+        typeof import('@aws-sdk/rds-signer')
+      >;
+
+      Signer.prototype.getAuthToken
+        .mockResolvedValueOnce('token-1')
+        .mockResolvedValueOnce('token-2');
+
+      const configResult = await buildPgDatabaseConfig(
+        new ConfigReader({
+          client: 'pg',
+          connection: {
+            type: 'rds',
+            host: 'mydb.cluster.eu-west-1.rds.amazonaws.com',
+            port: 5432,
+            user: 'postgres',
+            region: 'eu-west-1',
+          },
+        }),
+      );
+
+      const conn1 = await (configResult.connection as () => Promise<any>)();
+      const conn2 = await (configResult.connection as () => Promise<any>)();
+
+      expect(conn1.password).toBe('token-1');
+      expect(conn2.password).toBe('token-2');
+    });
+
+    it('returns an expirationChecker that reflects the token TTL', async () => {
+      const { Signer } = jest.requireMock('@aws-sdk/rds-signer') as jest.Mocked<
+        typeof import('@aws-sdk/rds-signer')
+      >;
+
+      Signer.prototype.getAuthToken.mockResolvedValue('mock-iam-token');
+
+      const configResult = await buildPgDatabaseConfig(
+        new ConfigReader({
+          client: 'pg',
+          connection: {
+            type: 'rds',
+            host: 'mydb.cluster.eu-west-1.rds.amazonaws.com',
+            port: 5432,
+            user: 'postgres',
+            region: 'eu-west-1',
+          },
+        }),
+      );
+
+      const conn = await (configResult.connection as () => Promise<any>)();
+
+      expect(conn.expirationChecker).toBeInstanceOf(Function);
+      // Token was just issued, so it should not yet be considered expired.
+      expect(conn.expirationChecker()).toBe(false);
+    });
+
+    it('throws when port is missing for rds connection', async () => {
+      await expect(
+        buildPgDatabaseConfig(
+          new ConfigReader({
+            client: 'pg',
+            connection: {
+              type: 'rds',
+              host: 'mydb.cluster.eu-west-1.rds.amazonaws.com',
+              user: 'postgres',
+              region: 'eu-west-1',
+            },
+          }),
+        ),
+      ).rejects.toThrow(/connection\.port/);
+    });
+
+    it('falls back to AWS_REGION env var when region is not set in config', async () => {
+      const { Signer } = jest.requireMock('@aws-sdk/rds-signer') as jest.Mocked<
+        typeof import('@aws-sdk/rds-signer')
+      >;
+
+      Signer.prototype.getAuthToken.mockResolvedValue('mock-iam-token');
+
+      const originalRegion = process.env.AWS_REGION;
+      process.env.AWS_REGION = 'us-east-1';
+
+      try {
+        await buildPgDatabaseConfig(
+          new ConfigReader({
+            client: 'pg',
+            connection: {
+              type: 'rds',
+              host: 'mydb.cluster.us-east-1.rds.amazonaws.com',
+              port: 5432,
+              user: 'postgres',
+            },
+          }),
+        );
+
+        expect(Signer).toHaveBeenCalledWith(
+          expect.objectContaining({ region: 'us-east-1' }),
+        );
+      } finally {
+        if (originalRegion === undefined) {
+          delete process.env.AWS_REGION;
+        } else {
+          process.env.AWS_REGION = originalRegion;
+        }
+      }
+    });
+
+    it('throws when host is missing for rds connection', async () => {
+      await expect(
+        buildPgDatabaseConfig(
+          new ConfigReader({
+            client: 'pg',
+            connection: {
+              type: 'rds',
+              port: 5432,
+              user: 'postgres',
+              region: 'eu-west-1',
+            },
+          }),
+        ),
+      ).rejects.toThrow(/connection\.host/);
+    });
+
+    it('throws when user is missing for rds connection', async () => {
+      await expect(
+        buildPgDatabaseConfig(
+          new ConfigReader({
+            client: 'pg',
+            connection: {
+              type: 'rds',
+              host: 'mydb.cluster.eu-west-1.rds.amazonaws.com',
+              port: 5432,
+              region: 'eu-west-1',
+            },
+          }),
+        ),
+      ).rejects.toThrow(/connection\.user/);
+    });
+
+    it('throws when region is missing and no env var is set for rds connection', async () => {
+      const originalRegion = process.env.AWS_REGION;
+      const originalDefaultRegion = process.env.AWS_DEFAULT_REGION;
+      delete process.env.AWS_REGION;
+      delete process.env.AWS_DEFAULT_REGION;
+
+      try {
+        await expect(
+          buildPgDatabaseConfig(
+            new ConfigReader({
+              client: 'pg',
+              connection: {
+                type: 'rds',
+                host: 'mydb.cluster.eu-west-1.rds.amazonaws.com',
+                port: 5432,
+                user: 'postgres',
+              },
+            }),
+          ),
+        ).rejects.toThrow(/Missing region for AWS RDS IAM auth/);
+      } finally {
+        if (originalRegion !== undefined) {
+          process.env.AWS_REGION = originalRegion;
+        }
+        if (originalDefaultRegion !== undefined) {
+          process.env.AWS_DEFAULT_REGION = originalDefaultRegion;
+        }
+      }
+    });
+
     it('throws an error when the connection type is not supported', async () => {
       await expect(
         buildPgDatabaseConfig(
@@ -620,6 +843,60 @@ describe('postgres', () => {
         },
         useNullAsDefault: true,
       });
+    });
+  });
+
+  describe('PgConnector', () => {
+    const createConnectorConfig = () =>
+      new ConfigReader({
+        client: 'pg',
+        connection: { host: 'localhost' },
+        plugin: {
+          plugin1: { connection: { database: 'shared' } },
+          plugin2: { connection: { database: 'shared' } },
+        },
+      });
+
+    it('shares database existence checks between plugins', async () => {
+      const ensureDatabaseExists = jest.fn().mockResolvedValue(undefined);
+      const connector = new PgConnector(
+        createConnectorConfig(),
+        'backstage_plugin_',
+        ensureDatabaseExists,
+      );
+
+      const clients = await Promise.all([
+        connector.getClient('plugin1', deps),
+        connector.getClient('plugin2', deps),
+      ]);
+
+      expect(ensureDatabaseExists).toHaveBeenCalledTimes(1);
+      expect(ensureDatabaseExists).toHaveBeenCalledWith(
+        expect.any(ConfigReader),
+        'shared',
+      );
+
+      await Promise.all(clients.map(client => client.destroy()));
+    });
+
+    it('retries a database existence check after failure', async () => {
+      const ensureDatabaseExists = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('temporary failure'))
+        .mockResolvedValueOnce(undefined);
+      const connector = new PgConnector(
+        createConnectorConfig(),
+        'backstage_plugin_',
+        ensureDatabaseExists,
+      );
+
+      await expect(connector.getClient('plugin1', deps)).rejects.toThrow(
+        "Failed to connect to the database to make sure that 'shared' exists, Error: temporary failure",
+      );
+
+      const client = await connector.getClient('plugin2', deps);
+      expect(ensureDatabaseExists).toHaveBeenCalledTimes(2);
+      await client.destroy();
     });
   });
 

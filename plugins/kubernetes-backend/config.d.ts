@@ -35,6 +35,14 @@ export interface Config {
     serviceLocatorMethod: {
       type: 'multiTenant' | 'singleTenant' | 'catalogRelation';
     };
+    /**
+     * Whether to continue returning clusters from successful locators when
+     * one or more locators fail. When set to `true`, errors are logged and
+     * only the clusters from successful locators are returned. Defaults to
+     * `false`, which preserves the existing behaviour of failing the entire
+     * request when any locator errors.
+     */
+    clusterLocatorContinueOnError?: boolean;
     clusterLocatorMethods: Array<
       | {
           /** @visibility frontend */
@@ -90,6 +98,13 @@ export interface Config {
           skipTLSVerify?: boolean;
           /** @visibility frontend */
           skipMetricsLookup?: boolean;
+          /**
+           * The type of endpoint to use for connecting to the cluster.
+           * 'public' uses the public IP endpoint (default).
+           * 'dns' uses the DNS-based control plane endpoint.
+           * @visibility frontend
+           */
+          endpointType?: 'public' | 'dns';
         }
     >;
     customResources?: Array<{
@@ -127,5 +142,19 @@ export interface Config {
       statefulsets?: string;
       daemonsets?: string;
     } & { [pluralKind: string]: string };
+
+    /**
+     * Options for the Kubernetes API proxy middleware cache.
+     */
+    proxy?: {
+      middlewareCache?: {
+        /** Maximum number of cached middleware instances. Defaults to 100. */
+        maxSize?: number;
+        ttl?: {
+          /** Time-to-live for cached middleware in milliseconds. Defaults to 60000. */
+          milliseconds?: number;
+        };
+      };
+    };
   };
 }

@@ -4,6 +4,10 @@ title: Authentication
 description: How to setup authentication for your Backstage app
 ---
 
+:::info
+This documentation is written for [the new frontend system](../../frontend-system/index.md). If you are on the old frontend system you may want to read [its own article](./authentication--old.md) instead.
+:::
+
 Audience: Admins or Developers
 
 ## Summary
@@ -12,7 +16,7 @@ We'll be walking you through how to setup authentication for your Backstage app 
 
 There are multiple authentication providers available for you to use with Backstage, feel free to follow [their instructions for adding authentication](../../auth/index.md).
 
-:::note Note
+:::note
 
 The default Backstage app comes with a guest Sign In Resolver. This resolver makes all users share a single "guest" identity and is only intended as a minimum requirement to quickly get up and running. You can read more about how [Sign In Resolvers](../../auth/identity-resolver.md#sign-in-resolvers) play a role in creating a [Backstage User Identity](../../auth/identity-resolver.md#backstage-user-identity) for logged in users.
 
@@ -50,37 +54,63 @@ auth:
 
 The next step is to change the sign-in page. For this, you'll actually need to write some code.
 
-Open `packages/app/src/App.tsx` and below the last `import` line, add:
+First let's add the packages we need, do this from the root:
+
+```shell
+yarn --cwd packages/app add @backstage/core-plugin-api @backstage/plugin-app-react
+```
+
+Then open `packages/app/src/App.tsx` and below the last `import` line, add:
 
 ```typescript title="packages/app/src/App.tsx"
 import { githubAuthApiRef } from '@backstage/core-plugin-api';
+import { SignInPageBlueprint } from '@backstage/plugin-app-react';
+import { SignInPage } from '@backstage/core-components';
+import { createFrontendModule } from '@backstage/frontend-plugin-api';
 ```
 
-Search for `const app = createApp({` in this file, and replace:
+Now below this we are going to use the `SignInPageBlueprint` to create an extension, add this code block to do that:
+
+```tsx
+const signInPage = SignInPageBlueprint.make({
+  params: {
+    loader: async () => props =>
+      (
+        <SignInPage
+          {...props}
+          provider={{
+            id: 'github-auth-provider',
+            title: 'GitHub',
+            message: 'Sign in using GitHub',
+            apiRef: githubAuthApiRef,
+          }}
+        />
+      ),
+  },
+});
+```
+
+Search for the `createApp()` function call in this file, and replace:
 
 ```tsx title="packages/app/src/App.tsx"
-components: {
-  SignInPage: props => <SignInPage {...props} auto providers={['guest']} />,
-},
+export default createApp({
+  features: [catalogPlugin, navModule],
+});
 ```
 
 with
 
 ```tsx title="packages/app/src/App.tsx"
-components: {
-  SignInPage: props => (
-    <SignInPage
-      {...props}
-      auto
-      provider={{
-        id: 'github-auth-provider',
-        title: 'GitHub',
-        message: 'Sign in using GitHub',
-        apiRef: githubAuthApiRef,
-      }}
-    />
-  ),
-},
+export default createApp({
+  features: [
+    catalogPlugin,
+    navModule,
+    createFrontendModule({
+      pluginId: 'app',
+      extensions: [signInPage],
+    }),
+  ],
+});
 ```
 
 ## Add sign-in resolver(s)
@@ -107,7 +137,7 @@ auth:
         /* highlight-add-end */
 ```
 
-What this will do is take the user details provided by the auth provider and match that against a User in the Catalog. In this case - `usernameMatchingUserEntityName` - will match the GitHub user name with the `metadata.name` value of a User in the Catalog, if none is found you will get an "Failed to sign-in, unable to resolve user identity" message. We'll cover this in the next few sections.
+What this will do is take the user details provided by the auth provider and match that against a User in the Catalog. In this case - `usernameMatchingUserEntityName` - will match the GitHub user name with the `metadata.name` value of a User in the Catalog, if none is found you will get a "Failed to sign-in, unable to resolve user identity" message. We'll cover this in the next few sections.
 
 Learn more about this topic in the [Sign-in Resolvers](../../auth/identity-resolver.md#sign-in-resolvers) documentation.
 
@@ -130,7 +160,7 @@ backend.add(import('@backstage/plugin-auth-backend-module-github-provider'));
 
 Restart Backstage from the terminal, by stopping it with `Ctrl+C`, and starting it with `yarn start`. You should be welcomed by a login prompt! If you try to login at this point you will get a "Failed to sign-in, unable to resolve user identity" message, read on as we'll fix that next.
 
-:::note Note
+:::note
 
 Sometimes the frontend starts before the backend resulting in errors on the sign in page. Wait for the backend to start and then reload Backstage to proceed.
 
@@ -138,9 +168,9 @@ Sometimes the frontend starts before the backend resulting in errors on the sign
 
 ## Adding a User
 
-The recommended approach for adding Users, and Groups, into your Catalog is to use one of the existing Org Entity Providers - [like this one for GitHub](https://backstage.io/docs/integrations/github/org) - or if those don't work you may need to [create one](https://backstage.io/docs/features/software-catalog/external-integrations#custom-entity-providers) that fits your Organization's needs.
+The recommended approach for adding Users, and Groups, into your Catalog is to use one of the existing Org Entity Providers - [like this one for GitHub](https://backstage.io/docs/integrations/github/org) - or if those don't work you may need to [create one](https://backstage.io/docs/features/software-catalog/external-integrations/entity-providers) that fits your Organization's needs.
 
-For the sake of this guide we'll simply step you though adding a User to the `org.yaml` file that is included when you create a new Backstage instance. Let's do that:
+For the sake of this guide we'll simply step you through adding a User to the `org.yaml` file that is included when you create a new Backstage instance. Let's do that:
 
 1. First open the `/examples/org.yaml` file in your text editor of choice
 2. At the bottom we'll add the following YAML:
@@ -197,7 +227,7 @@ integrations:
       token: ${GITHUB_TOKEN} # this will use the environment variable GITHUB_TOKEN
 ```
 
-:::note Note
+:::note
 
 If you've updated the configuration for your integration, it's likely that the backend will need a restart to apply these changes. To do this, stop the running instance in your terminal with `Control-C`, then start it again with `yarn start`. Once the backend has restarted, retry the operation.
 
@@ -206,4 +236,4 @@ If you've updated the configuration for your integration, it's likely that the b
 Some helpful links, for if you want to learn more about:
 
 - [Other available integrations](../../integrations/index.md)
-- [Using GitHub Apps instead of a Personal Access Token](../../integrations/github/github-apps.md#docsNav)
+- [Using GitHub Apps instead of a Personal Access Token](../../integrations/github/github-apps.md)

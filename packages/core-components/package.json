@@ -1,6 +1,6 @@
 {
   "name": "@backstage/core-components",
-  "version": "0.18.7",
+  "version": "0.18.14-next.0",
   "description": "Core components used by Backstage plugins and apps",
   "backstage": {
     "role": "web-library"
@@ -58,6 +58,7 @@
     "@backstage/core-plugin-api": "workspace:^",
     "@backstage/errors": "workspace:^",
     "@backstage/theme": "workspace:^",
+    "@backstage/ui": "workspace:^",
     "@backstage/version-bridge": "workspace:^",
     "@dagrejs/dagre": "^1.1.4",
     "@date-io/core": "^1.3.13",
@@ -70,16 +71,16 @@
     "@types/react-sparklines": "^1.7.0",
     "ansi-regex": "^6.0.1",
     "classnames": "^2.2.6",
+    "csstype": "^3.0.2",
     "d3-selection": "^3.0.0",
     "d3-shape": "^3.0.0",
     "d3-zoom": "^3.0.0",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^4.3.0",
     "linkify-react": "4.3.2",
     "linkifyjs": "4.3.2",
     "lodash": "^4.17.21",
     "parse5": "^6.0.0",
-    "pluralize": "^8.0.0",
-    "qs": "^6.9.4",
+    "qs": "^6.15.2",
     "rc-progress": "3.5.1",
     "react-full-screen": "^1.1.1",
     "react-helmet": "6.1.0",
@@ -95,7 +96,7 @@
     "rehype-sanitize": "^5.0.0",
     "remark-gfm": "^3.0.1",
     "zen-observable": "^0.10.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76 || ^4.0.0"
   },
   "devDependencies": {
     "@backstage/app-defaults": "workspace:^",
@@ -118,9 +119,10 @@
     "@types/react-virtualized-auto-sizer": "^1.0.1",
     "@types/react-window": "^1.8.5",
     "@types/zen-observable": "^0.8.0",
+    "copy-to-clipboard": "^3.3.1",
     "cross-fetch": "^4.0.0",
     "history": "^5.0.0",
-    "msw": "^1.0.0",
+    "msw": "^2.0.0",
     "react": "^18.0.2",
     "react-dom": "^18.0.2",
     "react-router-dom": "^6.30.2"

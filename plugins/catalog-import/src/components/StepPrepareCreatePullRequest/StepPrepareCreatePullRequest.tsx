@@ -16,10 +16,11 @@
 
 import { Entity } from '@backstage/catalog-model';
 import { errorApiRef, useApi } from '@backstage/core-plugin-api';
-import { assertError } from '@backstage/errors';
+import { toError } from '@backstage/errors';
 import { useTranslationRef } from '@backstage/frontend-plugin-api';
 import {
   catalogApiRef,
+  entityPresentationApiRef,
   humanizeEntityRef,
 } from '@backstage/plugin-catalog-react';
 import Box from '@material-ui/core/Box';
@@ -41,6 +42,7 @@ import { PrepareResult } from '../useImportState';
 import { PreparePullRequestForm } from './PreparePullRequestForm';
 import { PreviewCatalogInfoComponent } from './PreviewCatalogInfoComponent';
 import { PreviewPullRequestComponent } from './PreviewPullRequestComponent';
+import { AutocompleteTextFieldOption } from './AutocompleteTextField';
 
 const useStyles = makeStyles(theme => ({
   previewCard: {
@@ -94,7 +96,7 @@ export interface StepPrepareCreatePullRequestProps {
       'register' | 'setValue' | 'formState'
     > & {
       values: UnpackNestedValue<FormData>;
-      groups: string[];
+      groups: AutocompleteTextFieldOption[];
       groupsLoading: boolean;
     },
   ) => ReactNode;
@@ -133,6 +135,7 @@ export const StepPrepareCreatePullRequest = (
   const { t } = useTranslationRef(catalogImportTranslationRef);
   const classes = useStyles();
   const catalogApi = useApi(catalogApiRef);
+  const entityPresentationApi = useApi(entityPresentationApiRef);
   const catalogImportApi = useApi(catalogImportApiRef);
   const errorApi = useApi(errorApiRef);
 
@@ -161,9 +164,21 @@ export const StepPrepareCreatePullRequest = (
       filter: { kind: 'group' },
     });
 
-    return groupEntities.items
-      .map(e => humanizeEntityRef(e, { defaultKind: 'group' }))
-      .sort();
+    const options = await Promise.all(
+      groupEntities.items.map(async entity => ({
+        label: (
+          await entityPresentationApi.forEntity(entity, {
+            defaultKind: 'group',
+          }).promise
+        ).primaryTitle,
+        // The selected value is written verbatim to `spec.owner` of the
+        // generated entity, so it has to be an entity reference rather than a
+        // display name.
+        id: humanizeEntityRef(entity, { defaultKind: 'group' }),
+      })),
+    );
+
+    return options.sort((a, b) => a.label.localeCompare(b.label));
   });
 
   const handleResult = useCallback(
@@ -210,8 +225,7 @@ export const StepPrepareCreatePullRequest = (
           { notRepeatable: true },
         );
       } catch (e) {
-        assertError(e);
-        setError(e.message);
+        setError(toError(e).message);
         setSubmitted(false);
       }
     },

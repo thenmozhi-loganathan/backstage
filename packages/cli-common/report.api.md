@@ -11,22 +11,29 @@ import { SpawnOptions } from 'node:child_process';
 export const BACKSTAGE_JSON = 'backstage.json';
 
 // @public
-export function bootstrapEnvProxyAgents(): void;
-
-// @public
 export class ExitCodeError extends CustomErrorBase {
   constructor(code: number, command?: string);
-  // (undocumented)
   readonly code: number;
 }
 
 // @public
+export function findOwnPaths(searchDir: string): OwnPaths;
+
+// @public @deprecated
 export function findPaths(searchDir: string): Paths;
 
 // @public
 export function isChildPath(base: string, path: string): boolean;
 
 // @public
+export type OwnPaths = {
+  dir: string;
+  rootDir: string;
+  resolve: ResolveFunc;
+  resolveRoot: ResolveFunc;
+};
+
+// @public @deprecated
 export type Paths = {
   ownDir: string;
   ownRoot: string;
@@ -68,4 +75,15 @@ export function runOutput(
   args: string[],
   options?: RunOptions,
 ): Promise<string>;
+
+// @public
+export type TargetPaths = {
+  dir: string;
+  rootDir: string;
+  resolve: ResolveFunc;
+  resolveRoot: ResolveFunc;
+};
+
+// @public
+export const targetPaths: TargetPaths;
 ```

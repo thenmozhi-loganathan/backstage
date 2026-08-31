@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 The Backstage Authors
+ * Copyright 2026 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ export type ListTasks = {
     order?: Array<string>;
     status?: Array<string>;
   };
-  response: ListTasksResponse;
+  response: ListTasksResponse | Error;
 };
 /**
  * @public
@@ -116,7 +116,7 @@ export type Retry = {
     taskId: string;
   };
   body: RetryRequest;
-  response: Scaffold201Response;
+  response: Scaffold201Response | Scaffold400Response | Error;
 };
 /**
  * @public

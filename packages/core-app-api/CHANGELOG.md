@@ -1,5 +1,170 @@
 # @backstage/core-app-api
 
+## 1.20.5-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.17.2-next.0
+
+## 1.20.4
+
+### Patch Changes
+
+- bd435c3: Identity mocks passed to `renderInTestApp` (for example via `mockApis.identity(...)`) are now applied before the app's built-in guest fallback, so the configured `userEntityRef` reliably takes effect in tests instead of being silently overwritten by the default guest user.
+- a4759e6: Migrated tests from MSW v1 to MSW v2.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/ui@0.17.1
+
+## 1.20.4-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9-next.0
+
+## 1.20.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.17.1-next.0
+
+## 1.20.3
+
+### Patch Changes
+
+- 3ef5974: Added support for wildcard plugin entries in frontend discovery endpoints, matching the backend discovery behavior.
+- 6172725: Fixed the default fetch API to support discovery endpoints that only define an internal target.
+- Updated dependencies
+  - @backstage/ui@0.17.0
+  - @backstage/core-plugin-api@1.12.8
+
+## 1.20.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.17.0-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+
+## 1.20.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.16.0
+  - @backstage/core-plugin-api@1.12.7
+
+## 1.20.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.15.1-next.0
+  - @backstage/core-plugin-api@1.12.7-next.0
+
+## 1.20.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.15.0
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/config@1.3.8
+
+## 1.20.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.15.0-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+
+## 1.20.0
+
+### Minor Changes
+
+- 400aa23: Added `FetchMiddlewares.clarifyFailures()` which replaces the uninformative "TypeError: Failed to fetch" with a message that includes the request method and URL.
+
+### Patch Changes
+
+- 9244b70: The default auth implementation now checks for a `logoutUrl` in the logout response body. If the auth provider returns one (e.g. Auth0 federated logout), the browser is redirected to that URL to clear the provider's session cookies. This is backward compatible — providers that return an empty response are unaffected.
+- Updated dependencies
+  - @backstage/ui@0.14.0
+  - @backstage/config@1.3.7
+  - @backstage/core-plugin-api@1.12.5
+
+## 1.20.0-next.2
+
+### Patch Changes
+
+- 9244b70: The default auth implementation now checks for a `logoutUrl` in the logout response body. If the auth provider returns one (e.g. Auth0 federated logout), the browser is redirected to that URL to clear the provider's session cookies. This is backward compatible — providers that return an empty response are unaffected.
+- Updated dependencies
+  - @backstage/ui@0.14.0-next.2
+  - @backstage/config@1.3.7-next.0
+  - @backstage/core-plugin-api@1.12.5-next.2
+
+## 1.20.0-next.1
+
+### Minor Changes
+
+- 400aa23: Added `FetchMiddlewares.clarifyFailures()` which replaces the uninformative "TypeError: Failed to fetch" with a message that includes the request method and URL.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.14.0-next.1
+  - @backstage/core-plugin-api@1.12.5-next.1
+
+## 1.19.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/ui@0.14.0-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+  - @backstage/config@1.3.6
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+
+## 1.19.6
+
+### Patch Changes
+
+- 12d8afe: Added `BUIProvider` from `@backstage/ui` to the app shell provider tree, enabling BUI components to fire analytics events through the Backstage analytics system.
+- 59752a2: Deprecated `AlertApiForwarder` in favor of the new `ToastApi`. The `AlertApiForwarder` now emits a console warning on first use, guiding developers to migrate to `ToastApi` from `@backstage/frontend-plugin-api`.
+- 0452d02: Add optional `description` field to plugin-level feature flags.
+- 42f8c9b: Added `BUIProvider` inside the legacy app router to enable client-side routing for all BUI components.
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- Updated dependencies
+  - @backstage/ui@0.13.0
+  - @backstage/core-plugin-api@1.12.4
+
+## 1.19.6-next.1
+
+### Patch Changes
+
+- 12d8afe: Added `BUIProvider` from `@backstage/ui` to the app shell provider tree, enabling BUI components to fire analytics events through the Backstage analytics system.
+- 0452d02: Add optional `description` field to plugin-level feature flags.
+- Updated dependencies
+  - @backstage/ui@0.13.0-next.2
+  - @backstage/core-plugin-api@1.12.4-next.1
+
+## 1.19.6-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/config@1.3.6
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+
 ## 1.19.5
 
 ### Patch Changes

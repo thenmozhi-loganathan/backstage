@@ -19,13 +19,15 @@ import { createTranslationRef } from '@backstage/frontend-plugin-api';
  * Translation reference for the home plugin.
  * Contains localized text strings for home page components and widgets.
  *
- * @alpha
+ * @public
  */
 export const homeTranslationRef = createTranslationRef({
   id: 'home',
   messages: {
     addWidgetDialog: {
       title: 'Add new widget to dashboard',
+      noAvailableWidgets:
+        'All available widgets have been added to the dashboard.',
     },
     customHomepageButtons: {
       edit: 'Edit',
@@ -39,6 +41,10 @@ export const homeTranslationRef = createTranslationRef({
       noWidgets: "No widgets added. Start by clicking the 'Add widget' button.",
     },
     widgetSettingsOverlay: {
+      editSettingsTooltip: 'Edit settings',
+      /**
+       * @deprecated Use `editSettingsTooltip` instead. This was a typo in the original key.
+       */
       editSettingsTooptip: 'Edit settings',
       deleteWidgetTooltip: 'Delete widget',
       submitButtonTitle: 'Submit',
@@ -55,6 +61,11 @@ export const homeTranslationRef = createTranslationRef({
       },
       few: {
         title: 'The more pages you visit, the more pages will appear here.',
+      },
+      disabled: {
+        title: 'Visit tracking is not enabled.',
+        description:
+          'Enable visit tracking in your app-config.yaml to see your most visited and recently visited pages here.',
       },
     },
     quickStart: {

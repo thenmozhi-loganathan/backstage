@@ -18,7 +18,7 @@ import chalk from 'chalk';
 import { OptionValues } from 'commander';
 import inquirer, { Answers } from 'inquirer';
 import { resolve as resolvePath } from 'node:path';
-import { findPaths } from '@backstage/cli-common';
+import { targetPaths, findOwnPaths } from '@backstage/cli-common';
 import os from 'node:os';
 import fs from 'fs-extra';
 import {
@@ -31,13 +31,78 @@ import {
   tryInitGitRepository,
   readGitConfig,
   fetchYarnLockSeedTask,
+  tryCommandForVersion,
 } from './lib/tasks';
 
 const DEFAULT_BRANCH = 'master';
+// Uses the same 'N.x' format as GitHub Actions node-version matrices for easy find-and-replace.
+// Keep in sync with the engines.node field in the root package.json.
+const SUPPORTED_NODE_VERSIONS = ['22.x', '24.x'];
 
 export default async (opts: OptionValues): Promise<void> => {
-  /* eslint-disable-next-line no-restricted-syntax */
-  const paths = findPaths(__dirname);
+  // Prerequisite check — runs before the interactive prompt to fail fast
+  let hasPrerequisiteError = false;
+  const supportedMajors = SUPPORTED_NODE_VERSIONS.map(v =>
+    parseInt(v.split('.')[0], 10),
+  );
+  const [major, minor, patch] = process.versions.node.split('.').map(Number);
+  const yarn = await tryCommandForVersion('yarn -v');
+  let python = await tryCommandForVersion('python3 --version');
+  if (python.error) {
+    python = await tryCommandForVersion('python --version');
+  }
+
+  Task.log();
+  Task.log('Prerequisites check...');
+  Task.log();
+  Task.log(`  Node version is: ${major}.${minor}.${patch}`);
+  Task.log(`  Yarn version is: ${yarn.version}`);
+  Task.log(`  Python version is: ${python.version.replace(/^Python\s+/, '')}`);
+
+  if (yarn.error) {
+    Task.error(
+      'Yarn is not available. Please install Yarn before creating a Backstage app.',
+    );
+    hasPrerequisiteError = true;
+  }
+
+  if (python.error) {
+    Task.log(
+      chalk.yellow(
+        'Warning: Python is not available. Python is required by node-gyp for some native dependencies.',
+      ),
+    );
+  }
+
+  if (major % 2 !== 0) {
+    Task.error(
+      `Node version ${major} is an odd-numbered release and is not a supported LTS version. Please use an even-numbered LTS version (${SUPPORTED_NODE_VERSIONS.join(
+        ' or ',
+      )}).`,
+    );
+    hasPrerequisiteError = true;
+  } else if (!supportedMajors.includes(major)) {
+    Task.error(
+      `Node version ${major} is not a supported LTS version. Please use a supported version (${SUPPORTED_NODE_VERSIONS.join(
+        ' or ',
+      )}).`,
+    );
+    hasPrerequisiteError = true;
+  }
+
+  if (hasPrerequisiteError) {
+    Task.log(
+      'It seems that something went wrong when validating the prerequisites 🤔',
+    );
+    Task.log(
+      'For help with setting up prerequisites, see https://backstage.io/docs/getting-started/#prerequisites',
+    );
+
+    Task.error('🔥  Failed to validate needed prerequisites!');
+    Task.exit(1);
+    return;
+  }
+
   const answers: Answers = await inquirer.prompt([
     {
       type: 'input',
@@ -65,21 +130,23 @@ export default async (opts: OptionValues): Promise<void> => {
     },
   ]);
 
-  // Pick the built-in template based on the --next flag
-  const builtInTemplate = opts.next
-    ? paths.resolveOwn('templates/next-app')
-    : paths.resolveOwn('templates/default-app');
+  // Pick the built-in template based on the --legacy flag
+  /* eslint-disable-next-line no-restricted-syntax */
+  const ownPaths = findOwnPaths(__dirname);
+  const builtInTemplate = opts.legacy
+    ? ownPaths.resolve('templates/legacy-app')
+    : ownPaths.resolve('templates/default-app');
 
   // Use `--template-path` argument as template when specified. Otherwise, use the default template.
   const templateDir = opts.templatePath
-    ? paths.resolveTarget(opts.templatePath)
+    ? targetPaths.resolve(opts.templatePath)
     : builtInTemplate;
 
   // Use `--path` argument as application directory when specified, otherwise
   // create a directory using `answers.name`
   const appDir = opts.path
-    ? resolvePath(paths.targetDir, opts.path)
-    : resolvePath(paths.targetDir, answers.name);
+    ? resolvePath(targetPaths.dir, opts.path)
+    : resolvePath(targetPaths.dir, answers.name);
 
   Task.log();
   Task.log('Creating the app...');
@@ -102,7 +169,7 @@ export default async (opts: OptionValues): Promise<void> => {
       // Template to temporary location, and then move files
 
       Task.section('Checking if the directory is available');
-      await checkAppExistsTask(paths.targetDir, answers.name);
+      await checkAppExistsTask(targetPaths.dir, answers.name);
 
       Task.section('Creating a temporary app directory');
       const tempDir = await fs.mkdtemp(resolvePath(os.tmpdir(), answers.name));

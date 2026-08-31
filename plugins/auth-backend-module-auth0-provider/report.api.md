@@ -4,17 +4,24 @@
 
 ```ts
 import { BackendFeature } from '@backstage/backend-plugin-api';
+import { CacheService } from '@backstage/backend-plugin-api';
 import { OAuthAuthenticator } from '@backstage/plugin-auth-node';
 import { PassportOAuthAuthenticatorHelper } from '@backstage/plugin-auth-node';
 import { PassportProfile } from '@backstage/plugin-auth-node';
+import { Strategy } from 'passport';
 
 // @public (undocumented)
 export const auth0Authenticator: OAuthAuthenticator<
   {
     helper: PassportOAuthAuthenticatorHelper;
+    strategy: Strategy;
     audience: string | undefined;
     connection: string | undefined;
     connectionScope: string | undefined;
+    prompt: string;
+    domain: string;
+    clientID: string;
+    federated: boolean;
   },
   PassportProfile
 >;
@@ -22,4 +29,22 @@ export const auth0Authenticator: OAuthAuthenticator<
 // @public (undocumented)
 const authModuleAuth0Provider: BackendFeature;
 export default authModuleAuth0Provider;
+
+// @public (undocumented)
+export function createAuth0Authenticator(options?: {
+  cache?: CacheService;
+}): OAuthAuthenticator<
+  {
+    helper: PassportOAuthAuthenticatorHelper;
+    strategy: Strategy;
+    audience: string | undefined;
+    connection: string | undefined;
+    connectionScope: string | undefined;
+    prompt: string;
+    domain: string;
+    clientID: string;
+    federated: boolean;
+  },
+  PassportProfile
+>;
 ```

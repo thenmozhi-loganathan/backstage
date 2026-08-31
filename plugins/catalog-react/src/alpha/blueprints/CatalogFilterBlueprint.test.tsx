@@ -24,6 +24,7 @@ import {
   renderInTestApp,
 } from '@backstage/frontend-test-utils';
 import { waitFor, screen } from '@testing-library/react';
+import { z } from 'zod';
 
 describe('CatalogFilterBlueprint', () => {
   it('should create an extension with sane defaults', () => {
@@ -43,6 +44,7 @@ describe('CatalogFilterBlueprint', () => {
         "configSchema": undefined,
         "disabled": false,
         "factory": [Function],
+        "if": undefined,
         "inputs": {},
         "kind": "catalog-filter",
         "name": undefined,
@@ -56,16 +58,14 @@ describe('CatalogFilterBlueprint', () => {
     `);
   });
 
-  it('should allow overrding of inputs and config', async () => {
+  it('should allow overriding of inputs and config', async () => {
     const extension = CatalogFilterBlueprint.makeWithOverrides({
       name: 'test-name',
       inputs: {
         mock: createExtensionInput([coreExtensionData.reactElement]),
       },
-      config: {
-        schema: {
-          test: z => z.string(),
-        },
+      configSchema: {
+        test: z.string(),
       },
       factory(originalFactory, { config, inputs }) {
         return originalFactory({

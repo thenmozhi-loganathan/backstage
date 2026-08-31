@@ -1,5 +1,162 @@
 # @backstage/plugin-scaffolder-common
 
+## 2.3.0-next.0
+
+### Minor Changes
+
+- 1a705ca: Added `templateDryRunPermission`, which allows permission policies to control who can submit inline Software Template dry runs.
+
+## 2.2.2
+
+### Patch Changes
+
+- 4e8d763: Migrated tests from MSW v1 to MSW v2.
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/integration@2.1.0
+  - @backstage/plugin-permission-common@0.9.10
+
+## 2.2.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.1.0-next.0
+
+## 2.2.1
+
+### Patch Changes
+
+- 02c4e8a: Removed unused `json-schema` runtime dependency. The package was only used for TypeScript types from `@types/json-schema`; affected imports have been converted to `import type` to allow safe removal.
+- Updated dependencies
+  - @backstage/integration@2.0.3
+
+## 2.2.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.3-next.0
+
+## 2.2.0
+
+### Minor Changes
+
+- 8006acf: Promote the `formDecorators` field on the `Template` spec out of experimental.
+  The previous `EXPERIMENTAL_formDecorators` field continues to work and is
+  kept as a deprecated alias.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/errors@1.3.1
+  - @backstage/integration@2.0.2
+  - @backstage/plugin-permission-common@0.9.9
+
+## 2.2.0-next.1
+
+### Minor Changes
+
+- 8006acf: Promote the `formDecorators` field on the `Template` spec out of experimental.
+  The previous `EXPERIMENTAL_formDecorators` field continues to work and is
+  kept as a deprecated alias.
+
+## 2.1.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/integration@2.0.2-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/plugin-permission-common@0.9.9-next.0
+  - @backstage/types@1.2.2
+
+## 2.1.0
+
+### Minor Changes
+
+- e5fcfcb: Added `scaffolderCatalogModelLayer`, a Template kind model layer with JSON Schema definition, serving as an example of how plugins can declare their own catalog entity kinds.
+
+### Patch Changes
+
+- 3ef6078: Added optional `if` property to `ScaffolderOutputLink` and `ScaffolderOutputText` types, allowing template authors to conditionally include output links and text items.
+- Updated dependencies
+  - @backstage/errors@1.3.0
+  - @backstage/catalog-model@1.8.0
+  - @backstage/integration@2.0.1
+  - @backstage/plugin-permission-common@0.9.8
+
+## 2.0.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/integration@2.0.1-next.0
+  - @backstage/catalog-model@1.7.8-next.0
+  - @backstage/plugin-permission-common@0.9.8-next.0
+
+## 2.0.0
+
+### Major Changes
+
+- 527cf88: **BREAKING** Removed deprecated `bitbucket` integration from being registered in the `ScaffolderClient`. Use the `bitbucketCloud` or `bitbucketServer` integrations instead.
+
+### Minor Changes
+
+- f598909: **BREAKING PRODUCERS**: Made `retry`, `listTasks`, `listTemplatingExtensions`, `dryRun`, and `autocomplete` required methods on the `ScaffolderApi` interface. Implementations of `ScaffolderApi` must now provide these methods.
+- e8736ea: Added an optional `secrets` field to `TemplateEntityV1beta3` for configuring secrets validation. The schema for validating secrets is defined under `secrets.schema` as a JSON Schema object.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.0
+  - @backstage/plugin-permission-common@0.9.7
+  - @backstage/catalog-model@1.7.7
+
+## 2.0.0-next.2
+
+### Minor Changes
+
+- e8736ea: Added an optional `secrets` field to `TemplateEntityV1beta3` for configuring secrets validation. The schema for validating secrets is defined under `secrets.schema` as a JSON Schema object.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.0-next.2
+
+## 2.0.0-next.1
+
+### Major Changes
+
+- 527cf88: **BREAKING** Removed deprecated `bitbucket` integration from being registered in the `ScaffolderClient`. Use the `bitbucketCloud` or `bitbucketServer` integrations instead.
+
+### Minor Changes
+
+- f598909: **BREAKING PRODUCERS**: Made `retry`, `listTasks`, `listTemplatingExtensions`, `dryRun`, and `autocomplete` required methods on the `ScaffolderApi` interface. Implementations of `ScaffolderApi` must now provide these methods.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.0-next.1
+  - @backstage/catalog-model@1.7.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-permission-common@0.9.6
+
+## 1.7.7-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.21.0-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-permission-common@0.9.6
+
 ## 1.7.6
 
 ### Patch Changes

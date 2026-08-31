@@ -21,6 +21,8 @@ import type { Responsive, MarginProps } from '../../types';
 export type AlertOwnProps = {
   status?: Responsive<'info' | 'success' | 'warning' | 'danger'>;
   icon?: boolean | ReactElement;
+  isPending?: boolean;
+  /** @deprecated Use `isPending` instead. */
   loading?: boolean;
   customActions?: ReactNode;
   title?: ReactNode;
@@ -34,4 +36,10 @@ export type AlertOwnProps = {
  *
  * @public
  */
-export interface AlertProps extends MarginProps, AlertOwnProps {}
+export interface AlertProps
+  extends MarginProps,
+    AlertOwnProps,
+    Omit<
+      React.ComponentPropsWithoutRef<'div'>,
+      keyof AlertOwnProps | keyof MarginProps
+    > {}

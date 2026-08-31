@@ -62,15 +62,17 @@ In case after a proper configuration, the events still are not being captured: C
       service: 'backstage',
       env: '<%= config.getString("app.datadogRum.env") %>',
       sampleRate:
-        '<%= config.getOptionalNumber("app.datadogRum.sessionSampleRate") || 100 %>',
+        <%= config.getOptionalNumber("app.datadogRum.sessionSampleRate") || 100 %>,
       sessionReplaySampleRate:
-        '<%= config.getOptionalNumber("app.datadogRum.sessionReplaySampleRate") || 0 %>',
+        <%= config.getOptionalNumber("app.datadogRum.sessionReplaySampleRate") || 0 %>,
       trackInteractions: true,
     });
   });
 </script>
 <% } %>
 ```
+
+:::
 
 The `clientToken` and `applicationId` are generated from the Datadog RUM page
 following

@@ -7,7 +7,7 @@ description: TechDocs CLI - a utility command line interface for managing TechDo
 Utility command line interface for managing TechDocs sites in
 [Backstage](https://github.com/backstage/backstage).
 
-https://backstage.io/docs/features/techdocs/
+<https://backstage.io/docs/features/techdocs/>
 
 ## Features
 
@@ -63,6 +63,11 @@ By default, Docker and
 [techdocs-container](https://github.com/backstage/techdocs-container) is used to
 make sure all the dependencies are installed. However, Docker can be disabled
 with `--no-docker` flag.
+
+Note that the `serve` command does not pull the Docker image and keeps using the
+one available locally. If serving misbehaves, for example changes to
+documentation files are no longer detected, update the image with
+`docker pull spotify/techdocs`.
 
 The command starts two local servers - an MkDocs preview server on port 8000 and
 a Backstage app server on port 3000. The Backstage app has a custom TechDocs API
@@ -149,6 +154,8 @@ Options:
                                   Defaults to false, which means that the techdocs-core plugin is always added to the mkdocs file.
   --legacyCopyReadmeMdToIndexMd   Attempt to ensure an index.md exists falling back to using <docs-dir>/README.md or README.md
                                   in case a default <docs-dir>/index.md is not provided. (default: false)
+  --disableExternalFonts          Disable external font downloads for all TechDocs sites. Useful for air-gapped environments
+                                  where Google fonts cannot be accessed. (default: false)
   --runAsDefaultUser              Bypass setting the container user as the same user and group id as host for Linux and MacOS (default: false)
   -v, --verbose                   Enable verbose output. (default: false)
   -h, --help                      display help for command
@@ -208,12 +215,7 @@ Options:
 
 #### Publishing from behind a proxy
 
-For users attempting to publish TechDocs content behind a proxy, the TechDocs CLI leverages `global-agent` to navigate the proxy to successfully connect to that location. To enable `global-agent`, the following variables need to be set prior to running the techdocs-cli command:
-
-```bash
-export GLOBAL_AGENT_HTTPS_PROXY=${HTTP_PROXY}
-export GLOBAL_AGENT_NO_PROXY=${NO_PROXY}
-```
+Set `NODE_USE_ENV_PROXY=1` along with `HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY` to route TechDocs publishing through a proxy. See the [corporate proxy guide](../../tutorials/corporate-proxy.md) for details.
 
 ### Migrate content for case-insensitive access
 

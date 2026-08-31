@@ -1,11 +1,12 @@
 ---
 id: npx-create-app
 title: '001 - Scaffolding'
+description: How to scaffold a new Backstage app using create-app
 ---
 
 Audience: Developers and Admins
 
-:::note Note
+:::note
 It is not required, although recommended to have a basic understanding of [Yarn](https://www.pluralsight.com/guides/yarn-a-package-manager-for-node-js) and [npm](https://docs.npmjs.com/about-npm) before starting this guide.
 :::
 
@@ -15,7 +16,7 @@ This guide walks through how to get started creating your very own Backstage cus
 
 By the end of this guide, you will have a standalone Backstage installation running locally with a `SQLite` database and demo content.
 
-:::caution Organization customization
+:::caution[Organization customization]
 
 To be clear, this is not a production-ready installation, and it does not contain information specific to your organization. You will learn how to customize Backstage for your use case through this guide.
 
@@ -55,7 +56,33 @@ The wizard for this command will ask what name you want to have for your new app
 
 When you run the command, you'll see an output like this.
 
-![create app](../../assets/getting-started/create-app-output.png)
+```text
+
+? Enter a name for the app [required] my-backstage-app
+
+Creating the app...
+
+Checking if the directory is available:
+
+checking      my-backstage-app ✔
+
+Creating a temporary app directory:
+
+Preparing files:
+copying       .dockerignore ✔
+copying       .eslintignore ✔
+templating    .eslintrc.js.hbs ✔
+...
+Moving to final location:
+moving        my-backstage-app ✔
+fetching      yarn.lock seed ✔
+
+Installing dependencies:
+executing     yarn install ✔
+executing     yarn tsc ✔
+
+Successfully created my-backstage-app
+```
 
 And when it finishes, you'll have a working Backstage app (with example data)!
 
@@ -67,19 +94,13 @@ npx @backstage/create-app@latest
 
 This may take a few minutes to fully install everything. Don't stress if the loading seems to be spinning nonstop, there's a lot going on in the background.
 
-:::note
-
-If this fails on the `yarn install` step, it's likely that you will need to install some additional dependencies which are used to configure `isolated-vm`. You can find out more in their [requirements section](https://github.com/laverdet/isolated-vm#requirements), and then run `yarn install` manually again after you've completed those steps.
-
-:::
-
 ## Structure of your app
 
 ### General folder structure
 
 Below is a simplified layout of the files and folders generated when creating an app.
 
-```
+```text
 app
 ├── app-config.yaml
 ├── catalog-info.yaml

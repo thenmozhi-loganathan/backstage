@@ -1,5 +1,176 @@
 # @backstage/plugin-scaffolder-backend-module-bitbucket-server
 
+## 0.2.25-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-scaffolder-node@0.13.7-next.0
+
+## 0.2.24
+
+### Patch Changes
+
+- 4e8d763: Migrated tests from MSW v1 to MSW v2.
+- Updated dependencies
+  - @backstage/plugin-scaffolder-node@0.13.6
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/integration@2.1.0
+
+## 0.2.24-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.1.0-next.0
+  - @backstage/plugin-scaffolder-node@0.13.6-next.1
+
+## 0.2.24-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0-next.0
+  - @backstage/plugin-scaffolder-node@0.13.6-next.0
+
+## 0.2.23
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3
+  - @backstage/plugin-scaffolder-node@0.13.5
+
+## 0.2.23-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3-next.0
+  - @backstage/plugin-scaffolder-node@0.13.5-next.0
+
+## 0.2.22
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-scaffolder-node@0.13.4
+  - @backstage/integration@2.0.3
+  - @backstage/backend-plugin-api@1.9.2
+
+## 0.2.22-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.3-next.0
+  - @backstage/plugin-scaffolder-node@0.13.4-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.2.21
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/integration@2.0.2
+  - @backstage/plugin-scaffolder-node@0.13.3
+  - @backstage/config@1.3.8
+
+## 0.2.21-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/integration@2.0.2-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/plugin-scaffolder-node@0.13.3-next.0
+
+## 0.2.20
+
+### Patch Changes
+
+- ed6b53c: Removed bare catch-and-rethrow blocks that served no purpose.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/errors@1.3.0
+  - @backstage/plugin-scaffolder-node@0.13.2
+  - @backstage/integration@2.0.1
+  - @backstage/config@1.3.7
+
+## 0.2.20-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/plugin-scaffolder-node@0.13.2-next.2
+  - @backstage/integration@2.0.1-next.0
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/config@1.3.7-next.0
+
+## 0.2.20-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/plugin-scaffolder-node@0.13.1-next.1
+
+## 0.2.20-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/plugin-scaffolder-node@0.13.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/integration@2.0.0
+
+## 0.2.19
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/plugin-scaffolder-node@0.13.0
+  - @backstage/integration@2.0.0
+
+## 0.2.19-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/integration@2.0.0-next.2
+  - @backstage/plugin-scaffolder-node@0.13.0-next.2
+
+## 0.2.19-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@2.0.0-next.1
+  - @backstage/plugin-scaffolder-node@0.13.0-next.1
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+
+## 0.2.19-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/integration@1.21.0-next.0
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/plugin-scaffolder-node@0.12.6-next.0
+
 ## 0.2.18
 
 ### Patch Changes

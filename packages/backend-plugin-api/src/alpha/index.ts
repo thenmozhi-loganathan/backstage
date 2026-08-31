@@ -15,20 +15,52 @@
  */
 
 export type {
-  RootSystemMetadataServicePluginInfo,
-  RootSystemMetadataService,
-} from './RootSystemMetadataService';
-
-export type {
   ActionsRegistryService,
   ActionsRegistryActionOptions,
   ActionsRegistryActionContext,
+  ActionsRegistryActionExample,
 } from './ActionsRegistryService';
 
 export type { ActionsService, ActionsServiceAction } from './ActionsService';
 
+export type {
+  MetricsService,
+  MetricAdvice,
+  MetricAttributes,
+  MetricAttributeValue,
+  MetricOptions,
+  MetricsServiceCounter,
+  MetricsServiceUpDownCounter,
+  MetricsServiceHistogram,
+  MetricsServiceGauge,
+  MetricsServiceObservable,
+  MetricsServiceObservableCallback,
+  MetricsServiceObservableCounter,
+  MetricsServiceObservableGauge,
+  MetricsServiceObservableResult,
+  MetricsServiceObservableUpDownCounter,
+} from './MetricsService';
+
+export type {
+  TracingService,
+  TracingServiceAttributeValue,
+  TracingServiceAttributes,
+  TracingServiceBaggage,
+  TracingServiceBaggageEntry,
+  TracingServiceContext,
+  TracingServiceContextAPI,
+  TracingServicePropagationAPI,
+  TracingServiceSpan,
+  TracingServiceSpanKind,
+  TracingServiceSpanOptions,
+  TracingServiceSpanStatus,
+} from './TracingService';
+
 export {
   actionsRegistryServiceRef,
   actionsServiceRef,
-  rootSystemMetadataServiceRef,
+  metricsServiceRef,
+  tracingServiceRef,
 } from './refs';
+
+export type { ConnectionRegistration } from '../wiring/types';

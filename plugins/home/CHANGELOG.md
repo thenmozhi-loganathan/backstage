@@ -1,5 +1,300 @@
 # @backstage/plugin-home
 
+## 0.9.10-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.2-next.0
+  - @backstage/core-app-api@1.20.5-next.0
+  - @backstage/core-components@0.18.14-next.0
+  - @backstage/core-compat-api@0.5.15-next.0
+  - @backstage/plugin-home-react@0.1.42-next.0
+
+## 0.9.9
+
+### Patch Changes
+
+- a178067: Added new frontend system widget blueprints for Most Visited, Recently Visited, World Clocks, and a configurable Toolkit. The home page now supports a `defaultConfig` for defining the initial grid layout via app-config.
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/core-components@0.18.13
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/plugin-catalog-react@3.2.1
+  - @backstage/core-app-api@1.20.4
+  - @backstage/plugin-home-react@0.1.41
+  - @backstage/frontend-plugin-api@0.18.0
+  - @backstage/core-compat-api@0.5.14
+
+## 0.9.9-next.2
+
+### Patch Changes
+
+- a178067: Added new frontend system widget blueprints for Most Visited, Recently Visited, World Clocks, and a configurable Toolkit. The home page now supports a `defaultConfig` for defining the initial grid layout via app-config.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9-next.1
+  - @backstage/plugin-catalog-react@3.2.1-next.3
+  - @backstage/plugin-home-react@0.1.41-next.2
+
+## 0.9.9-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.1-next.2
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+  - @backstage/core-compat-api@0.5.14-next.1
+  - @backstage/core-plugin-api@1.12.9-next.0
+  - @backstage/plugin-home-react@0.1.41-next.1
+  - @backstage/core-app-api@1.20.4-next.1
+  - @backstage/core-components@0.18.13-next.2
+
+## 0.9.9-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-components@0.18.13-next.0
+  - @backstage/plugin-catalog-react@3.2.1-next.0
+  - @backstage/plugin-home-react@0.1.41-next.0
+  - @backstage/core-app-api@1.20.4-next.0
+  - @backstage/core-compat-api@0.5.14-next.0
+
+## 0.9.8
+
+### Patch Changes
+
+- e9776b0: Optionally prevent duplicate widget additions via prop and added empty state for Add Widget dialog
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/plugin-catalog-react@3.2.0
+  - @backstage/core-components@0.18.12
+  - @backstage/core-app-api@1.20.3
+  - @backstage/catalog-client@1.16.1
+  - @backstage/core-compat-api@0.5.13
+  - @backstage/core-plugin-api@1.12.8
+  - @backstage/plugin-home-react@0.1.40
+
+## 0.9.8-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@3.2.0-next.0
+  - @backstage/core-compat-api@0.5.13-next.0
+  - @backstage/core-app-api@1.20.3-next.0
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+  - @backstage/catalog-client@1.16.1-next.0
+  - @backstage/core-components@0.18.12-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+  - @backstage/plugin-home-react@0.1.40-next.0
+
+## 0.9.7
+
+### Patch Changes
+
+- a07e6a3: Added the correctly-spelled `'widgetSettingsOverlay.editSettingsTooltip'` translation key in `homeTranslationRef` and deprecated the previous typoed `'widgetSettingsOverlay.editSettingsTooptip'` key. Existing references to the old key continue to work; switch to the new key to avoid future removal.
+- Updated dependencies
+  - @backstage/catalog-client@1.16.0
+  - @backstage/plugin-catalog-react@3.1.0
+  - @backstage/core-components@0.18.11
+  - @backstage/frontend-plugin-api@0.17.2
+  - @backstage/core-app-api@1.20.2
+  - @backstage/core-compat-api@0.5.12
+  - @backstage/core-plugin-api@1.12.7
+  - @backstage/plugin-home-react@0.1.39
+
+## 0.9.7-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-client@1.16.0-next.1
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+  - @backstage/core-components@0.18.11-next.1
+  - @backstage/core-compat-api@0.5.12-next.1
+  - @backstage/core-plugin-api@1.12.7-next.0
+  - @backstage/plugin-catalog-react@3.0.1-next.1
+  - @backstage/plugin-home-react@0.1.39-next.1
+  - @backstage/core-app-api@1.20.2-next.0
+
+## 0.9.7-next.0
+
+### Patch Changes
+
+- a07e6a3: Added the correctly-spelled `'widgetSettingsOverlay.editSettingsTooltip'` translation key in `homeTranslationRef` and deprecated the previous typoed `'widgetSettingsOverlay.editSettingsTooptip'` key. Existing references to the old key continue to work; switch to the new key to avoid future removal.
+- Updated dependencies
+  - @backstage/catalog-client@1.16.0-next.0
+  - @backstage/plugin-catalog-react@3.0.1-next.0
+  - @backstage/core-components@0.18.11-next.0
+  - @backstage/core-compat-api@0.5.12-next.0
+  - @backstage/plugin-home-react@0.1.39-next.0
+
+## 0.9.6
+
+### Patch Changes
+
+- 419141e: Fixed widgets not being movable or resizable after saved edits. Previously, entering edit mode didn't restore `isDraggable` and `isResizable`.
+- 44d77e9: Removed separate nav item extensions. Sidebar entries are now provided via `title` and `icon` on each plugin's page extension.
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/core-components@0.18.10
+  - @backstage/frontend-plugin-api@0.17.0
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/plugin-catalog-react@3.0.0
+  - @backstage/core-compat-api@0.5.11
+  - @backstage/catalog-client@1.15.1
+  - @backstage/config@1.3.8
+  - @backstage/core-app-api@1.20.1
+  - @backstage/plugin-home-react@0.1.38
+
+## 0.9.5-next.0
+
+### Patch Changes
+
+- 419141e: Fixed widgets not being movable or resizable after saved edits. Previously, entering edit mode didn't restore `isDraggable` and `isResizable`.
+- Updated dependencies
+  - @backstage/core-components@0.18.10-next.0
+  - @backstage/core-compat-api@0.5.11-next.0
+  - @backstage/plugin-catalog-react@2.1.5-next.0
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/plugin-home-react@0.1.38-next.0
+  - @backstage/core-app-api@1.20.1-next.0
+  - @backstage/catalog-client@1.15.1-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/theme@0.7.3
+
+## 0.9.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.7.3
+  - @backstage/catalog-model@1.8.0
+  - @backstage/plugin-catalog-react@2.1.2
+  - @backstage/core-app-api@1.20.0
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/core-components@0.18.9
+  - @backstage/core-compat-api@0.5.10
+  - @backstage/catalog-client@1.15.0
+  - @backstage/config@1.3.7
+  - @backstage/core-plugin-api@1.12.5
+  - @backstage/plugin-home-react@0.1.37
+
+## 0.9.4-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/theme@0.7.3-next.0
+  - @backstage/core-app-api@1.20.0-next.2
+  - @backstage/core-components@0.18.9-next.1
+  - @backstage/plugin-catalog-react@2.1.2-next.2
+  - @backstage/catalog-client@1.14.1-next.0
+  - @backstage/catalog-model@1.7.8-next.0
+  - @backstage/config@1.3.7-next.0
+  - @backstage/core-compat-api@0.5.10-next.2
+  - @backstage/core-plugin-api@1.12.5-next.2
+  - @backstage/frontend-plugin-api@0.16.0-next.2
+
+## 0.9.4-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.20.0-next.1
+  - @backstage/plugin-catalog-react@2.1.2-next.1
+  - @backstage/frontend-plugin-api@0.16.0-next.1
+  - @backstage/core-compat-api@0.5.10-next.1
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/core-plugin-api@1.12.5-next.1
+  - @backstage/plugin-home-react@0.1.37-next.1
+
+## 0.9.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.1-next.0
+  - @backstage/core-components@0.18.9-next.0
+  - @backstage/frontend-plugin-api@0.15.2-next.0
+  - @backstage/core-compat-api@0.5.10-next.0
+  - @backstage/core-app-api@1.19.7-next.0
+  - @backstage/plugin-home-react@0.1.37-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+  - @backstage/catalog-client@1.14.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/config@1.3.6
+  - @backstage/theme@0.7.2
+
+## 0.9.3
+
+### Patch Changes
+
+- 538c985: Updated installation documentation to use feature discovery as the default.
+- 0be2541: Promoted the plugin's translation ref to the stable package entry point. It was previously only available through the alpha entry point.
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- Updated dependencies
+  - @backstage/plugin-catalog-react@2.1.0
+  - @backstage/core-compat-api@0.5.9
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/core-components@0.18.8
+  - @backstage/frontend-plugin-api@0.15.0
+  - @backstage/catalog-client@1.14.0
+  - @backstage/core-app-api@1.19.6
+  - @backstage/plugin-home-react@0.1.36
+  - @backstage/catalog-model@1.7.7
+
+## 0.9.3-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-compat-api@0.5.9-next.2
+  - @backstage/core-app-api@1.19.6-next.1
+  - @backstage/frontend-plugin-api@0.15.0-next.1
+  - @backstage/core-plugin-api@1.12.4-next.1
+  - @backstage/catalog-client@1.14.0-next.2
+  - @backstage/plugin-catalog-react@2.1.0-next.2
+  - @backstage/core-components@0.18.8-next.1
+  - @backstage/plugin-home-react@0.1.36-next.1
+
+## 0.9.3-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/catalog-client@1.14.0-next.1
+  - @backstage/plugin-catalog-react@2.1.0-next.1
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/core-app-api@1.19.6-next.0
+  - @backstage/core-compat-api@0.5.9-next.1
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/theme@0.7.2
+  - @backstage/plugin-home-react@0.1.36-next.0
+
+## 0.9.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/catalog-client@1.13.1-next.0
+  - @backstage/plugin-catalog-react@2.0.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/core-app-api@1.19.6-next.0
+  - @backstage/core-compat-api@0.5.9-next.0
+  - @backstage/core-components@0.18.8-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/theme@0.7.2
+  - @backstage/plugin-home-react@0.1.36-next.0
+
 ## 0.9.2
 
 ### Patch Changes

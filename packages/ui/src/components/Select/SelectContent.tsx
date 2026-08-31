@@ -19,58 +19,112 @@ import {
   SearchField,
   Autocomplete,
   Button,
+  type Key,
 } from 'react-aria-components';
 import { useFilter } from 'react-aria';
 import { RiCloseCircleLine } from '@remixicon/react';
-import clsx from 'clsx';
-import { useStyles } from '../../hooks/useStyles';
-import { SelectDefinition } from './definition';
+import { useDefinition } from '../../hooks/useDefinition';
+import { SelectContentDefinition } from './definition';
 import { SelectListBox } from './SelectListBox';
-import styles from './Select.module.css';
-import type { Option } from './types';
+import type {
+  CollectionItem,
+  NormalizedOption,
+} from '../../types/selectableCollection';
+import type { SelectContentOwnProps } from './types';
+import type { Node } from '@react-types/shared';
 
-interface SelectContentProps {
-  searchable?: boolean;
-  searchPlaceholder?: string;
-  options?: Array<Option>;
-}
+type SearchFilter<T extends CollectionItem> = (
+  textValue: string,
+  inputValue: string,
+  node: Node<T>,
+) => boolean;
 
-export function SelectContent({
-  searchable,
-  searchPlaceholder = 'Search...',
-  options,
-}: SelectContentProps) {
-  const { contains } = useFilter({ sensitivity: 'base' });
-  const { classNames } = useStyles(SelectDefinition);
-
-  if (!searchable) {
-    return <SelectListBox options={options} />;
+function getSearchFilter<T extends CollectionItem>({
+  visibleIds,
+  filter,
+  contains,
+}: {
+  visibleIds?: Set<Key>;
+  filter?: (item: T, query: string) => boolean;
+  contains: (textValue: string, inputValue: string) => boolean;
+}): SearchFilter<T> {
+  if (visibleIds) {
+    return (_textValue, _inputValue, node) => visibleIds.has(node.key);
   }
 
-  return (
-    <Autocomplete filter={contains}>
-      <SearchField
-        autoFocus
-        className={clsx(
-          classNames.searchWrapper,
-          styles[classNames.searchWrapper],
-        )}
-        aria-label={searchPlaceholder}
+  if (filter) {
+    return (_textValue, inputValue, node) =>
+      filter(node.value as T, inputValue);
+  }
+
+  return (textValue, inputValue) => contains(textValue, inputValue);
+}
+
+export function SelectContent<T extends CollectionItem = NormalizedOption>(
+  props: SelectContentOwnProps<T>,
+) {
+  const { contains } = useFilter({ sensitivity: 'base' });
+  const { ownProps } = useDefinition(SelectContentDefinition, props);
+  const {
+    classes,
+    search,
+    options,
+    items,
+    children,
+    dependencies,
+    loading,
+    isStale,
+    visibleIds,
+    retainedOptions,
+  } = ownProps;
+
+  const listBox = (
+    <div className={classes.results}>
+      <SelectListBox
+        options={options}
+        items={items}
+        dependencies={dependencies}
+        loading={loading}
+        isStale={isStale}
+        retainedOptions={retainedOptions}
       >
-        <Input
-          placeholder={searchPlaceholder}
-          className={clsx(classNames.search, styles[classNames.search])}
-        />
-        <Button
-          className={clsx(
-            classNames.searchClear,
-            styles[classNames.searchClear],
-          )}
+        {children}
+      </SelectListBox>
+    </div>
+  );
+
+  if (!search) {
+    return <div className={classes.root}>{listBox}</div>;
+  }
+
+  const searchProps = typeof search === 'object' ? search : undefined;
+  const placeholder = searchProps?.placeholder ?? 'Search...';
+  const filter = getSearchFilter({
+    visibleIds,
+    filter: searchProps?.filter,
+    contains,
+  });
+
+  return (
+    <Autocomplete
+      inputValue={searchProps?.inputValue}
+      defaultInputValue={searchProps?.defaultInputValue}
+      onInputChange={searchProps?.onInputChange}
+      filter={filter}
+    >
+      <div className={classes.root}>
+        <SearchField
+          autoFocus
+          className={classes.searchWrapper}
+          aria-label={placeholder}
         >
-          <RiCloseCircleLine />
-        </Button>
-      </SearchField>
-      <SelectListBox options={options} />
+          <Input placeholder={placeholder} className={classes.search} />
+          <Button className={classes.searchClear}>
+            <RiCloseCircleLine />
+          </Button>
+        </SearchField>
+        {listBox}
+      </div>
     </Autocomplete>
   );
 }

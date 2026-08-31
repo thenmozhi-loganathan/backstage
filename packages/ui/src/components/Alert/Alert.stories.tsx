@@ -32,7 +32,7 @@ const meta = preview.meta({
     icon: {
       control: 'boolean',
     },
-    loading: {
+    isPending: {
       control: 'boolean',
     },
   },
@@ -208,25 +208,25 @@ export const WithActionsAndDescriptions = WithActions.extend({
   },
 });
 
-export const LoadingVariants = meta.story({
+export const PendingVariants = meta.story({
   render: () => (
     <Flex direction="column" gap="4">
       <Text>Info</Text>
       <Alert
         status="info"
         icon={true}
-        loading
+        isPending
         title="Processing your request..."
       />
 
       <Text>Success</Text>
-      <Alert status="success" icon={true} loading title="Saving changes..." />
+      <Alert status="success" icon={true} isPending title="Saving changes..." />
 
       <Text>Warning</Text>
       <Alert
         status="warning"
         icon={true}
-        loading
+        isPending
         title="Checking for issues..."
       />
 
@@ -234,27 +234,27 @@ export const LoadingVariants = meta.story({
       <Alert
         status="danger"
         icon={true}
-        loading
+        isPending
         title="Attempting recovery..."
       />
     </Flex>
   ),
 });
 
-export const LoadingWithDescription = meta.story({
+export const PendingWithDescription = meta.story({
   render: () => (
     <Flex direction="column" gap="4">
       <Alert
         status="info"
         icon={true}
-        loading
+        isPending
         title="Processing your request"
         description="This may take a few moments. Please do not close this window."
       />
       <Alert
         status="success"
         icon={true}
-        loading
+        isPending
         title="Deployment in Progress"
         description="Your application is being deployed to production. You'll receive a notification when complete."
       />
@@ -297,7 +297,7 @@ export const OnDifferentBackgrounds = meta.story({
 
       <Flex direction="column" gap="4">
         <Text>On Neutral 1</Text>
-        <Flex direction="column" gap="2" bg="neutral-1" p="4">
+        <Flex direction="column" gap="2" bg="neutral" p="4">
           <Alert status="info" icon={true} title="Alert on neutral-1" />
           <Alert status="success" icon={true} title="Alert on neutral-1" />
         </Flex>
@@ -305,18 +305,24 @@ export const OnDifferentBackgrounds = meta.story({
 
       <Flex direction="column" gap="4">
         <Text>On Neutral 2</Text>
-        <Flex direction="column" gap="2" bg="neutral-2" p="4">
-          <Alert status="info" icon={true} title="Alert on neutral-2" />
-          <Alert status="success" icon={true} title="Alert on neutral-2" />
-        </Flex>
+        <Box bg="neutral">
+          <Flex direction="column" gap="2" bg="neutral" p="4">
+            <Alert status="info" icon={true} title="Alert on neutral-2" />
+            <Alert status="success" icon={true} title="Alert on neutral-2" />
+          </Flex>
+        </Box>
       </Flex>
 
       <Flex direction="column" gap="4">
         <Text>On Neutral 3</Text>
-        <Flex direction="column" gap="2" bg="neutral-3" p="4">
-          <Alert status="info" icon={true} title="Alert on neutral-3" />
-          <Alert status="success" icon={true} title="Alert on neutral-3" />
-        </Flex>
+        <Box bg="neutral">
+          <Box bg="neutral">
+            <Flex direction="column" gap="2" bg="neutral" p="4">
+              <Alert status="info" icon={true} title="Alert on neutral-3" />
+              <Alert status="success" icon={true} title="Alert on neutral-3" />
+            </Flex>
+          </Box>
+        </Box>
       </Flex>
     </Flex>
   ),
@@ -337,7 +343,7 @@ export const Responsive = meta.story({
 
 export const WithUtilityProps = meta.story({
   render: () => (
-    <Box bg="neutral-1" py="4">
+    <Box bg="neutral" py="4">
       <Alert
         status="success"
         icon={true}

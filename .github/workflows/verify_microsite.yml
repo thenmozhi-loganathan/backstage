@@ -7,6 +7,7 @@ on:
       - 'microsite/**'
       - 'beps/**'
       - 'mkdocs.yml'
+      - 'mkdocs-ci.yml'
       - 'docs/**'
 
 permissions:
@@ -28,55 +29,56 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
-      - name: find latest release
+      - name: find latest release branch
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         id: find-release
         with:
           script: |
-            const { data } = await github.rest.repos.listTags({
+            const data = await octokit.paginate(github.rest.repos.listBranches, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
             })
 
-            const [{tag}] = data
+            const [{branch}] = data
               .map(i => i.name)
-              .filter(tag => tag.match(/^v\d+\.\d+\.\d+$/))
-              .map(tag => ({
-                tag,
-                val: tag
+              .filter(branch => branch.match(/^patch\/v\d+\.\d+\.\d+$/))
+              .map(branch => ({
+                branch,
+                val: branch
+                  .split('/')[1]
                   .slice(1)
                   .split('.')
                   .reduce((val, part) => Number(val) * 1000 + Number(part))
               }))
               .sort((a, b) => b.val - a.val)
 
-            return tag
+            return branch
           result-encoding: string
 
       - name: checkout latest release
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          ref: refs/tags/${{ steps.find-release.outputs.result }}
+          ref: refs/heads/${{ steps.find-release.outputs.result }}
 
       - name: Use Node.js 22.x
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22.x
           registry-url: https://registry.npmjs.org/ # Needed for auth
 
       - name: yarn install
-        uses: backstage/actions/yarn-install@c4dd040f963edd226462b5f32efd319ffca12ac5 # v0.7.7
+        uses: backstage/actions/yarn-install@2cd6978b476cbdc39fec48346f8b6ca13199dd6a # v0.7.8
         with:
           cache-prefix: ${{ runner.os }}-v22.x
 
       # Use the lower-level cache actions for the success cache, so that we can store the cache even on failed builds
       - name: restore package-docs cache
-        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .cache/package-docs
           key: ${{ runner.os }}-v${{ matrix.node-version }}-package-docs-stable-${{ github.run_id }}
@@ -87,14 +89,14 @@ jobs:
         run: yarn backstage-repo-tools package-docs
 
       - name: upload API reference
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: stable-reference
           path: type-docs/
 
       # Always save success cache even if there were failures, that way it can be used in re-triggered builds
       - name: save package-docs cache
-        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         if: always()
         with:
           path: .cache/package-docs
@@ -109,7 +111,7 @@ jobs:
         run: yarn docusaurus gen-api-docs all
 
       - name: upload OpenAPI API docs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: stable-openapi-docs
           path: docs/**/api/**/*
@@ -126,27 +128,27 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
       - name: checkout master
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Use Node.js 22.x
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22.x
           registry-url: https://registry.npmjs.org/ # Needed for auth
 
       - name: yarn install
-        uses: backstage/actions/yarn-install@c4dd040f963edd226462b5f32efd319ffca12ac5 # v0.7.7
+        uses: backstage/actions/yarn-install@2cd6978b476cbdc39fec48346f8b6ca13199dd6a # v0.7.8
         with:
           cache-prefix: ${{ runner.os }}-v22.x
 
       # Use the lower-level cache actions for the success cache, so that we can store the cache even on failed builds
       - name: restore package-docs cache
-        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .cache/package-docs
           key: ${{ runner.os }}-v${{ matrix.node-version }}-package-docs-next-${{ github.run_id }}
@@ -157,14 +159,14 @@ jobs:
         run: yarn backstage-repo-tools package-docs
 
       - name: upload API reference
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: next-reference
           path: type-docs/
 
       # Always save success cache even if there were failures, that way it can be used in re-triggered builds
       - name: save package-docs cache
-        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         if: always()
         with:
           path: .cache/package-docs
@@ -174,7 +176,7 @@ jobs:
         run: yarn build-storybook
 
       - name: Upload Storybook
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: storybook
           path: dist-storybook
@@ -190,7 +192,7 @@ jobs:
         run: yarn docusaurus gen-api-docs all
 
       - name: upload OpenAPI API docs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: next-openapi-docs
           path: docs/**/api/**/*
@@ -212,17 +214,17 @@ jobs:
     name: Microsite
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Use Node.js 22.x
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 22.x
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.9'
 
@@ -246,7 +248,7 @@ jobs:
         run: node scripts/verify-lockfile-duplicates.js
 
       - name: download stable OpenAPI API docs
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: stable-openapi-docs
           path: docs
@@ -278,15 +280,15 @@ jobs:
         run: git clean -fdx docs/
 
       - name: checkout master
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           clean: false
 
       - name: Build MkDocs for TechDocs
-        run: mkdocs build --strict
+        run: mkdocs build --strict --config-file mkdocs-ci.yml
 
       - name: download next OpenAPI API docs
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: next-openapi-docs
           path: docs

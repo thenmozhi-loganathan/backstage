@@ -1,5 +1,321 @@
 # @backstage/frontend-test-utils
 
+## 0.6.4-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-app@0.5.3-next.0
+  - @backstage/core-app-api@1.20.5-next.0
+  - @backstage/frontend-app-api@0.16.8-next.0
+  - @backstage/test-utils@1.7.22-next.0
+
+## 0.6.3
+
+### Patch Changes
+
+- bd435c3: Identity mocks passed to `renderInTestApp` (for example via `mockApis.identity(...)`) are now applied before the app's built-in guest fallback, so the configured `userEntityRef` reliably takes effect in tests instead of being silently overwritten by the default guest user.
+- Updated dependencies
+  - @backstage/core-plugin-api@1.12.9
+  - @backstage/core-app-api@1.20.4
+  - @backstage/test-utils@1.7.21
+  - @backstage/plugin-permission-common@0.9.10
+  - @backstage/frontend-plugin-api@0.18.0
+  - @backstage/plugin-app@0.5.2
+  - @backstage/frontend-app-api@0.16.7
+  - @backstage/plugin-app-react@0.2.6
+  - @backstage/plugin-permission-react@0.5.4
+
+## 0.6.3-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-app@0.5.2-next.2
+  - @backstage/frontend-plugin-api@0.18.0-next.0
+  - @backstage/frontend-app-api@0.16.7-next.1
+  - @backstage/plugin-app-react@0.2.6-next.0
+  - @backstage/core-plugin-api@1.12.9-next.0
+  - @backstage/core-app-api@1.20.4-next.1
+  - @backstage/test-utils@1.7.21-next.1
+  - @backstage/plugin-permission-react@0.5.4-next.0
+
+## 0.6.3-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-app@0.5.2-next.0
+  - @backstage/core-app-api@1.20.4-next.0
+  - @backstage/frontend-app-api@0.16.7-next.0
+  - @backstage/test-utils@1.7.21-next.0
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.3
+  - @backstage/plugin-app@0.5.1
+  - @backstage/core-app-api@1.20.3
+  - @backstage/frontend-app-api@0.16.6
+  - @backstage/filter-predicates@0.1.4
+  - @backstage/core-plugin-api@1.12.8
+  - @backstage/test-utils@1.7.20
+  - @backstage/plugin-app-react@0.2.5
+  - @backstage/plugin-permission-react@0.5.3
+
+## 0.6.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-app-api@0.16.5-next.0
+  - @backstage/filter-predicates@0.1.4-next.0
+  - @backstage/core-app-api@1.20.3-next.0
+  - @backstage/plugin-app@0.5.1-next.0
+  - @backstage/frontend-plugin-api@0.17.3-next.0
+  - @backstage/core-plugin-api@1.12.8-next.0
+  - @backstage/test-utils@1.7.20-next.0
+  - @backstage/plugin-app-react@0.2.5-next.0
+  - @backstage/plugin-permission-react@0.5.3-next.0
+
+## 0.6.1
+
+### Patch Changes
+
+- 62dd4fc: Added a `mountPath` option to `renderInTestApp` that controls the route path pattern the test element is rendered at. When set, the element is wrapped in a `<Route>` with the given path, enabling `useParams()` to extract route parameters from the URL. Use together with `initialRouteEntries` to set a concrete URL that matches the pattern. This is useful for testing page components that depend on URL parameters, such as entity pages that use `useRouteRefParams`.
+- Updated dependencies
+  - @backstage/plugin-app@0.5.0
+  - @backstage/frontend-plugin-api@0.17.2
+  - @backstage/frontend-app-api@0.16.4
+  - @backstage/core-app-api@1.20.2
+  - @backstage/core-plugin-api@1.12.7
+  - @backstage/test-utils@1.7.19
+  - @backstage/plugin-app-react@0.2.4
+  - @backstage/plugin-permission-react@0.5.2
+
+## 0.6.1-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.2-next.0
+  - @backstage/core-plugin-api@1.12.7-next.0
+  - @backstage/frontend-app-api@0.16.4-next.1
+  - @backstage/plugin-app@0.4.7-next.1
+  - @backstage/plugin-app-react@0.2.4-next.0
+  - @backstage/core-app-api@1.20.2-next.0
+  - @backstage/test-utils@1.7.19-next.0
+  - @backstage/plugin-permission-react@0.5.2-next.0
+
+## 0.6.1-next.0
+
+### Patch Changes
+
+- 62dd4fc: Added a `mountPath` option to `renderInTestApp` that controls the route path pattern the test element is rendered at. When set, the element is wrapped in a `<Route>` with the given path, enabling `useParams()` to extract route parameters from the URL. Use together with `initialRouteEntries` to set a concrete URL that matches the pattern. This is useful for testing page components that depend on URL parameters, such as entity pages that use `useRouteRefParams`.
+- Updated dependencies
+  - @backstage/plugin-app@0.4.7-next.0
+  - @backstage/frontend-app-api@0.16.4-next.0
+
+## 0.6.0
+
+### Minor Changes
+
+- 44d77e9: **BREAKING**: `renderInTestApp` no longer renders a sidebar or legacy `nav-item` extensions. The app nav extension is now disabled in the minimal test app shell, along with the layout and routes extensions.
+
+  If your tests passed `features` containing `nav-item` extensions and asserted on links or labels in that stub sidebar, switch to `renderTestApp` instead — it uses the real app shell and discovers nav items from page extensions.
+
+  If you only use `renderInTestApp` to mount a component with APIs or route refs, there is no change.
+
+### Patch Changes
+
+- 0c298f7: Removed internal `mockWithApiFactory` helper in favor of using `attachMockApiFactory` directly.
+- fa363f9: Added support for `ExternalRouteRef` in the `mountedRoutes` option of `renderInTestApp` and `renderTestApp`.
+- 9279ea8: Added explicit type annotations to `.map()` callback parameters in `renderInTestApp` to avoid implicit `any` errors with newer TypeScript versions.
+- Updated dependencies
+  - @backstage/plugin-app@0.4.6
+  - @backstage/frontend-app-api@0.16.3
+  - @backstage/frontend-plugin-api@0.17.0
+  - @backstage/core-plugin-api@1.12.6
+  - @backstage/filter-predicates@0.1.3
+  - @backstage/plugin-permission-common@0.9.9
+  - @backstage/plugin-app-react@0.2.3
+  - @backstage/config@1.3.8
+  - @backstage/core-app-api@1.20.1
+  - @backstage/test-utils@1.7.18
+  - @backstage/plugin-permission-react@0.5.1
+
+## 0.5.3-next.1
+
+### Patch Changes
+
+- fa363f9: Added support for `ExternalRouteRef` in the `mountedRoutes` option of `renderInTestApp` and `renderTestApp`.
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.17.0-next.1
+  - @backstage/core-plugin-api@1.12.6-next.1
+  - @backstage/frontend-app-api@0.16.3-next.1
+  - @backstage/plugin-app@0.4.6-next.1
+  - @backstage/plugin-permission-common@0.9.9-next.1
+
+## 0.5.3-next.0
+
+### Patch Changes
+
+- 0c298f7: Removed internal `mockWithApiFactory` helper in favor of using `attachMockApiFactory` directly.
+- 9279ea8: Added explicit type annotations to `.map()` callback parameters in `renderInTestApp` to avoid implicit `any` errors with newer TypeScript versions.
+- Updated dependencies
+  - @backstage/plugin-app@0.4.6-next.0
+  - @backstage/frontend-app-api@0.16.3-next.0
+  - @backstage/frontend-plugin-api@0.17.0-next.0
+  - @backstage/core-app-api@1.20.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/core-plugin-api@1.12.6-next.0
+  - @backstage/filter-predicates@0.1.3-next.0
+  - @backstage/plugin-permission-common@0.9.9-next.0
+  - @backstage/plugin-app-react@0.2.3-next.0
+  - @backstage/test-utils@1.7.18-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-permission-react@0.5.1-next.0
+
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-app@0.4.3
+  - @backstage/core-app-api@1.20.0
+  - @backstage/frontend-plugin-api@0.16.0
+  - @backstage/filter-predicates@0.1.2
+  - @backstage/frontend-app-api@0.16.2
+  - @backstage/plugin-permission-react@0.5.0
+  - @backstage/test-utils@1.7.17
+  - @backstage/config@1.3.7
+  - @backstage/core-plugin-api@1.12.5
+  - @backstage/plugin-app-react@0.2.2
+  - @backstage/plugin-permission-common@0.9.8
+
+## 0.5.2-next.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/core-app-api@1.20.0-next.2
+  - @backstage/plugin-app@0.4.3-next.2
+  - @backstage/config@1.3.7-next.0
+  - @backstage/core-plugin-api@1.12.5-next.2
+  - @backstage/filter-predicates@0.1.2-next.0
+  - @backstage/frontend-app-api@0.16.2-next.2
+  - @backstage/frontend-plugin-api@0.16.0-next.2
+  - @backstage/plugin-permission-common@0.9.8-next.0
+  - @backstage/test-utils@1.7.17-next.2
+  - @backstage/plugin-permission-react@0.4.42-next.1
+
+## 0.5.2-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-app@0.4.3-next.1
+  - @backstage/core-app-api@1.20.0-next.1
+  - @backstage/frontend-plugin-api@0.16.0-next.1
+  - @backstage/frontend-app-api@0.16.2-next.1
+  - @backstage/core-plugin-api@1.12.5-next.1
+  - @backstage/test-utils@1.7.17-next.1
+  - @backstage/plugin-app-react@0.2.2-next.1
+
+## 0.5.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-app@0.4.3-next.0
+  - @backstage/frontend-plugin-api@0.15.2-next.0
+  - @backstage/frontend-app-api@0.16.2-next.0
+  - @backstage/core-app-api@1.19.7-next.0
+  - @backstage/core-plugin-api@1.12.5-next.0
+  - @backstage/plugin-app-react@0.2.2-next.0
+  - @backstage/test-utils@1.7.17-next.0
+  - @backstage/config@1.3.6
+  - @backstage/filter-predicates@0.1.1
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-permission-common@0.9.7
+  - @backstage/plugin-permission-react@0.4.42-next.0
+
+## 0.5.1
+
+### Patch Changes
+
+- b56f573: Deprecated standalone mock API exports in favor of the `mockApis` namespace. This includes the mock classes (`MockAlertApi`, `MockAnalyticsApi`, `MockConfigApi`, `MockErrorApi`, `MockFetchApi`, `MockFeatureFlagsApi`, `MockPermissionApi`, `MockStorageApi`, `MockTranslationApi`), their option types (`MockErrorApiOptions`, `MockFeatureFlagsApiOptions`), and the `ErrorWithContext` type. `MockFetchApiOptions` is kept as a non-deprecated export. Use the `mockApis` namespace instead, for example `mockApis.alert()` or `mockApis.alert.mock()`.
+- 479282f: Fixed type inference of `TestApiPair` when using tuple syntax by wrapping `MockWithApiFactory` in `NoInfer`.
+- 8e09233: Added a missing dependency on `@backstage/filter-predicates` to `@backstage/frontend-test-utils`. This fixes package metadata for consumers using the frontend test app helpers with predicate-based behavior.
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- 909c742: Switched `MockTranslationApi` and related test utility imports from `@backstage/core-plugin-api/alpha` to the stable `@backstage/frontend-plugin-api` export. The `TranslationApi` type in the API report is now sourced from a single package. This has no effect on runtime behavior.
+- Updated dependencies
+  - @backstage/frontend-app-api@0.16.0
+  - @backstage/core-plugin-api@1.12.4
+  - @backstage/frontend-plugin-api@0.15.0
+  - @backstage/core-app-api@1.19.6
+  - @backstage/plugin-app@0.4.1
+  - @backstage/plugin-app-react@0.2.1
+  - @backstage/plugin-permission-react@0.4.41
+  - @backstage/filter-predicates@0.1.1
+  - @backstage/plugin-permission-common@0.9.7
+  - @backstage/test-utils@1.7.16
+
+## 0.5.1-next.2
+
+### Patch Changes
+
+- b56f573: Deprecated standalone mock API exports in favor of the `mockApis` namespace. This includes the mock classes (`MockAlertApi`, `MockAnalyticsApi`, `MockConfigApi`, `MockErrorApi`, `MockFetchApi`, `MockFeatureFlagsApi`, `MockPermissionApi`, `MockStorageApi`, `MockTranslationApi`), their option types (`MockErrorApiOptions`, `MockFeatureFlagsApiOptions`), and the `ErrorWithContext` type. `MockFetchApiOptions` is kept as a non-deprecated export. Use the `mockApis` namespace instead, for example `mockApis.alert()` or `mockApis.alert.mock()`.
+- Updated dependencies
+  - @backstage/core-app-api@1.19.6-next.1
+  - @backstage/frontend-plugin-api@0.15.0-next.1
+  - @backstage/core-plugin-api@1.12.4-next.1
+  - @backstage/frontend-app-api@0.16.0-next.1
+  - @backstage/plugin-app-react@0.2.1-next.1
+  - @backstage/plugin-app@0.4.1-next.2
+
+## 0.5.1-next.1
+
+### Patch Changes
+
+- 479282f: Fixed type inference of `TestApiPair` when using tuple syntax by wrapping `MockWithApiFactory` in `NoInfer`.
+- Updated dependencies
+  - @backstage/plugin-app@0.4.1-next.1
+  - @backstage/config@1.3.6
+  - @backstage/core-app-api@1.19.6-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/frontend-app-api@0.15.1-next.0
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/test-utils@1.7.16-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-app-react@0.2.1-next.0
+  - @backstage/plugin-permission-common@0.9.6
+  - @backstage/plugin-permission-react@0.4.41-next.0
+
+## 0.5.1-next.0
+
+### Patch Changes
+
+- 909c742: Switched `MockTranslationApi` and related test utility imports from `@backstage/core-plugin-api/alpha` to the stable `@backstage/frontend-plugin-api` export. The `TranslationApi` type in the API report is now sourced from a single package. This has no effect on runtime behavior.
+- Updated dependencies
+  - @backstage/frontend-plugin-api@0.14.2-next.0
+  - @backstage/plugin-app@0.4.1-next.0
+  - @backstage/config@1.3.6
+  - @backstage/core-app-api@1.19.6-next.0
+  - @backstage/core-plugin-api@1.12.4-next.0
+  - @backstage/frontend-app-api@0.15.1-next.0
+  - @backstage/test-utils@1.7.16-next.0
+  - @backstage/types@1.2.2
+  - @backstage/version-bridge@1.0.12
+  - @backstage/plugin-app-react@0.2.1-next.0
+  - @backstage/plugin-permission-common@0.9.6
+  - @backstage/plugin-permission-react@0.4.41-next.0
+
 ## 0.5.0
 
 ### Minor Changes

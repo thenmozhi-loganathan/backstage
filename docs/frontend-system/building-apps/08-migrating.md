@@ -273,6 +273,24 @@ If your app starts and works in hybrid mode, you’re ready to begin Phase 2. If
 
 At this point, the contents of your app should have moved past the initial migration stage. Let's continue by gradually removing legacy code and helpers to fully adopt the new system.
 
+### Choose a customization mechanism
+
+During Phase 2, prefer the least invasive mechanism that meets your needs.
+This keeps your app closer to the default frontend system and reduces the
+amount of migration code that you need to maintain.
+
+| When you need to...                                                                     | Use...                                                                                        |
+| :-------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------- |
+| Change behavior that an extension already exposes as a setting.                         | The extension's configuration.                                                                |
+| Add a new page, app root element, theme, API, or other independent extension.           | An extension blueprint and a frontend module.                                                 |
+| Change an existing extension in a way that its configuration and inputs do not support. | An extension override. Keep the override focused on the missing customization.                |
+| Preserve existing legacy app code while you migrate it.                                 | The compatibility helpers in Phase 1, then remove them as the corresponding code is migrated. |
+
+For an overview of available blueprints, look for `*Blueprint` exports in the
+relevant frontend package. Before adding an override, check the extension's
+configuration and inputs. Those mechanisms are intended for common
+customizations and avoid replacing extension behavior.
+
 ### Migrating `createApp` options
 
 Many of the `createApp` options have been migrated to use extensions instead. Each will have their own [extension blueprint](../architecture/23-extension-blueprints.md) that you use to create a custom extension. To add these standalone extensions to the app they need to be passed to `createFrontendModule`, which bundles them into a _feature_ that you can install in the app. See the [frontend module](../architecture/25-extension-overrides.md#creating-a-frontend-module) section for more information.
@@ -636,7 +654,7 @@ The `AlertDisplay` and `OAuthRequestDialog` are already provided as built-in ext
 const convertedRootFeatures = convertLegacyAppRoot(routes);
 ```
 
-But, if you have your own custom root elements you will need to migrate them to be extensions that you install in the app instead. Use `createAppRootElementExtension` to create said extension and then install it in the app.
+But, if you have your own custom root elements you will need to migrate them to be extensions that you install in the app instead. Use `AppRootElementBlueprint` from `@backstage/frontend-plugin-api` (for example `AppRootElementBlueprint.make({ ... })`) to create said extension and then install it in the app.
 
 Whether the element used to be rendered as a child of the `AppRouter` or not doesn't matter. All new root app elements will be rendered as a child of the app router.
 
@@ -686,7 +704,7 @@ createApp({
 
 #### App Root Sidebar
 
-New apps feature a built-in sidebar extension which is created by using the `NavContentBlueprint` in `src/modules/nav/Sidebar.tsx`. The default implementation of the sidebar in this blueprint will render some items explicitly in different groups, and then render the rest of the items. Nav items are auto-discovered from page extensions registered under `app/routes` (no explicit `NavItemBlueprint` required), with metadata from page config, nav item extensions, or plugin defaults.
+New apps feature a built-in sidebar extension which is created by using the `NavContentBlueprint` in `src/modules/nav/Sidebar.tsx`. The default implementation of the sidebar in this blueprint will render some items explicitly in different groups, and then render the rest of the items. Nav items are auto-discovered from page extensions registered under `app/routes`, with metadata from page config or plugin defaults.
 
 In order to migrate your existing sidebar, you will want to create an override for the `app/nav` extension. You can do this by copying the standard of having a `src/modules/nav/` folder, which can contain an extension which you can install into the `app` in the form of a `module`.
 
@@ -740,14 +758,7 @@ The deprecated `items` prop (a flat list compatible with `<SidebarItem {...item}
 
 You might also notice that when you're rendering additional fixed icons for plugins (e.g. Search in a dedicated group) these might become duplicated, since that page is also included in `nav.rest()`. To exclude an item from the remaining list, call `nav.take('page:search')` before calling `nav.rest()` — you can discard the return value. Items that have been taken will not appear in `rest()`.
 
-You can also use the old `NavItemBlueprint`-based nav item extensions to disable items from the nav bar, these can be disabled in config without affecting the page itself:
-
-```yaml title="in app-config.yaml"
-app:
-  extensions:
-    - nav-item:search: false
-    - nav-item:catalog: false
-```
+To hide a page from the sidebar without disabling the page itself, use `nav.take('page:...')` in your custom sidebar implementation before calling `nav.rest()`, or disable the page extension in config with `page:<plugin-id>: false`.
 
 #### App Root Routes
 
@@ -799,6 +810,22 @@ const routes = (
 If you are using [app feature discovery](../architecture/10-app.md#feature-discovery) the installation step is simple, it's already done! The new version of the scaffolder plugin was already discovered and present in the app, it was simply disabled because the plugin created from the legacy route had higher priority. If you do not use feature discovery, you will instead need to manually install the new scaffolder plugin in your app through the `features` option of `createApp`.
 
 Continue this process for each of your legacy routes until you have migrated all of them. For any plugin with additional extensions installed as children of the `Route`, refer to the plugin READMEs for more detailed instructions. For the entity pages, refer to the [separate section](#catalog-entity-page).
+
+##### Migrating `<Redirect>` routes
+
+If your old routes include `<Redirect>` elements to forward users from one path to another, you can replace them with the built-in redirect configuration on the `app/routes` extension:
+
+```yaml title="app-config.yaml"
+app:
+  extensions:
+    - app/routes:
+        config:
+          redirects:
+            - from: /old-path
+              to: /new-path
+```
+
+See the [`app/routes` built-in extension documentation](./03-built-in-extensions.md#configuring-redirects) for more details.
 
 ### Migrating core, internal and third-party plugins
 
@@ -899,47 +926,27 @@ It's encouraged that once you switch over to using the new frontend system, that
 
 This practice is also pretty important early on, as it's going to help you get familiar with the practices of the new frontend system.
 
-When creating a new Backstage app with `create-app` and using the `--next` flag you'll automatically get these choices in the `yarn new` command, but if you want to bring these templates to an older app, you can add the following to your root `package.json`:
-
-```json
-{
-  ...
-  "scripts": {
-    ...
-    "new": "backstage-cli new"
-  },
-  "backstage": {
-    "cli": {
-      "new": {
-        "globals": {
-          "license": "UNLICENSED"
-        },
-        "templates": [
-          "@backstage/cli/templates/new-frontend-plugin",
-          "@backstage/cli/templates/new-frontend-plugin-module",
-          "@backstage/cli/templates/backend-plugin",
-          "@backstage/cli/templates/backend-plugin-module",
-          "@backstage/cli/templates/plugin-web-library",
-          "@backstage/cli/templates/plugin-node-library",
-          "@backstage/cli/templates/plugin-common-library",
-          "@backstage/cli/templates/web-library",
-          "@backstage/cli/templates/node-library",
-          "@backstage/cli/templates/catalog-provider-module",
-          "@backstage/cli/templates/scaffolder-backend-module"
-        ]
-      }
-    }
-  }
-}
-```
+The `yarn new` command now defaults to the new frontend system templates for frontend plugins. If you have an older app that was created before this change, you can simply update the `@backstage/cli-module-new` package to get access to the new templates.
 
 ## Troubleshooting
 
-We'd recommend that you install the `app-visualizer` plugin to help your troubleshooting. If you run `yarn add @backstage/plugin-app-visualizer` in `packages/app` it should be automatically added to the sidebar, and available on `/visualizer`.
+### Using the App Visualizer Plugin
 
-There is a `tree` mode that can be very helpful in understanding which plugins are being automatically detected and the extensions that they are providing to the system. You should also be able to see any legacy extensions which are being converted and added to the app.
+We'd recommend that you install the `app-visualizer` plugin to help your troubleshooting.
 
-This can be really useful output when raising any issue to the main repository too, so we can dig in to see what's happening with the system.
+For installation instructions, please read [App Visualizer](./09-app-visualizer.md).
+
+#### Using the App Visualizer During Migration
+
+During migration, the tree view is particularly helpful for:
+
+- **Verifying plugin detection** — After converting your app with `convertLegacyAppOptions` and `convertLegacyAppRoot`, open the tree view to confirm that all expected plugins appear. Legacy plugins that were converted will show up alongside native new-system plugins.
+
+- **Spotting duplicate extensions** — If you see duplicate entries for the same plugin or page, it likely means the plugin is being loaded both through the legacy conversion helpers and the new system. See the [duplicate cards troubleshooting section](#im-seeing-duplicate-cards-for-entity-pages) below.
+
+- **Sharing debug output** — When raising issues, use the text view to copy your extension tree and include it in your bug report. This gives maintainers immediate visibility into your app's structure.
+
+You can also use the **Copy tree as JSON** button in the page header to export the full extension tree as a JSON structure, which can be attached to issue reports for deeper analysis.
 
 ### I'm seeing duplicate cards for Entity Pages
 
@@ -955,5 +962,7 @@ If you have a use case where these are required, please reach out to us either t
 
 ## Next Steps
 
+- Explore the [Backstage demo repository](https://github.com/backstage/demo),
+  which uses the new frontend system, for a complete app reference.
 - See [architecture docs](../architecture/00-index.md) for more on the new system.
 - If you encounter issues, check [GitHub issues](https://github.com/backstage/backstage/issues) or ask in [Discord](https://discord.gg/backstage-687207715902193673).

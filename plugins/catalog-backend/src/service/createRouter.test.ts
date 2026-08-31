@@ -19,7 +19,6 @@ import { wrapServer } from '@backstage/backend-openapi-utils/testUtils';
 import {
   mockCredentials,
   mockServices,
-  TestDatabaseId,
   TestDatabases,
 } from '@backstage/backend-test-utils';
 import type { Location } from '@backstage/catalog-client';
@@ -31,17 +30,10 @@ import {
 } from '@backstage/catalog-model';
 import { ConfigReader } from '@backstage/config';
 import { NotFoundError } from '@backstage/errors';
-import { RESOURCE_TYPE_CATALOG_ENTITY } from '@backstage/plugin-catalog-common/alpha';
 import { LocationAnalyzer } from '@backstage/plugin-catalog-node';
-import { AuthorizeResult } from '@backstage/plugin-permission-common';
-import {
-  createPermissionIntegrationRouter,
-  createPermissionRule,
-} from '@backstage/plugin-permission-node';
 import express from 'express';
 import { Server } from 'node:http';
 import request from 'supertest';
-import { z } from 'zod';
 import { Cursor, EntitiesCatalog } from '../catalog/types';
 import { applyDatabaseMigrations } from '../database/migrations';
 import { DbLocationsRow } from '../database/tables';
@@ -83,6 +75,7 @@ describe('createRouter readonly disabled', () => {
       createLocation: jest.fn(),
       queryLocations: jest.fn(),
       listLocations: jest.fn(),
+      updateLocation: jest.fn(),
       deleteLocation: jest.fn(),
       getLocationByEntity: jest.fn(),
     };
@@ -98,7 +91,6 @@ describe('createRouter readonly disabled', () => {
       logger: mockServices.logger.mock(),
       refreshService,
       config: new ConfigReader(undefined),
-      permissionIntegrationRouter: express.Router(),
       auth: mockServices.auth(),
       httpAuth: mockServices.httpAuth(),
       locationAnalyzer,
@@ -206,19 +198,16 @@ describe('createRouter readonly disabled', () => {
       expect(entitiesCatalog.queryEntities).toHaveBeenCalledTimes(1);
       expect(entitiesCatalog.queryEntities).toHaveBeenCalledWith({
         filter: {
-          anyOf: [
+          $any: [
             {
-              allOf: [
-                { key: 'a', values: ['1', '2'] },
-                { key: 'b', values: ['3'] },
-              ],
+              $all: [{ a: { $in: ['1', '2'] } }, { b: '3' }],
             },
-            { key: 'c', values: ['4'] },
+            { c: '4' },
           ],
         },
         limit: 10000,
         credentials: mockCredentials.user(),
-        skipTotalItems: true,
+        totalItems: 'exclude',
       });
     });
 
@@ -250,14 +239,11 @@ describe('createRouter readonly disabled', () => {
       expect(entitiesCatalog.entities).toHaveBeenCalledTimes(1);
       expect(entitiesCatalog.entities).toHaveBeenCalledWith({
         filter: {
-          anyOf: [
+          $any: [
             {
-              allOf: [
-                { key: 'a', values: ['1', '2'] },
-                { key: 'b', values: ['3'] },
-              ],
+              $all: [{ a: { $in: ['1', '2'] } }, { b: '3' }],
             },
-            { key: 'c', values: ['4'] },
+            { c: '4' },
           ],
         },
         credentials: mockCredentials.user(),
@@ -302,14 +288,11 @@ describe('createRouter readonly disabled', () => {
       expect(entitiesCatalog.queryEntities).toHaveBeenCalledTimes(1);
       expect(entitiesCatalog.queryEntities).toHaveBeenCalledWith({
         filter: {
-          anyOf: [
+          $any: [
             {
-              allOf: [
-                { key: 'a', values: ['1', '2'] },
-                { key: 'b', values: ['3'] },
-              ],
+              $all: [{ a: { $in: ['1', '2'] } }, { b: '3' }],
             },
-            { key: 'c', values: ['4'] },
+            { c: '4' },
           ],
         },
         orderFields: [
@@ -342,14 +325,11 @@ describe('createRouter readonly disabled', () => {
       expect(entitiesCatalog.queryEntities).toHaveBeenCalledTimes(1);
       expect(entitiesCatalog.queryEntities).toHaveBeenCalledWith({
         filter: {
-          anyOf: [
+          $any: [
             {
-              allOf: [
-                { key: 'a', values: ['1', '2'] },
-                { key: 'b', values: ['3'] },
-              ],
+              $all: [{ a: { $in: ['1', '2'] } }, { b: '3' }],
             },
-            { key: 'c', values: ['4'] },
+            { c: '4' },
           ],
         },
         orderFields: [
@@ -475,6 +455,87 @@ describe('createRouter readonly disabled', () => {
       expect(response.status).toEqual(400);
       expect(response.body.error.message).toMatch(
         /request\/query\/limit must be integer/,
+      );
+    });
+  });
+
+  describe('POST /entities/by-query', () => {
+    it('queries entities with a predicate filter', async () => {
+      const items: Entity[] = [
+        { apiVersion: 'a', kind: 'b', metadata: { name: 'n' } },
+      ];
+      entitiesCatalog.queryEntities.mockResolvedValue({
+        items: { type: 'object', entities: items },
+        pageInfo: {},
+        totalItems: 1,
+      });
+
+      const response = await request(app)
+        .post('/entities/by-query')
+        .send({ query: { kind: 'b' }, limit: 10 });
+
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({
+        items,
+        totalItems: 1,
+        pageInfo: {},
+      });
+      expect(entitiesCatalog.queryEntities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: { kind: 'b' },
+          limit: 10,
+          credentials: mockCredentials.user(),
+        }),
+      );
+    });
+
+    it('queries entities with an offset', async () => {
+      const items: Entity[] = [
+        { apiVersion: 'a', kind: 'b', metadata: { name: 'n' } },
+      ];
+      entitiesCatalog.queryEntities.mockResolvedValue({
+        items: { type: 'object', entities: items },
+        pageInfo: {},
+        totalItems: 5,
+      });
+
+      const response = await request(app)
+        .post('/entities/by-query')
+        .send({ query: { kind: 'b' }, limit: 2, offset: 3 });
+
+      expect(response.status).toEqual(200);
+      expect(entitiesCatalog.queryEntities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: { kind: 'b' },
+          limit: 2,
+          offset: 3,
+          credentials: mockCredentials.user(),
+        }),
+      );
+    });
+
+    it('paginates with a cursor in the body', async () => {
+      const items: Entity[] = [
+        { apiVersion: 'a', kind: 'b', metadata: { name: 'n' } },
+      ];
+      const cursor = mockCursor({ totalItems: 100, isPrevious: false });
+
+      entitiesCatalog.queryEntities.mockResolvedValue({
+        items: { type: 'object', entities: items },
+        pageInfo: { nextCursor: mockCursor() },
+        totalItems: 100,
+      });
+
+      const response = await request(app)
+        .post('/entities/by-query')
+        .send({ cursor: encodeCursor(cursor) });
+
+      expect(response.status).toEqual(200);
+      expect(entitiesCatalog.queryEntities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cursor,
+          credentials: mockCredentials.user(),
+        }),
       );
     });
   });
@@ -637,17 +698,101 @@ describe('createRouter readonly disabled', () => {
         entityRefs: [entityRef],
         fields: expect.any(Function),
         credentials: mockCredentials.user(),
-        filter: { key: 'kind', values: ['Component'] },
+        filter: { kind: 'Component' },
       });
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({ items: [entity] });
     });
   });
 
+  describe('POST /entities/by-refs with query predicate', () => {
+    it('can fetch entities by refs with a predicate query', async () => {
+      const entity: Entity = {
+        apiVersion: 'a',
+        kind: 'component',
+        metadata: {
+          name: 'a',
+        },
+      };
+      const entityRef = stringifyEntityRef(entity);
+      entitiesCatalog.entitiesBatch.mockResolvedValue({
+        items: { type: 'object', entities: [entity] },
+      });
+      const response = await request(app)
+        .post('/entities/by-refs')
+        .set('Content-Type', 'application/json')
+        .send(
+          JSON.stringify({
+            entityRefs: [entityRef],
+            query: { kind: 'Component' },
+          }),
+        );
+      expect(entitiesCatalog.entitiesBatch).toHaveBeenCalledTimes(1);
+      expect(entitiesCatalog.entitiesBatch).toHaveBeenCalledWith({
+        entityRefs: [entityRef],
+        fields: undefined,
+        credentials: mockCredentials.user(),
+        filter: { kind: 'Component' },
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({ items: [entity] });
+    });
+
+    it('forwards both filter query param and body query predicate merged', async () => {
+      const entity: Entity = {
+        apiVersion: 'a',
+        kind: 'component',
+        metadata: {
+          name: 'a',
+        },
+      };
+      const entityRef = stringifyEntityRef(entity);
+      entitiesCatalog.entitiesBatch.mockResolvedValue({
+        items: { type: 'object', entities: [entity] },
+      });
+      const response = await request(app)
+        .post('/entities/by-refs?filter=kind=Component')
+        .set('Content-Type', 'application/json')
+        .send(
+          JSON.stringify({
+            entityRefs: [entityRef],
+            query: { 'metadata.namespace': 'default' },
+          }),
+        );
+      expect(entitiesCatalog.entitiesBatch).toHaveBeenCalledWith({
+        entityRefs: [entityRef],
+        fields: undefined,
+        credentials: mockCredentials.user(),
+        filter: {
+          $all: [{ kind: 'Component' }, { 'metadata.namespace': 'default' }],
+        },
+      });
+      expect(response.status).toEqual(200);
+    });
+
+    it('rejects invalid query predicate', async () => {
+      const response = await request(app)
+        .post('/entities/by-refs')
+        .set('Content-Type', 'application/json')
+        .send(
+          JSON.stringify({
+            entityRefs: ['component:default/a'],
+            query: { $invalid: 'bad' },
+          }),
+        );
+      expect(response.status).toEqual(400);
+    });
+  });
+
   describe('GET /locations', () => {
     it('happy path: lists locations', async () => {
       const locations: Location[] = [
-        { id: 'foo', type: 'url', target: 'example.com' },
+        {
+          id: 'foo',
+          type: 'url',
+          target: 'example.com',
+          entityRef: 'location:default/generated-foo',
+        },
       ];
       locationService.listLocations.mockResolvedValueOnce(locations);
 
@@ -658,7 +803,14 @@ describe('createRouter readonly disabled', () => {
       });
       expect(response.status).toEqual(200);
       expect(response.body).toEqual([
-        { data: { id: 'foo', target: 'example.com', type: 'url' } },
+        {
+          data: {
+            id: 'foo',
+            target: 'example.com',
+            type: 'url',
+            entityRef: 'location:default/generated-foo',
+          },
+        },
       ]);
     });
   });
@@ -669,6 +821,7 @@ describe('createRouter readonly disabled', () => {
         id: 'foo',
         type: 'url',
         target: 'example.com',
+        entityRef: 'location:default/generated-foo',
       };
       locationService.getLocation.mockResolvedValueOnce(location);
 
@@ -683,6 +836,7 @@ describe('createRouter readonly disabled', () => {
         id: 'foo',
         target: 'example.com',
         type: 'url',
+        entityRef: 'location:default/generated-foo',
       });
     });
   });
@@ -710,7 +864,11 @@ describe('createRouter readonly disabled', () => {
       };
 
       locationService.createLocation.mockResolvedValue({
-        location: { id: 'a', ...spec },
+        location: {
+          id: 'a',
+          ...spec,
+          entityRef: 'location:default/generated-a',
+        },
         entities: [],
       });
 
@@ -726,7 +884,11 @@ describe('createRouter readonly disabled', () => {
       expect(response.status).toEqual(201);
       expect(response.body).toEqual(
         expect.objectContaining({
-          location: { id: 'a', ...spec },
+          location: {
+            id: 'a',
+            ...spec,
+            entityRef: 'location:default/generated-a',
+          },
         }),
       );
     });
@@ -738,7 +900,11 @@ describe('createRouter readonly disabled', () => {
       };
 
       locationService.createLocation.mockResolvedValue({
-        location: { id: 'a', ...spec },
+        location: {
+          id: 'a',
+          ...spec,
+          entityRef: 'location:default/generated-a',
+        },
         entities: [],
       });
 
@@ -754,7 +920,11 @@ describe('createRouter readonly disabled', () => {
       expect(response.status).toEqual(201);
       expect(response.body).toEqual(
         expect.objectContaining({
-          location: { id: 'a', ...spec },
+          location: {
+            id: 'a',
+            ...spec,
+            entityRef: 'location:default/generated-a',
+          },
         }),
       );
     });
@@ -767,16 +937,27 @@ describe('createRouter readonly disabled', () => {
         createLocation: jest.fn(),
         queryLocations: jest.fn(),
         listLocations: jest.fn(),
+        updateLocation: jest.fn(),
         deleteLocation: jest.fn(),
         getLocationByEntity: jest.fn(),
       };
       const router = await createRouter({
+        entitiesCatalog: {
+          entities: jest.fn(),
+          entitiesBatch: jest.fn(),
+          queryEntities: jest.fn(),
+          removeEntityByUid: jest.fn(),
+          entityAncestry: jest.fn(),
+          facets: jest.fn(),
+        },
+        locationAnalyzer: { analyzeLocation: jest.fn() },
         locationService,
         logger: mockServices.logger.mock(),
         config: new ConfigReader(undefined),
         auth: mockServices.auth(),
         httpAuth: mockServices.httpAuth(),
         orchestrator: { process: jest.fn() },
+        refreshService: { refresh: jest.fn() },
         permissionsService: mockServices.permissions(),
         auditor: mockServices.auditor.mock(),
       });
@@ -790,8 +971,18 @@ describe('createRouter readonly disabled', () => {
 
     it('happy path: queries locations without pagination', async () => {
       const locations: Location[] = [
-        { id: 'loc1', type: 'url', target: 'https://example.com/a' },
-        { id: 'loc2', type: 'url', target: 'https://example.com/b' },
+        {
+          id: 'loc1',
+          type: 'url',
+          target: 'https://example.com/a',
+          entityRef: 'location:default/generated-loc1',
+        },
+        {
+          id: 'loc2',
+          type: 'url',
+          target: 'https://example.com/b',
+          entityRef: 'location:default/generated-loc2',
+        },
       ];
       locationService.queryLocations.mockResolvedValueOnce({
         items: locations,
@@ -817,7 +1008,12 @@ describe('createRouter readonly disabled', () => {
 
     it('happy path: queries locations with filter', async () => {
       const locations: Location[] = [
-        { id: 'loc1', type: 'url', target: 'https://example.com/a' },
+        {
+          id: 'loc1',
+          type: 'url',
+          target: 'https://example.com/a',
+          entityRef: 'location:default/generated-loc1',
+        },
       ];
       locationService.queryLocations.mockResolvedValueOnce({
         items: locations,
@@ -844,9 +1040,24 @@ describe('createRouter readonly disabled', () => {
 
     it('returns nextCursor when more results exist', async () => {
       const locations: Location[] = [
-        { id: 'loc1', type: 'url', target: 'https://example.com/a' },
-        { id: 'loc2', type: 'url', target: 'https://example.com/b' },
-        { id: 'loc3', type: 'url', target: 'https://example.com/c' },
+        {
+          id: 'loc1',
+          type: 'url',
+          target: 'https://example.com/a',
+          entityRef: 'location:default/generated-loc1',
+        },
+        {
+          id: 'loc2',
+          type: 'url',
+          target: 'https://example.com/b',
+          entityRef: 'location:default/generated-loc2',
+        },
+        {
+          id: 'loc3',
+          type: 'url',
+          target: 'https://example.com/c',
+          entityRef: 'location:default/generated-loc3',
+        },
       ];
       locationService.queryLocations.mockResolvedValueOnce({
         items: locations,
@@ -879,7 +1090,12 @@ describe('createRouter readonly disabled', () => {
 
     it('uses cursor for pagination', async () => {
       const locations: Location[] = [
-        { id: 'loc3', type: 'url', target: 'https://example.com/c' },
+        {
+          id: 'loc3',
+          type: 'url',
+          target: 'https://example.com/c',
+          entityRef: 'location:default/generated-loc3',
+        },
       ];
       locationService.queryLocations.mockResolvedValueOnce({
         items: locations,
@@ -956,12 +1172,50 @@ describe('createRouter readonly disabled', () => {
     });
   });
 
+  describe('PUT /locations/:id', () => {
+    it('rejects malformed body', async () => {
+      const response = await request(app)
+        .put('/locations/foo')
+        .send({ typez: 'url', target: 'https://example.com' });
+
+      expect(locationService.updateLocation).not.toHaveBeenCalled();
+      expect(response.status).toEqual(400);
+    });
+
+    it('updates the location and returns it', async () => {
+      const spec: LocationInput = {
+        type: 'url',
+        target: 'https://example.com/new',
+      };
+
+      locationService.updateLocation.mockResolvedValue({
+        id: 'foo',
+        ...spec,
+        entityRef: 'location:default/generated-foo',
+      });
+
+      const response = await request(app).put('/locations/foo').send(spec);
+
+      expect(locationService.updateLocation).toHaveBeenCalledTimes(1);
+      expect(locationService.updateLocation).toHaveBeenCalledWith('foo', spec, {
+        credentials: mockCredentials.user(),
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({
+        id: 'foo',
+        ...spec,
+        entityRef: 'location:default/generated-foo',
+      });
+    });
+  });
+
   describe('GET /locations/by-entity/:kind/:namespace/:name', () => {
     it('happy path: gets location by entity ref', async () => {
       const location: Location = {
         id: 'foo',
         type: 'url',
         target: 'example.com',
+        entityRef: 'location:default/generated-foo',
       };
       locationService.getLocationByEntity.mockResolvedValueOnce(location);
 
@@ -979,6 +1233,7 @@ describe('createRouter readonly disabled', () => {
         id: 'foo',
         target: 'example.com',
         type: 'url',
+        entityRef: 'location:default/generated-foo',
       });
     });
   });
@@ -1109,6 +1364,89 @@ describe('createRouter readonly disabled', () => {
       );
     });
   });
+
+  describe('GET /entity-facets', () => {
+    it('returns facets', async () => {
+      entitiesCatalog.facets.mockResolvedValue({
+        facets: { kind: [{ value: 'Component', count: 5 }] },
+      });
+
+      const response = await request(app).get('/entity-facets?facet=kind');
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        facets: { kind: [{ value: 'Component', count: 5 }] },
+      });
+    });
+
+    it('returns facets with filter parameter', async () => {
+      entitiesCatalog.facets.mockResolvedValue({
+        facets: { 'spec.type': [{ value: 'service', count: 3 }] },
+      });
+
+      const response = await request(app).get(
+        '/entity-facets?facet=spec.type&filter=kind=Component',
+      );
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        facets: { 'spec.type': [{ value: 'service', count: 3 }] },
+      });
+      expect(entitiesCatalog.facets).toHaveBeenCalledWith(
+        expect.objectContaining({
+          facets: ['spec.type'],
+          filter: { kind: 'Component' },
+        }),
+      );
+    });
+  });
+
+  describe('POST /entity-facets', () => {
+    it('returns facets with predicate query', async () => {
+      entitiesCatalog.facets.mockResolvedValue({
+        facets: { 'spec.type': [{ value: 'service', count: 3 }] },
+      });
+
+      const response = await request(app)
+        .post('/entity-facets')
+        .send({
+          facets: ['spec.type'],
+          query: { kind: 'Component' },
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        facets: { 'spec.type': [{ value: 'service', count: 3 }] },
+      });
+      expect(entitiesCatalog.facets).toHaveBeenCalledWith(
+        expect.objectContaining({
+          facets: ['spec.type'],
+          filter: { kind: 'Component' },
+        }),
+      );
+    });
+
+    it('returns facets without query predicate', async () => {
+      entitiesCatalog.facets.mockResolvedValue({
+        facets: { kind: [{ value: 'Component', count: 5 }] },
+      });
+
+      const response = await request(app)
+        .post('/entity-facets')
+        .send({ facets: ['kind'] });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        facets: { kind: [{ value: 'Component', count: 5 }] },
+      });
+    });
+
+    it('returns 400 for missing facets', async () => {
+      const response = await request(app)
+        .post('/entity-facets')
+        .send({ query: { kind: 'Component' } });
+
+      expect(response.status).toBe(400);
+    });
+  });
 });
 
 describe('createRouter readonly and raw json enabled', () => {
@@ -1131,11 +1469,13 @@ describe('createRouter readonly and raw json enabled', () => {
       createLocation: jest.fn(),
       listLocations: jest.fn(),
       queryLocations: jest.fn(),
+      updateLocation: jest.fn(),
       deleteLocation: jest.fn(),
       getLocationByEntity: jest.fn(),
     };
     const router = await createRouter({
       entitiesCatalog,
+      locationAnalyzer: { analyzeLocation: jest.fn() },
       locationService,
       logger: mockServices.logger.mock(),
       config: new ConfigReader({
@@ -1143,10 +1483,10 @@ describe('createRouter readonly and raw json enabled', () => {
           readonly: true,
         },
       }),
-      permissionIntegrationRouter: express.Router(),
       auth: mockServices.auth(),
       httpAuth: mockServices.httpAuth(),
       orchestrator: { process: jest.fn() },
+      refreshService: { refresh: jest.fn() },
       permissionsService,
       auditor: mockServices.auditor.mock(),
     });
@@ -1192,7 +1532,12 @@ describe('createRouter readonly and raw json enabled', () => {
   describe('GET /locations', () => {
     it('happy path: lists locations', async () => {
       const locations: Location[] = [
-        { id: 'foo', type: 'url', target: 'example.com' },
+        {
+          id: 'foo',
+          type: 'url',
+          target: 'example.com',
+          entityRef: 'location:default/generated-foo',
+        },
       ];
       locationService.listLocations.mockResolvedValueOnce(locations);
 
@@ -1204,7 +1549,14 @@ describe('createRouter readonly and raw json enabled', () => {
 
       expect(response.status).toEqual(200);
       expect(response.body).toEqual([
-        { data: { id: 'foo', target: 'example.com', type: 'url' } },
+        {
+          data: {
+            id: 'foo',
+            target: 'example.com',
+            type: 'url',
+            entityRef: 'location:default/generated-foo',
+          },
+        },
       ]);
     });
   });
@@ -1215,6 +1567,7 @@ describe('createRouter readonly and raw json enabled', () => {
         id: 'foo',
         type: 'url',
         target: 'example.com',
+        entityRef: 'location:default/generated-foo',
       };
       locationService.getLocation.mockResolvedValueOnce(location);
 
@@ -1229,6 +1582,7 @@ describe('createRouter readonly and raw json enabled', () => {
         id: 'foo',
         target: 'example.com',
         type: 'url',
+        entityRef: 'location:default/generated-foo',
       });
     });
   });
@@ -1257,7 +1611,11 @@ describe('createRouter readonly and raw json enabled', () => {
       };
 
       locationService.createLocation.mockResolvedValue({
-        location: { id: 'a', ...spec },
+        location: {
+          id: 'a',
+          ...spec,
+          entityRef: 'location:default/generated-a',
+        },
         entities: [],
       });
 
@@ -1273,7 +1631,11 @@ describe('createRouter readonly and raw json enabled', () => {
       expect(response.status).toEqual(201);
       expect(response.body).toEqual(
         expect.objectContaining({
-          location: { id: 'a', ...spec },
+          location: {
+            id: 'a',
+            ...spec,
+            entityRef: 'location:default/generated-a',
+          },
         }),
       );
     });
@@ -1293,6 +1655,7 @@ describe('createRouter readonly and raw json enabled', () => {
         id: 'foo',
         type: 'url',
         target: 'example.com',
+        entityRef: 'location:default/generated-foo',
       };
       locationService.getLocationByEntity.mockResolvedValueOnce(location);
 
@@ -1310,164 +1673,75 @@ describe('createRouter readonly and raw json enabled', () => {
         id: 'foo',
         target: 'example.com',
         type: 'url',
+        entityRef: 'location:default/generated-foo',
       });
     });
   });
 });
 
-describe('NextRouter permissioning', () => {
-  let entitiesCatalog: jest.Mocked<EntitiesCatalog>;
-  let locationService: jest.Mocked<LocationService>;
-  let app: express.Express;
-  let refreshService: RefreshService;
-  const permissionsService = mockServices.permissions();
+const databases = TestDatabases.create();
 
-  const fakeRule = createPermissionRule({
-    name: 'FAKE_RULE',
-    description: 'fake rule',
-    resourceType: RESOURCE_TYPE_CATALOG_ENTITY,
-    paramsSchema: z.object({
-      foo: z.string(),
-    }),
-    apply: () => true,
-    toQuery: () => ({ key: '', values: [] }),
-  });
+describe.each(databases.eachSupportedId())(
+  'POST /locations/by-query works end to end, %p',
+  databaseId => {
+    async function createTestRouter() {
+      const knex = await databases.init(databaseId);
+      await applyDatabaseMigrations(knex);
 
-  beforeAll(async () => {
-    entitiesCatalog = {
-      entities: jest.fn(),
-      entitiesBatch: jest.fn(),
-      removeEntityByUid: jest.fn(),
-      entityAncestry: jest.fn(),
-      facets: jest.fn(),
-      queryEntities: jest.fn(),
-    };
-    locationService = {
-      getLocation: jest.fn(),
-      createLocation: jest.fn(),
-      queryLocations: jest.fn(),
-      listLocations: jest.fn(),
-      deleteLocation: jest.fn(),
-      getLocationByEntity: jest.fn(),
-    };
-    refreshService = { refresh: jest.fn() };
-    const router = await createRouter({
-      entitiesCatalog,
-      locationService,
-      logger: mockServices.logger.mock(),
-      refreshService,
-      config: new ConfigReader(undefined),
-      permissionIntegrationRouter: createPermissionIntegrationRouter({
-        resourceType: RESOURCE_TYPE_CATALOG_ENTITY,
-        rules: [fakeRule],
-        getResources: jest.fn((resourceRefs: string[]) =>
-          Promise.resolve(
-            resourceRefs.map(resourceRef => ({ id: resourceRef })),
-          ),
-        ),
-      }),
-      auth: mockServices.auth(),
-      httpAuth: mockServices.httpAuth(),
-      orchestrator: { process: jest.fn() },
-      permissionsService,
-      auditor: mockServices.auditor.mock(),
-    });
-    app = express().use(router);
-  });
+      const mockScmEvents = {
+        subscribe: jest.fn(),
+        publish: jest.fn(),
+        markEventActionTaken: jest.fn(),
+      };
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+      const store = new DefaultLocationStore(knex, mockScmEvents, {
+        refresh: false,
+        unregister: false,
+        move: false,
+      });
+      await store.connect({ applyMutation: jest.fn(), refresh: jest.fn() });
 
-  it('accepts and evaluates conditions at the apply-conditions endpoint', async () => {
-    const spideySense: Entity = {
-      apiVersion: 'a',
-      kind: 'component',
-      metadata: {
-        name: 'spidey-sense',
-      },
-    };
-    entitiesCatalog.entities.mockResolvedValueOnce({
-      entities: { type: 'object', entities: [spideySense] },
-      pageInfo: { hasNextPage: false },
-    });
-
-    const requestBody = {
-      items: [
+      const locationService = new DefaultLocationService(
+        store,
+        { process: jest.fn() },
         {
-          id: '123',
-          resourceType: 'catalog-entity',
-          resourceRef: 'component:default/spidey-sense',
-          conditions: {
-            rule: 'FAKE_RULE',
-            resourceType: 'catalog-entity',
-            params: {
-              foo: 'user:default/spiderman',
-            },
-          },
+          allowedLocationTypes: ['url'],
+          defaultLocationConflictStrategy: 'reject',
         },
-      ],
-    };
-    const response = await request(app)
-      .post('/.well-known/backstage/permissions/apply-conditions')
-      .send(requestBody);
+      );
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      items: [{ id: '123', result: AuthorizeResult.ALLOW }],
-    });
-  });
-});
+      const router = await createRouter({
+        entitiesCatalog: {
+          entities: jest.fn(),
+          entitiesBatch: jest.fn(),
+          queryEntities: jest.fn(),
+          removeEntityByUid: jest.fn(),
+          entityAncestry: jest.fn(),
+          facets: jest.fn(),
+        },
+        locationAnalyzer: { analyzeLocation: jest.fn() },
+        locationService,
+        logger: mockServices.logger.mock(),
+        config: new ConfigReader(undefined),
+        auth: mockServices.auth(),
+        httpAuth: mockServices.httpAuth(),
+        orchestrator: { process: jest.fn() },
+        refreshService: { refresh: jest.fn() },
+        permissionsService: mockServices.permissions(),
+        auditor: mockServices.auditor.mock(),
+      });
 
-describe('POST /locations/by-query works end to end', () => {
-  const databases = TestDatabases.create();
+      const errorMiddleware = MiddlewareFactory.create({
+        logger: mockServices.logger.mock(),
+        config: mockServices.rootConfig(),
+      });
+      router.use(errorMiddleware.error());
 
-  async function createTestRouter(databaseId: TestDatabaseId) {
-    const knex = await databases.init(databaseId);
-    await applyDatabaseMigrations(knex);
+      return { knex, app: express().use(router) };
+    }
 
-    const mockScmEvents = {
-      subscribe: jest.fn(),
-      publish: jest.fn(),
-    };
-
-    const store = new DefaultLocationStore(knex, mockScmEvents, {
-      refresh: false,
-      unregister: false,
-      move: false,
-    });
-    await store.connect({ applyMutation: jest.fn(), refresh: jest.fn() });
-
-    const locationService = new DefaultLocationService(
-      store,
-      { process: jest.fn() },
-      { allowedLocationTypes: ['url'] },
-    );
-
-    const router = await createRouter({
-      locationService,
-      logger: mockServices.logger.mock(),
-      config: new ConfigReader(undefined),
-      auth: mockServices.auth(),
-      httpAuth: mockServices.httpAuth(),
-      orchestrator: { process: jest.fn() },
-      permissionsService: mockServices.permissions(),
-      auditor: mockServices.auditor.mock(),
-    });
-
-    const errorMiddleware = MiddlewareFactory.create({
-      logger: mockServices.logger.mock(),
-      config: mockServices.rootConfig(),
-    });
-    router.use(errorMiddleware.error());
-
-    return { knex, app: express().use(router) };
-  }
-
-  it.each(databases.eachSupportedId())(
-    'paginates through locations correctly, %p',
-    async databaseId => {
-      const { knex, app } = await createTestRouter(databaseId);
+    it('paginates through locations correctly', async () => {
+      const { knex, app } = await createTestRouter();
 
       // Insert 5 locations directly into the database
       const locations = [
@@ -1475,33 +1749,48 @@ describe('POST /locations/by-query works end to end', () => {
           id: '00000000-0000-0000-0000-000000000001',
           type: 'url',
           target: 'https://example.com/a.yaml',
+          entityRef:
+            'location:default/generated-17fb6f13ffb6251438be1e4f37c6482b83ede45c',
         },
         {
           id: '00000000-0000-0000-0000-000000000002',
           type: 'url',
           target: 'https://example.com/b.yaml',
+          entityRef:
+            'location:default/generated-50316008e1cdf0dfc8740b7691661615a3588ae5',
         },
         {
           id: '00000000-0000-0000-0000-000000000003',
           type: 'url',
           target: 'https://example.com/c.yaml',
+          entityRef:
+            'location:default/generated-f50fac82cafdc5ec095faee0a33ced6d9286fe08',
         },
         {
           id: '00000000-0000-0000-0000-000000000004',
           type: 'url',
           target: 'https://example.com/d.yaml',
+          entityRef:
+            'location:default/generated-45aa6e8abd2e13841ddf91bd04249460cbe55a47',
         },
         {
           id: '00000000-0000-0000-0000-000000000005',
           type: 'url',
           target: 'https://example.com/e.yaml',
+          entityRef:
+            'location:default/generated-c991bf07f54891933929eadce219b11fd32eaa5a',
         },
       ];
 
       // Clear the table and insert our test data
       await knex<DbLocationsRow>('locations').delete();
       for (const location of locations) {
-        await knex<DbLocationsRow>('locations').insert(location);
+        await knex<DbLocationsRow>('locations').insert({
+          id: location.id,
+          type: location.type,
+          target: location.target,
+          location_entity_ref: location.entityRef,
+        });
       }
 
       // First request: get first 2 locations
@@ -1539,13 +1828,10 @@ describe('POST /locations/by-query works end to end', () => {
         totalItems: 5,
         pageInfo: {},
       });
-    },
-  );
+    });
 
-  it.each(databases.eachSupportedId())(
-    'filters locations with query parameter, %p',
-    async databaseId => {
-      const { knex, app } = await createTestRouter(databaseId);
+    it('filters locations with query parameter', async () => {
+      const { knex, app } = await createTestRouter();
 
       // Insert locations with different types
       const locations = [
@@ -1553,23 +1839,34 @@ describe('POST /locations/by-query works end to end', () => {
           id: '00000000-0000-0000-0000-000000000001',
           type: 'url',
           target: 'https://example.com/a.yaml',
+          entityRef:
+            'location:default/generated-17fb6f13ffb6251438be1e4f37c6482b83ede45c',
         },
         {
           id: '00000000-0000-0000-0000-000000000002',
           type: 'file',
           target: '/tmp/b.yaml',
+          entityRef:
+            'location:default/generated-49cac033ce5406c6fefc6ac16cf70f90852d9257',
         },
         {
           id: '00000000-0000-0000-0000-000000000003',
           type: 'url',
           target: 'https://example.com/c.yaml',
+          entityRef:
+            'location:default/generated-f50fac82cafdc5ec095faee0a33ced6d9286fe08',
         },
       ];
 
       // Clear the table and insert our test data
       await knex<DbLocationsRow>('locations').delete();
       for (const location of locations) {
-        await knex<DbLocationsRow>('locations').insert(location);
+        await knex<DbLocationsRow>('locations').insert({
+          id: location.id,
+          type: location.type,
+          target: location.target,
+          location_entity_ref: location.entityRef,
+        });
       }
 
       // Query only url type locations
@@ -1583,9 +1880,9 @@ describe('POST /locations/by-query works end to end', () => {
         totalItems: 2,
         pageInfo: {},
       });
-    },
-  );
-});
+    });
+  },
+);
 
 function mockCursor(partialCursor?: Partial<Cursor>): Cursor {
   return {

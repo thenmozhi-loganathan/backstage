@@ -36,6 +36,7 @@ const IGNORED_WHEN_LISTING = [
 const IGNORED_WHEN_EXPLICIT = [
   /^ADOPTERS\.md$/,
   /^OWNERS\.md$/,
+  /^.*[/\\]CHANGELOG\.md$/, // generated from changesets anyway - THOSE should have been checked earlier
   /^.*[/\\]knip-report\.md$/,
 ];
 
@@ -71,7 +72,7 @@ async function exitIfMissingVale() {
   try {
     // eslint-disable-next-line @backstage/no-undeclared-imports
     await require('command-exists')('vale');
-  } catch (e) {
+  } catch {
     console.log(
       `Language linter (vale) was not found. Please install vale linter (https://vale.sh/docs/vale-cli/installation/).\n`,
     );
@@ -101,7 +102,126 @@ async function runVale(files) {
   return true;
 }
 
+async function ciCheck(prFilesPath) {
+  const content = await fs.readFile(prFilesPath, 'utf8');
+  const prFiles = content.split('\n').filter(f => f.trim());
+
+  const mdFiles = prFiles
+    .filter(f => f.endsWith('.md'))
+    .filter(f => !IGNORED_WHEN_LISTING.some(p => p.test(f)));
+
+  if (mdFiles.length === 0) {
+    console.log('No documentation files to check.');
+    return;
+  }
+
+  console.log(`Checking ${mdFiles.length} changed documentation file(s)...`);
+
+  const result = spawnSync(
+    'vale',
+    [
+      '--config',
+      resolvePath(rootDir, '.vale.ini'),
+      '--output=JSON',
+      ...mdFiles,
+    ],
+    { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 },
+  );
+
+  if (result.error) {
+    console.error('Failed to run vale:', result.error.message);
+    process.exit(1);
+  }
+
+  let errorCount = 0;
+  let warningCount = 0;
+
+  if (result.stdout && result.stdout.trim()) {
+    try {
+      const data = JSON.parse(result.stdout);
+      const severityLevels = {
+        error: 'error',
+        warning: 'warning',
+        suggestion: 'notice',
+      };
+
+      for (const [file, alerts] of Object.entries(data)) {
+        if (alerts.length === 0) continue;
+
+        // Emit GitHub Actions annotations
+        for (const alert of alerts) {
+          const level = severityLevels[alert.Severity] ?? 'notice';
+          const col = alert.Span ? alert.Span[0] : 1;
+          const endCol = alert.Span ? `,endColumn=${alert.Span[1] + 1}` : '';
+          console.log(
+            `::${level} file=${file},line=${alert.Line},col=${col}${endCol},title=${alert.Check}::${alert.Message}`,
+          );
+        }
+
+        // Print eslint-style file group, e.g.:
+        //   .changeset/my-change.md
+        //     9:74      error      Did you really mean 'accessor'?  Vale.Terms
+        console.log(`\n${file}`);
+        for (const alert of alerts) {
+          const level = alert.Severity === 'error' ? 'error' : 'warning';
+          const col = alert.Span ? alert.Span[0] : 1;
+          const loc = `${alert.Line}:${col}`;
+          console.log(
+            `  ${loc.padEnd(8)}  ${level.padEnd(9)}  ${alert.Message}  ${
+              alert.Check
+            }`,
+          );
+          if (alert.Severity === 'error') {
+            errorCount++;
+          } else {
+            warningCount++;
+          }
+        }
+      }
+    } catch {
+      console.error('Failed to parse vale output:');
+      console.error(result.stdout);
+      process.exit(1);
+    }
+  }
+
+  if (result.stderr && result.stderr.trim()) {
+    console.error(result.stderr);
+  }
+
+  const issueCount = errorCount + warningCount;
+  if (issueCount > 0) {
+    const parts = [];
+    if (errorCount > 0) {
+      parts.push(`${errorCount} error${errorCount !== 1 ? 's' : ''}`);
+    }
+    if (warningCount > 0) {
+      parts.push(`${warningCount} warning${warningCount !== 1 ? 's' : ''}`);
+    }
+    console.log(
+      `\n✖ ${issueCount} problem${issueCount !== 1 ? 's' : ''} (${parts.join(
+        ', ',
+      )})`,
+    );
+  }
+
+  if (result.status !== 0) {
+    process.exit(1);
+  }
+}
+
 async function main() {
+  if (process.argv.includes('--ci')) {
+    const idx = process.argv.indexOf('--ci');
+    const prFilesPath = process.argv[idx + 1];
+    if (!prFilesPath) {
+      console.error('Usage: check-docs-quality.js --ci <pr-files-list.txt>');
+      process.exit(1);
+    }
+    await ciCheck(prFilesPath);
+    return;
+  }
+
   if (process.argv.includes('--ci-args')) {
     const files = await listFiles();
 

@@ -45,6 +45,7 @@ function sidebarElementWithIndex(
 
 export default {
   docs: [
+    'landing-page/doc-landing-page',
     sidebarElementWithIndex({ label: 'Overview' }, [
       'overview/what-is-backstage',
       'overview/technical-overview',
@@ -61,6 +62,7 @@ export default {
         'getting-started/configure-app-with-plugins',
         'getting-started/homepage',
       ]),
+      'getting-started/ci',
       sidebarElementWithIndex({ label: 'Deploying Backstage' }, [
         'deployment/index',
         'deployment/scaling',
@@ -69,8 +71,17 @@ export default {
       ]),
       sidebarElementWithIndex({ label: 'Using Backstage' }, [
         'getting-started/logging-in',
-        'getting-started/register-a-component',
-        'getting-started/create-a-component',
+        'getting-started/viewing-catalog',
+        'getting-started/view-what-you-own',
+        'getting-started/viewing-entity-relationships',
+        'getting-started/filter-catalog',
+        sidebarElementWithIndex({ label: 'Managing Components' }, [
+          'getting-started/register-a-component',
+          'getting-started/create-a-component',
+          'getting-started/update-a-component',
+          'getting-started/unregister-delete-component',
+        ]),
+        'features/techdocs/creating-and-publishing',
       ]),
       'overview/support',
       'getting-started/keeping-backstage-updated',
@@ -78,6 +89,14 @@ export default {
     ...(process.env.GOLDEN_PATH
       ? [
           sidebarElementWithIndex({ label: 'Golden Paths' }, [
+            sidebarElementWithIndex({ label: '000 - Adoption' }, [
+              'golden-path/adoption/getting-started',
+              'golden-path/adoption/leadership-buy-in',
+              'golden-path/adoption/setting-up-a-poc',
+              'golden-path/adoption/first-stakeholder-feedback',
+              'golden-path/adoption/customizing-your-instance',
+              'golden-path/adoption/preparing-for-ga',
+            ]),
             sidebarElementWithIndex({ label: '001 - Create an App' }, [
               'golden-path/create-app/index',
               'golden-path/create-app/npx-create-app',
@@ -92,9 +111,32 @@ export default {
               'golden-path/plugins/why-build-plugins',
               'golden-path/plugins/sustainable-plugin-development',
               sidebarElementWithIndex({ label: 'Backend Plugins' }, [
-                'golden-path/plugins/backend/001-first-steps',
-                'golden-path/plugins/backend/002-poking-around',
+                'golden-path/plugins/backend/first-steps',
+                'golden-path/plugins/backend/poking-around',
+                'golden-path/plugins/backend/persistence',
+                'golden-path/plugins/backend/reading-from-source',
+                'golden-path/plugins/backend/testing',
               ]),
+              sidebarElementWithIndex({ label: 'Frontend Plugins' }, [
+                'golden-path/plugins/frontend/first-steps',
+                'golden-path/plugins/frontend/poking-around',
+                'golden-path/plugins/frontend/dynamic-config',
+                'golden-path/plugins/frontend/http-client',
+                'golden-path/plugins/frontend/testing',
+              ]),
+            ]),
+            sidebarElementWithIndex({ label: '003 - Deployment' }, [
+              'golden-path/deployment/index',
+            ]),
+            sidebarElementWithIndex({ label: '004 - Adoption' }, [
+              'golden-path/adoption/getting-started',
+              'golden-path/adoption/leadership-buy-in',
+              'golden-path/adoption/setting-up-a-poc',
+              'golden-path/adoption/first-stakeholder-feedback',
+              'golden-path/adoption/customize-your-instance',
+              'golden-path/adoption/preparing-for-ga',
+              'golden-path/adoption/plugin-ownership',
+              'golden-path/adoption/full-catalog',
             ]),
           ]),
         ]
@@ -105,6 +147,21 @@ export default {
         description: 'Features powering the core of Backstage.',
       },
       [
+        sidebarElementWithIndex(
+          {
+            label: 'AI',
+            description:
+              'Features in Backstage you can leverage with your AI tools.',
+          },
+          [
+            'ai/overview',
+            'ai/ai-in-the-catalog',
+            'ai/mcp-actions',
+            'ai/well-known-actions',
+            'ai/skills',
+            'ai/well-known-skills',
+          ],
+        ),
         sidebarElementWithIndex(
           {
             label: 'Auth and Identity',
@@ -132,6 +189,7 @@ export default {
                 'auth/google/provider',
                 'auth/google/gcp-iap-auth',
                 'auth/guest/provider',
+                'auth/keycloak/provider',
                 'auth/okta/provider',
                 'auth/oauth2-proxy/provider',
                 'auth/onelogin/provider',
@@ -160,6 +218,7 @@ export default {
             'features/kubernetes/authentication-strategies',
             'features/kubernetes/troubleshooting',
             'features/kubernetes/proxy',
+            'features/kubernetes/audit-events',
           ],
         ),
         sidebarElementWithIndex(
@@ -225,7 +284,12 @@ export default {
             },
             'features/search/architecture',
             'features/search/search-engines',
-            'features/search/collators',
+            {
+              type: 'category',
+              label: 'Collators',
+              link: { type: 'doc', id: 'features/search/collators' },
+              items: ['features/search/custom-collators'],
+            },
             'features/search/how-to-guides',
           ],
         ),
@@ -245,8 +309,21 @@ export default {
             'features/software-catalog/well-known-relations',
             'features/software-catalog/well-known-statuses',
             'features/software-catalog/extending-the-model',
-            'features/software-catalog/external-integrations',
+            {
+              type: 'category',
+              label: 'External integrations',
+              link: {
+                type: 'doc',
+                id: 'features/software-catalog/external-integrations/index',
+              },
+              items: [
+                'features/software-catalog/external-integrations/entity-providers',
+                'features/software-catalog/external-integrations/processors',
+                'features/software-catalog/external-integrations/incremental-entity-providers',
+              ],
+            },
             'features/software-catalog/catalog-customization',
+            'features/software-catalog/entity-presentation',
             'features/software-catalog/audit-events',
             {
               type: 'category',
@@ -286,8 +363,6 @@ export default {
             'features/software-templates/writing-custom-field-extensions',
             'features/software-templates/writing-custom-step-layouts',
             'features/software-templates/authorizing-scaffolder-template-details',
-            'features/software-templates/migrating-to-rjsf-v5',
-            'features/software-templates/migrating-from-v1beta2-to-v1beta3',
             'features/software-templates/dry-run-testing',
             'features/software-templates/experimental',
             'features/software-templates/templating-extensions',
@@ -349,9 +424,11 @@ export default {
           'integrations/azure-blobStorage/locations',
           'integrations/azure-blobStorage/discovery',
         ]),
-        sidebarElementWithIndex({ label: 'Azure' }, [
+        sidebarElementWithIndex({ label: 'Azure DevOps' }, [
           'integrations/azure/locations',
           'integrations/azure/discovery',
+        ]),
+        sidebarElementWithIndex({ label: 'Microsoft Entra ID' }, [
           'integrations/azure/org',
         ]),
         sidebarElementWithIndex({ label: 'Bitbucket Cloud' }, [
@@ -369,7 +446,7 @@ export default {
           'integrations/gerrit/locations',
           'integrations/gerrit/discovery',
         ]),
-        sidebarElementWithIndex({ label: 'Github' }, [
+        sidebarElementWithIndex({ label: 'GitHub' }, [
           'integrations/github/locations',
           'integrations/github/discovery',
           'integrations/github/org',
@@ -390,61 +467,11 @@ export default {
         sidebarElementWithIndex({ label: 'Google GCS' }, [
           'integrations/google-cloud-storage/locations',
         ]),
+        sidebarElementWithIndex({ label: 'Keycloak' }, [
+          'integrations/keycloak/org',
+        ]),
         sidebarElementWithIndex({ label: 'LDAP' }, ['integrations/ldap/org']),
-      ],
-    ),
-    sidebarElementWithIndex(
-      {
-        label: 'Plugins',
-        description: 'Extend Backstage with custom functionality.',
-      },
-      [
-        'plugins/index',
-        'plugins/create-a-plugin',
-        'plugins/plugin-development',
-        'plugins/structure-of-a-plugin',
-        'plugins/integrating-plugin-into-software-catalog',
-        'plugins/integrating-search-into-plugins',
-        'plugins/composability',
-        'plugins/internationalization',
-        'plugins/analytics',
-        'plugins/feature-flags',
-        sidebarElementWithIndex(
-          {
-            label: 'OpenAPI',
-            description:
-              'Work with OpenAPI specifications and generate clients.',
-          },
-          [
-            'openapi/01-getting-started',
-            'openapi/generate-client',
-            'openapi/test-case-validation',
-          ],
-        ),
-        sidebarElementWithIndex(
-          {
-            label: 'Backends and APIs',
-            description: 'Build and manage backend services and APIs.',
-          },
-          [
-            'plugins/proxying',
-            'plugins/backend-plugin',
-            'plugins/call-existing-api',
-          ],
-        ),
-        sidebarElementWithIndex(
-          { label: 'Testing', description: 'Testing plugins and modules.' },
-          ['plugins/testing'],
-        ),
-        sidebarElementWithIndex(
-          { label: 'Publishing', description: 'Publishing your plugins.' },
-          [
-            'plugins/publish-private',
-            'plugins/add-to-directory',
-            'plugins/plugin-directory-audit',
-          ],
-        ),
-        'plugins/observability',
+        sidebarElementWithIndex({ label: 'Okta' }, ['integrations/okta/org']),
       ],
     ),
     sidebarElementWithIndex(
@@ -521,6 +548,7 @@ export default {
                 'backend-system/core-services/identity',
                 'backend-system/core-services/lifecycle',
                 'backend-system/core-services/logger',
+                'backend-system/core-services/metrics',
                 'backend-system/core-services/permissions',
                 'backend-system/core-services/permissions-registry',
                 'backend-system/core-services/plugin-metadata',
@@ -542,15 +570,15 @@ export default {
         ),
         sidebarElementWithIndex(
           {
-            label: 'New Frontend System',
-            description: 'New frontend system components and architecture.',
+            label: 'Frontend System',
+            description: 'Frontend system components and architecture.',
           },
           [
             'frontend-system/index',
             sidebarElementWithIndex(
               {
                 label: 'Architecture',
-                description: 'Architecture of the new frontend system.',
+                description: 'Architecture of the frontend system.',
                 differentiator: 'frontend-system/',
               },
               [
@@ -579,6 +607,9 @@ export default {
                 'frontend-system/building-plugins/common-extension-blueprints',
                 'frontend-system/building-plugins/built-in-data-refs',
                 'frontend-system/building-plugins/migrating',
+                'frontend-system/building-plugins/internationalization',
+                'frontend-system/building-plugins/analytics',
+                'frontend-system/building-plugins/feature-flags',
               ],
             ),
             sidebarElementWithIndex(
@@ -588,11 +619,13 @@ export default {
               },
               [
                 'frontend-system/building-apps/index',
+                'frontend-system/building-apps/installing-plugins',
                 'frontend-system/building-apps/configuring-extensions',
                 'frontend-system/building-apps/built-in-extensions',
                 'frontend-system/building-apps/plugin-conversion',
                 'frontend-system/building-apps/module-federation',
                 'frontend-system/building-apps/migrating',
+                'frontend-system/building-apps/app-visualizer',
               ],
             ),
             sidebarElementWithIndex(
@@ -622,6 +655,30 @@ export default {
             'tooling/cli/templates',
             sidebarElementWithIndex(
               {
+                label: 'CLI Modules',
+                description:
+                  'Documentation for each CLI module and its commands.',
+              },
+              [
+                'tooling/cli/modules',
+                'tooling/cli/module-auth',
+                'tooling/cli/module-actions',
+                'tooling/cli/module-build',
+                'tooling/cli/module-config',
+                'tooling/cli/module-github',
+                'tooling/cli/module-info',
+                'tooling/cli/module-lint',
+                'tooling/cli/module-maintenance',
+                'tooling/cli/module-migrate',
+                'tooling/cli/module-new',
+                'tooling/cli/module-test',
+                'tooling/cli/module-translations',
+                'tooling/cli/module-package-manager-yarn',
+              ],
+            ),
+            'tooling/cli/building-cli-modules',
+            sidebarElementWithIndex(
+              {
                 label: 'Local Development',
                 description:
                   'Guides for local development using Backstage CLI.',
@@ -647,6 +704,18 @@ export default {
             'conf/user-interface/sidebar',
           ],
         ),
+        sidebarElementWithIndex(
+          {
+            label: 'OpenAPI',
+            description:
+              'Work with OpenAPI specifications and generate clients.',
+          },
+          [
+            'openapi/01-getting-started',
+            'openapi/generate-client',
+            'openapi/test-case-validation',
+          ],
+        ),
       ],
     ),
     sidebarElementWithIndex(
@@ -669,11 +738,11 @@ export default {
             description: 'Technical tutorials and guides.',
           },
           [
-            'tutorials/quickstart-app-plugin',
             'tutorials/configuring-plugin-databases',
             'tutorials/manual-knex-rollback',
             'tutorials/switching-sqlite-postgres',
             'tutorials/using-backstage-proxy-within-plugin',
+            'tutorials/corporate-proxy',
             'tutorials/enable-public-entry',
             'tutorials/setup-opentelemetry',
             'tutorials/integrating-event-driven-updates-with-entity-providers',
@@ -691,13 +760,52 @@ export default {
             'tutorials/react-router-stable-migration',
             'tutorials/react18-migration',
             'tutorials/package-role-migration',
-            'tutorials/migrating-away-from-core',
             'tutorials/yarn-migration',
             'tutorials/migrate-to-mui5',
             'tutorials/auth-service-migration',
             'tutorials/jsx-transform-migration',
           ],
         ),
+      ],
+    ),
+    sidebarElementWithIndex(
+      {
+        label: 'Plugins (Legacy)',
+        description:
+          'Legacy plugin development documentation for the old frontend system. For new development, see the Frontend System and Backend System sections under Framework.',
+      },
+      [
+        'plugins/index',
+        'plugins/create-a-plugin',
+        'plugins/plugin-development',
+        'plugins/structure-of-a-plugin',
+        'plugins/integrating-plugin-into-software-catalog',
+        'plugins/integrating-search-into-plugins',
+        'plugins/composability',
+        'plugins/internationalization',
+        'plugins/analytics',
+        'plugins/feature-flags',
+        sidebarElementWithIndex(
+          {
+            label: 'Backends and APIs',
+            description: 'Build and manage backend services and APIs.',
+          },
+          [
+            'plugins/proxying',
+            'plugins/backend-plugin',
+            'plugins/call-existing-api',
+          ],
+        ),
+        sidebarElementWithIndex(
+          { label: 'Testing', description: 'Testing plugins and modules.' },
+          ['plugins/testing'],
+        ),
+        sidebarElementWithIndex(
+          { label: 'Publishing', description: 'Publishing your plugins.' },
+          ['plugins/add-to-directory', 'plugins/plugin-directory-audit'],
+        ),
+        'plugins/observability',
+        'plugins/new-backend-system',
       ],
     ),
     sidebarElementWithIndex(
@@ -713,6 +821,7 @@ export default {
         'contribute/index',
         'contribute/getting-involved',
         'contribute/project-structure',
+        'contribute/doc-style-guide',
       ],
     ),
     sidebarElementWithIndex(

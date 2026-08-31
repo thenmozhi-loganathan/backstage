@@ -25,12 +25,12 @@ An **external user** is a user that does not belong to the other three groups, f
 
 :::info
 This section assumes that you are using the
-[new backend system](../backend-system/index.md) and at least Backstage release [version 1.24](../releases/v1.24.0.md). Before that Backstage did not come with built-in protection against unauthorized access and you were required to deploy it in a protected environment.
+[backend system](../backend-system/index.md) and at least Backstage release [version 1.24](../releases/v1.24.0.md). Before that Backstage did not come with built-in protection against unauthorized access and you were required to deploy it in a protected environment.
 :::
 
 Backstage is primarily designed to be deployed in a protected environment rather than being exposed to the public internet. From a confidentiality and integrity perspective, Backstage is designed to protect against unauthorized access to data and to ensure that data is not tampered with. However, Backstage does not provide more than rudimentary protection against denial of service attacks, and it is the responsibility of the operator to ensure that the Backstage deployment is protected against such attacks. A common and recommended way to protect a Backstage deployment from unauthorized access is to deploy it behind an authenticating proxy such as AWS’s ALB, GCP’s IAP, or Cloudflare Access.
 
-Users that are signed-in in to Backstage generally have full access to all information and actions. If more fine-grained control is required, the [permissions system](../permissions/overview.md) should be enabled and configured to restrict access as necessary.
+Users that are signed in to Backstage generally have full access to all information and actions. If more fine-grained control is required, the [permissions system](../permissions/overview.md) should be enabled and configured to restrict access as necessary.
 
 An operator is responsible for protecting the integrity of configuration files as it may otherwise be possible to introduce vulnerable configurations, as well as the confidentiality of configured secrets related to Backstage as these typically include authentication details to third party systems.
 
@@ -78,7 +78,7 @@ By default all internal users are allowed to create and delete entities. If this
 
 ## Scaffolder
 
-By default, Scaffolding jobs execute directly on the host machine, including any actions defined in the template. Because the Scaffolder templates are considered a more sensitive area it is recommended to control access to create and update templates to trusted parties. Template execution is intended to be secure regardless of input, but we still recommend this additional layer of protection. The string templating is executed in a [node VM sandbox](https://github.com/laverdet/isolated-vm) to mitigate the possibility of remote code execution attacks.
+By default, Scaffolding jobs execute directly on the host machine, including any actions defined in the template. Because the Scaffolder templates are considered a more sensitive area it is recommended to control access to create and update templates to trusted parties. Template execution is intended to be secure regardless of input, but we still recommend this additional layer of protection. String templates are evaluated by the [closed interpreter in Nunjitsu](https://github.com/Rugvip/nunjitsu/blob/main/docs/security.md), which prevents templates from accessing the surrounding Node.js process.
 
 The Scaffolder often has elevated permissions to for example create repositories in a GitHub organization. The operator should therefore be cautious of Scaffolder Templates that for example delete or update existing resources as the user input is typically user defined and can therefore delete or modify resources maliciously or by mistake.
 

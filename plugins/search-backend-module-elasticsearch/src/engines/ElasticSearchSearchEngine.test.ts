@@ -27,7 +27,10 @@ import {
 import { ElasticSearchSearchEngineIndexer } from './ElasticSearchSearchEngineIndexer';
 import { mockServices } from '@backstage/backend-test-utils';
 
-jest.mock('uuid', () => ({ v4: () => 'tag' }));
+jest.mock('node:crypto', () => ({
+  ...jest.requireActual('node:crypto'),
+  randomUUID: () => 'tag',
+}));
 
 class ElasticSearchSearchEngineForTranslatorTests extends ElasticSearchSearchEngine {
   getTranslator() {
@@ -851,6 +854,26 @@ describe('ElasticSearchSearchEngine', () => {
         },
         index: ['test-type__search'],
       });
+
+      elasticSearchQuerySpy.mockClear();
+    });
+
+    it('should return empty results without querying when types is an empty array', async () => {
+      const elasticSearchQuerySpy = jest.spyOn(clientWrapper, 'search');
+
+      const result = await testSearchEngine.query({
+        term: 'testTerm',
+        filters: {},
+        types: [],
+      });
+
+      expect(result).toEqual({
+        results: [],
+        nextPageCursor: undefined,
+        previousPageCursor: undefined,
+        numberOfResults: undefined,
+      });
+      expect(elasticSearchQuerySpy).not.toHaveBeenCalled();
 
       elasticSearchQuerySpy.mockClear();
     });

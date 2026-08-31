@@ -15,77 +15,120 @@
  */
 
 import { forwardRef, useRef } from 'react';
-import { useLink } from 'react-aria';
-import clsx from 'clsx';
-import { useStyles } from '../../hooks/useStyles';
-import { LinkDefinition } from './definition';
+import { mergeProps, useFocusRing, useLink } from 'react-aria';
 import type { LinkProps } from './types';
-import { InternalLinkProvider } from '../InternalLinkProvider';
-import styles from './Link.module.css';
+import {
+  useDefinition,
+  type UseDefinitionResult,
+} from '../../hooks/useDefinition';
+import { useResolvedHref } from '../../hooks/useResolvedHref';
+import { LinkDefinition } from './definition';
+import { getNodeText } from '../../analytics/getNodeText';
+import {
+  handleRouterLinkClick,
+  type AnchorNavigation,
+} from '../../navigation/useNavigation';
 
-const LinkInternal = forwardRef<HTMLAnchorElement, LinkProps>((props, ref) => {
-  const { classNames, dataAttributes, cleanedProps } = useStyles(
-    LinkDefinition,
-    {
-      variant: 'body',
-      weight: 'regular',
-      color: 'primary',
-      ...props,
-    },
-  );
+type LinkViewProps = {
+  definitionResult: UseDefinitionResult<typeof LinkDefinition, LinkProps>;
+  navigation: AnchorNavigation;
+  forwardedRef: React.ForwardedRef<HTMLAnchorElement>;
+};
 
-  const {
-    className,
-    href,
-    title,
-    children,
-    onPress,
-    variant,
-    weight,
-    color,
-    truncate,
-    standalone,
-    slot,
-    ...restProps
-  } = cleanedProps;
+function LinkView({
+  definitionResult,
+  navigation,
+  forwardedRef,
+}: LinkViewProps) {
+  const { ownProps, restProps, dataAttributes, analytics } = definitionResult;
+  const { classes, title, children } = ownProps;
 
   const internalRef = useRef<HTMLAnchorElement>(null);
-  const linkRef = (ref || internalRef) as React.RefObject<HTMLAnchorElement>;
+  const linkRef = (forwardedRef ||
+    internalRef) as React.RefObject<HTMLAnchorElement>;
 
-  // Use useLink hook to get link props
-  // For internal links, this will use the RouterProvider's navigate function
-  const { linkProps } = useLink(
-    {
-      href,
-      onPress,
+  let resolvedLinkProps = restProps;
+  if (navigation.type === 'router') {
+    resolvedLinkProps = {
       ...restProps,
-    },
-    linkRef,
-  );
+      href: navigation.ariaHref,
+      routerOptions: navigation.routerOptions,
+    };
+  } else if (navigation.type === 'native') {
+    resolvedLinkProps = {
+      ...restProps,
+      href: navigation.ariaHref,
+    };
+  }
+  // React Aria Components' Link filters out the native title attribute.
+  // Render the anchor explicitly so truncated links retain their browser tooltip.
+  const { linkProps } = useLink(resolvedLinkProps, linkRef);
+  const { isFocusVisible, focusProps } = useFocusRing();
+  const fallbackHref = useResolvedHref(restProps.href);
+  const resolvedHref =
+    navigation.type === 'native' ? navigation.browserHref : fallbackHref;
 
-  return (
-    <a
-      {...linkProps}
-      {...dataAttributes}
-      {...(restProps as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
-      ref={linkRef}
-      href={href}
-      title={title}
-      className={clsx(classNames.root, styles[classNames.root], className)}
-    >
-      {children}
-    </a>
-  );
-});
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    linkProps.onClick?.(e);
+    const text =
+      restProps['aria-label'] ??
+      getNodeText(children) ??
+      String(restProps.href ?? '');
+    analytics.captureEvent('click', text, {
+      attributes: { to: String(restProps.href ?? '') },
+    });
+    handleRouterLinkClick(e, navigation);
+  };
 
-LinkInternal.displayName = 'LinkInternal';
+  const { href: _href, ...interactionProps } = mergeProps(
+    linkProps,
+    focusProps,
+  ) as React.AnchorHTMLAttributes<HTMLAnchorElement>;
+  const {
+    href: _restHref,
+    routerOptions: _routerOptions,
+    ...anchorProps
+  } = restProps;
+  const commonProps = {
+    ...interactionProps,
+    ...dataAttributes,
+    ...(anchorProps as React.AnchorHTMLAttributes<HTMLAnchorElement>),
+    ref: linkRef,
+    title,
+    className: classes.root,
+    'data-focus-visible': isFocusVisible || undefined,
+    onClick: handleClick,
+    children,
+  };
 
-/** @public */
+  if (navigation.type === 'router') {
+    return (
+      <navigation.Link
+        {...commonProps}
+        {...navigation.routerLinkOptions}
+        to={navigation.to}
+      />
+    );
+  }
+
+  return <a {...commonProps} href={resolvedHref} />;
+}
+
+/**
+ * A styled anchor element that supports analytics event tracking on click.
+ *
+ * @public
+ */
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>((props, ref) => {
+  const definitionResult = useDefinition(LinkDefinition, props);
+  const Navigation = definitionResult.navigation;
+
   return (
-    <InternalLinkProvider href={props.href}>
-      <LinkInternal {...props} ref={ref} />
-    </InternalLinkProvider>
+    <Navigation
+      props={definitionResult.restProps}
+      view={LinkView}
+      viewProps={{ definitionResult, forwardedRef: ref }}
+    />
   );
 });
 

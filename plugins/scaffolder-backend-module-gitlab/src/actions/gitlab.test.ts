@@ -45,6 +45,7 @@ const mockGitlabClient = {
   Users: {
     showCurrentUser: jest.fn(),
     allProjects: jest.fn(),
+    all: jest.fn(),
   },
   ProjectMembers: {
     add: jest.fn(),
@@ -220,10 +221,41 @@ describe('publish:gitlab', () => {
     expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
       namespaceId: 1234,
       name: 'bob',
+      path: 'bob',
       visibility: 'private',
     });
     expect(mockGitlabClient.Branches.create).not.toHaveBeenCalled();
     expect(mockGitlabClient.ProtectedBranches.protect).not.toHaveBeenCalled();
+  });
+
+  it('requires an explicit token and does not allow privileged integration credentials when configured', async () => {
+    const requiredConfig = new ConfigReader({
+      integrations: {
+        gitlab: [{ host: 'gitlab.com', token: 'integration-token' }],
+      },
+      scaffolder: { requireScmUserCredentials: true },
+    });
+    const requiredAction = createPublishGitlabAction({
+      integrations: ScmIntegrations.fromConfig(requiredConfig),
+      config: requiredConfig,
+    });
+
+    await expect(requiredAction.handler(mockContext)).rejects.toThrow(
+      'No user credentials provided for host gitlab.com, but scaffolder.requireScmUserCredentials is enabled',
+    );
+    await expect(
+      requiredAction.handler({
+        ...mockContext,
+        input: {
+          ...mockContext.input,
+          token: 'user-token',
+          setUserAsOwner: true,
+        },
+      }),
+    ).rejects.toThrow(
+      'The setUserAsOwner and ownerUsername inputs cannot be used when scaffolder.requireScmUserCredentials is enabled because they require credentials from the GitLab integration',
+    );
+    expect(mockGitlabClient.Namespaces.show).not.toHaveBeenCalled();
   });
 
   it('should call the correct Gitlab APIs when the owner is a group', async () => {
@@ -240,6 +272,7 @@ describe('publish:gitlab', () => {
     expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
       namespaceId: 1234,
       name: 'repo',
+      path: 'repo',
       visibility: 'private',
       ci_config_path: '.gitlab-ci.yml',
     });
@@ -263,6 +296,7 @@ describe('publish:gitlab', () => {
     expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
       namespaceId: 12345,
       name: 'repo',
+      path: 'repo',
       visibility: 'private',
       ci_config_path: '.gitlab-ci.yml',
     });
@@ -348,6 +382,7 @@ describe('publish:gitlab', () => {
     expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
       namespaceId: 1234,
       name: 'repo',
+      path: 'repo',
       visibility: 'private',
       ci_config_path: '.gitlab-ci.yml',
     });
@@ -372,6 +407,7 @@ describe('publish:gitlab', () => {
     expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
       namespaceId: 1234,
       name: 'repo',
+      path: 'repo',
       visibility: 'internal',
       topics: ['topic1', 'topic2'],
       ci_config_path: '.gitlab-ci.yml',
@@ -398,6 +434,7 @@ describe('publish:gitlab', () => {
     expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
       namespaceId: 1234,
       name: 'repo',
+      path: 'repo',
       visibility: 'private',
     });
     expect(mockGitlabClient.Branches.create).toHaveBeenCalledTimes(2);
@@ -442,6 +479,7 @@ describe('publish:gitlab', () => {
     expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
       namespaceId: 1234,
       name: 'repo',
+      path: 'repo',
       visibility: 'private',
     });
 
@@ -774,6 +812,7 @@ describe('publish:gitlab', () => {
     expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
       namespaceId: 1234,
       name: 'repo',
+      path: 'repo',
       visibility: 'private',
     });
   });
@@ -796,6 +835,139 @@ describe('publish:gitlab', () => {
       }),
     ).rejects.toThrow(
       `The namespace ${owner} is not found or the user doesn't have permissions to access it`,
+    );
+  });
+
+  it('should use settings.name as the project title when provided', async () => {
+    mockGitlabClient.Users.showCurrentUser.mockResolvedValue({ id: 12345 });
+    mockGitlabClient.Namespaces.show.mockResolvedValue({
+      id: 1234,
+      kind: 'group',
+    });
+    mockGitlabClient.Groups.allProjects.mockResolvedValue([]);
+    mockGitlabClient.Projects.create.mockResolvedValue({
+      http_url_to_repo: 'http://mockurl.git',
+    });
+
+    await action.handler({
+      ...mockContext,
+      input: {
+        repoUrl: 'gitlab.com?repo=my-project-slug&owner=owner',
+        settings: {
+          name: 'My Project Title',
+        },
+      },
+    });
+
+    expect(mockGitlabClient.Projects.create).toHaveBeenCalledWith({
+      namespaceId: 1234,
+      name: 'My Project Title',
+      path: 'my-project-slug',
+      visibility: 'private',
+    });
+  });
+
+  it('should add ownerUsername as project owner when provided', async () => {
+    mockGitlabClient.Users.showCurrentUser.mockResolvedValue({ id: 12345 });
+    mockGitlabClient.Namespaces.show.mockResolvedValue({
+      id: 1234,
+      kind: 'group',
+    });
+    mockGitlabClient.Groups.allProjects.mockResolvedValue([]);
+    mockGitlabClient.Projects.create.mockResolvedValue({
+      id: 123456,
+      http_url_to_repo: 'http://mockurl.git',
+    });
+    mockGitlabClient.Users.all.mockResolvedValue([{ id: 99999 }]);
+
+    await action.handler({
+      ...mockContext,
+      input: {
+        repoUrl: 'gitlab.com?repo=repo&owner=owner',
+        ownerUsername: 'target-owner',
+      },
+    });
+
+    expect(mockGitlabClient.Users.all).toHaveBeenCalledWith({
+      username: 'target-owner',
+    });
+    expect(mockGitlabClient.ProjectMembers.add).toHaveBeenCalledWith(
+      123456,
+      50,
+      { userId: 99999 },
+    );
+  });
+
+  it('should warn and continue when ownerUsername is not found', async () => {
+    mockGitlabClient.Users.showCurrentUser.mockResolvedValue({ id: 12345 });
+    mockGitlabClient.Namespaces.show.mockResolvedValue({
+      id: 1234,
+      kind: 'group',
+    });
+    mockGitlabClient.Groups.allProjects.mockResolvedValue([]);
+    mockGitlabClient.Projects.create.mockResolvedValue({
+      id: 123456,
+      http_url_to_repo: 'http://mockurl.git',
+    });
+    mockGitlabClient.Users.all.mockResolvedValue([]);
+
+    const ctx = {
+      ...mockContext,
+      input: {
+        repoUrl: 'gitlab.com?repo=repo&owner=owner',
+        ownerUsername: 'unknown-user',
+      },
+    };
+    ctx.logger.warn = jest.fn();
+
+    await action.handler(ctx);
+
+    expect(mockGitlabClient.Users.all).toHaveBeenCalledWith({
+      username: 'unknown-user',
+    });
+    expect(ctx.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Could not find GitLab user'),
+    );
+    expect(mockGitlabClient.ProjectMembers.add).not.toHaveBeenCalled();
+  });
+
+  it('should warn and continue when adding ownerUsername as project member fails', async () => {
+    mockGitlabClient.Users.showCurrentUser.mockResolvedValue({ id: 12345 });
+    mockGitlabClient.Namespaces.show.mockResolvedValue({
+      id: 1234,
+      kind: 'group',
+    });
+    mockGitlabClient.Groups.allProjects.mockResolvedValue([]);
+    mockGitlabClient.Projects.create.mockResolvedValue({
+      id: 123456,
+      http_url_to_repo: 'http://mockurl.git',
+    });
+    mockGitlabClient.Users.all.mockResolvedValue([{ id: 99999 }]);
+    mockGitlabClient.ProjectMembers.add.mockRejectedValue(
+      new Error('Forbidden'),
+    );
+
+    const ctx = {
+      ...mockContext,
+      input: {
+        repoUrl: 'gitlab.com?repo=repo&owner=owner',
+        ownerUsername: 'target-owner',
+      },
+    };
+    ctx.logger.warn = jest.fn();
+
+    await action.handler(ctx);
+
+    expect(mockGitlabClient.ProjectMembers.add).toHaveBeenCalledWith(
+      123456,
+      50,
+      { userId: 99999 },
+    );
+    expect(ctx.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to add user'),
+    );
+    expect(ctx.logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Forbidden'),
     );
   });
 });

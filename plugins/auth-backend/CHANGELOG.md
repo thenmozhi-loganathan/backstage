@@ -1,5 +1,314 @@
 # @backstage/plugin-auth-backend
 
+## 0.30.1-next.0
+
+### Patch Changes
+
+- 08c5d9b: Fixed inconsistent URL pattern matching in token revocation.
+
+## 0.30.0
+
+### Minor Changes
+
+- 274acc5: **BREAKING**: The OAuth redirect URI and client ID metadata document allowlists now match patterns against each URL component separately instead of against the full URL string. Wildcards no longer match across the host and path boundary, patterns must include an explicit protocol and are otherwise rejected as invalid configuration instead of being silently ignored, and redirect URIs that contain embedded credentials are always rejected.
+
+  A wildcard port also no longer implicitly matches every path: a pattern such as `http://localhost:*` now only matches the root path. Use `http://localhost:*/*` to allow any port and any path. The built-in loopback defaults have been updated accordingly, so this only affects explicitly configured patterns.
+
+### Patch Changes
+
+- 4e884d2: Skip SSRF protection for CIMD metadata fetches when the `client_id` matches an exact (non-wildcard) entry in `allowedClientIdPatterns`. Exact patterns mean the administrator explicitly listed a specific URL, so the DNS resolution is trusted. Wildcard patterns still enforce the SSRF check to protect against attacker-controlled subdomains resolving to internal addresses.
+- a995892: Allow ChatGPT Codex clients to use Client ID Metadata Documents by default.
+- 827989d: Fixed the built-in CLI client being rejected when `allowedClientIdPatterns` is configured for Client ID Metadata Documents.
+- Updated dependencies
+  - @backstage/catalog-model@1.10.0
+  - @backstage/backend-plugin-api@1.10.0
+  - @backstage/plugin-auth-node@0.7.4
+  - @backstage/plugin-catalog-node@2.2.4
+
+## 0.30.0-next.1
+
+### Patch Changes
+
+- 4e884d2: Skip SSRF protection for CIMD metadata fetches when the `client_id` matches an exact (non-wildcard) entry in `allowedClientIdPatterns`. Exact patterns mean the administrator explicitly listed a specific URL, so the DNS resolution is trusted. Wildcard patterns still enforce the SSRF check to protect against attacker-controlled subdomains resolving to internal addresses.
+- 827989d: Fixed the built-in CLI client being rejected when `allowedClientIdPatterns` is configured for Client ID Metadata Documents.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.10.0-next.1
+
+## 0.30.0-next.0
+
+### Minor Changes
+
+- 274acc5: **BREAKING**: The OAuth redirect URI and client ID metadata document allowlists now match patterns against each URL component separately instead of against the full URL string. Wildcards no longer match across the host and path boundary, patterns must include an explicit protocol and are otherwise rejected as invalid configuration instead of being silently ignored, and redirect URIs that contain embedded credentials are always rejected.
+
+  A wildcard port also no longer implicitly matches every path: a pattern such as `http://localhost:*` now only matches the root path. Use `http://localhost:*/*` to allow any port and any path. The built-in loopback defaults have been updated accordingly, so this only affects explicitly configured patterns.
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.4-next.0
+  - @backstage/backend-plugin-api@1.10.0-next.0
+  - @backstage/plugin-catalog-node@2.2.4-next.0
+
+## 0.29.2
+
+### Patch Changes
+
+- e2b3472: Promoted Client ID Metadata Documents (CIMD) to the stable `auth.clientIdMetadataDocuments` configuration. The previous `auth.experimentalClientIdMetadataDocuments` key remains supported as a deprecated alias. Dynamic Client Registration now logs a deprecation warning when enabled and users should migrate to CIMD.
+- 2aeb246: Added token revocation support for clients using client ID metadata documents (CIMD). The `/v1/revoke` endpoint is now available whenever dynamic client registration or client ID metadata documents are enabled, and is advertised through `revocation_endpoint` in the OpenID provider configuration.
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.3
+  - @backstage/backend-plugin-api@1.9.3
+  - @backstage/plugin-catalog-node@2.2.3
+
+## 0.29.2-next.1
+
+### Patch Changes
+
+- 2aeb246: Added token revocation support for clients using client ID metadata documents (CIMD). The `/v1/revoke` endpoint is now available whenever dynamic client registration or client ID metadata documents are enabled, and is advertised through `revocation_endpoint` in the OpenID provider configuration.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.3-next.1
+
+## 0.29.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.3-next.0
+  - @backstage/backend-plugin-api@1.9.3-next.0
+  - @backstage/plugin-catalog-node@2.2.3-next.0
+
+## 0.29.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.2
+  - @backstage/plugin-auth-node@0.7.2
+  - @backstage/plugin-catalog-node@2.2.2
+
+## 0.29.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.7.2-next.0
+  - @backstage/plugin-catalog-node@2.2.2-next.0
+  - @backstage/backend-plugin-api@1.9.2-next.0
+
+## 0.29.0
+
+### Minor Changes
+
+- 29d398b: **BREAKING**: Hardened the default allowed patterns for CIMD and DCR to replace the previous permissive `['*']` wildcards with specific defaults for known MCP clients. If you previously relied on the default `['*']` patterns, you will need to explicitly configure the patterns you need in your `app-config.yaml`.
+
+  **CIMD (`experimentalClientIdMetadataDocuments`):**
+
+  - `allowedClientIdPatterns` now defaults to Claude, VS Code, and the built-in Backstage CLI instead of `['*']`
+  - `allowedRedirectUriPatterns` now defaults to loopback addresses (localhost, 127.0.0.1, [::1]) instead of `['*']`
+
+  **DCR (`experimentalDynamicClientRegistration`):**
+
+  - `allowedRedirectUriPatterns` now defaults to Cursor and loopback addresses instead of `['*']`
+
+  If you need to allow additional clients or redirect URIs, you can override these defaults in your `app-config.yaml`:
+
+  ```yaml
+  auth:
+    experimentalClientIdMetadataDocuments:
+      enabled: true
+      allowedClientIdPatterns:
+        - 'https://claude.ai/*'
+        - 'https://vscode.dev/*'
+        - 'https://my-custom-client.example.com/*'
+      allowedRedirectUriPatterns:
+        - 'http://localhost:*'
+        - 'http://127.0.0.1:*'
+        - 'https://my-app.example.com/callback'
+    experimentalDynamicClientRegistration:
+      enabled: true
+      allowedRedirectUriPatterns:
+        - 'cursor://*'
+        - 'http://localhost:*'
+        - 'http://127.0.0.1:*'
+        - 'myapp://*'
+  ```
+
+### Patch Changes
+
+- 9f269d7: Limit the size of fetched client ID metadata documents to prevent oversized responses from being accepted.
+- 3f5e7ec: Improved OIDC error messages to include the rejected redirect URI or client ID, making it easier to debug client registration failures.
+- e9b78e9: Removed the `uuid` dependency and replaced usage with the built-in `crypto.randomUUID()`.
+- 27f24a9: Refresh token usage now verifies that the user's catalog entity still exists before issuing a new access token. If the user has been removed from the catalog, the refresh is rejected and the session is revoked. Transient catalog errors reject the refresh but preserve the session for retry. This check can be disabled by setting `auth.experimentalRefreshToken.dangerouslyDisableCatalogPresenceCheck` to `true`.
+- 4f62755: Improved the OAuth consent dialog for MCP authorization by showing more client details, including the client metadata host for CIMD clients, the metadata URL, callback URL, and requested scopes.
+- Updated dependencies
+  - @backstage/catalog-model@1.9.0
+  - @backstage/errors@1.3.1
+  - @backstage/backend-plugin-api@1.9.1
+  - @backstage/plugin-catalog-node@2.2.1
+  - @backstage/plugin-auth-node@0.7.1
+  - @backstage/config@1.3.8
+
+## 0.28.1-next.2
+
+### Patch Changes
+
+- 4f62755: Improved the OAuth consent dialog for MCP authorization by showing more client details, including the client metadata host for CIMD clients, the metadata URL, callback URL, and requested scopes.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.1-next.1
+
+## 0.28.1-next.1
+
+### Patch Changes
+
+- e9b78e9: Removed the `uuid` dependency and replaced usage with the built-in `crypto.randomUUID()`.
+- Updated dependencies
+  - @backstage/catalog-model@1.8.1-next.1
+  - @backstage/plugin-catalog-node@2.2.1-next.1
+  - @backstage/plugin-auth-node@0.7.1-next.1
+
+## 0.28.1-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/errors@1.3.1-next.0
+  - @backstage/plugin-auth-node@0.7.1-next.0
+  - @backstage/backend-plugin-api@1.9.1-next.0
+  - @backstage/catalog-model@1.8.1-next.0
+  - @backstage/config@1.3.8-next.0
+  - @backstage/plugin-catalog-node@2.2.1-next.0
+  - @backstage/types@1.2.2
+
+## 0.28.0
+
+### Minor Changes
+
+- d7c67cd: **BREAKING**: The setting `auth.omitIdentityTokenOwnershipClaim` has had its default value switched to `true`.
+
+  With this setting Backstage user tokens issued by the `auth` backend will no longer contain an `ent` claim - the one with the user's ownership entity refs. This means that tokens issued in large orgs no longer risk hitting HTTP header size limits.
+
+  To get ownership info for the current user, code should use the `userInfo` core service. In practice code will typically already conform to this since the `ent` claim has not been readily exposed in any other way for quite some time. But code which explicitly decodes Backstage tokens - which is strongly discouraged - may be affected by this change.
+
+  The setting will remain for some time to allow it to be set back to `false` if need be, but it will be removed entirely in a future release.
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- dc87ac1: Fixed CIMD redirect URI matching to allow any port for localhost addresses per RFC 8252 Section 7.3. Native CLI clients use ephemeral ports for OAuth callbacks, which are now accepted when the registered redirect URI uses a localhost address.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0
+  - @backstage/errors@1.3.0
+  - @backstage/plugin-auth-node@0.7.0
+  - @backstage/catalog-model@1.8.0
+  - @backstage/plugin-catalog-node@2.2.0
+  - @backstage/config@1.3.7
+
+## 0.28.0-next.2
+
+### Patch Changes
+
+- 482ceed: Migrated from `assertError` to `toError` for error handling.
+- Updated dependencies
+  - @backstage/errors@1.3.0-next.0
+  - @backstage/plugin-auth-node@0.7.0-next.2
+  - @backstage/plugin-catalog-node@2.2.0-next.2
+  - @backstage/backend-plugin-api@1.9.0-next.2
+  - @backstage/catalog-model@1.7.8-next.0
+  - @backstage/config@1.3.7-next.0
+
+## 0.28.0-next.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.9.0-next.1
+  - @backstage/plugin-auth-node@0.7.0-next.1
+  - @backstage/plugin-catalog-node@2.1.1-next.1
+
+## 0.28.0-next.0
+
+### Minor Changes
+
+- d7c67cd: **BREAKING**: The setting `auth.omitIdentityTokenOwnershipClaim` has had its default value switched to `true`.
+
+  With this setting Backstage user tokens issued by the `auth` backend will no longer contain an `ent` claim - the one with the user's ownership entity refs. This means that tokens issued in large orgs no longer risk hitting HTTP header size limits.
+
+  To get ownership info for the current user, code should use the `userInfo` core service. In practice code will typically already conform to this since the `ent` claim has not been readily exposed in any other way for quite some time. But code which explicitly decodes Backstage tokens - which is strongly discouraged - may be affected by this change.
+
+  The setting will remain for some time to allow it to be set back to `false` if need be, but it will be removed entirely in a future release.
+
+### Patch Changes
+
+- dc87ac1: Fixed CIMD redirect URI matching to allow any port for localhost addresses per RFC 8252 Section 7.3. Native CLI clients use ephemeral ports for OAuth callbacks, which are now accepted when the registered redirect URI uses a localhost address.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.1-next.0
+  - @backstage/plugin-auth-node@0.6.15-next.0
+  - @backstage/plugin-catalog-node@2.1.1-next.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+
+## 0.27.2
+
+### Patch Changes
+
+- 1ccad86: Added `who-am-i` action to the auth backend actions registry. Returns the catalog entity and user info for the currently authenticated user.
+- d0f4cd2: Added optional client metadata document endpoint at `/.well-known/oauth-client/cli.json` relative to the auth backend base URL for CLI authentication. Enabled when `auth.experimentalClientIdMetadataDocuments.enabled` is set to `true`.
+- 6738cf0: build(deps): bump `minimatch` from 9.0.5 to 10.2.1
+- e9b6e97: Fixed a security vulnerability where the CIMD metadata fetch could follow HTTP redirects to internal hosts, bypassing SSRF protections.
+- 0f9d673: Improved redirect URI validation in the experimental OIDC provider to match against normalized URLs rather than raw strings.
+- a49a40d: Updated dependency `zod` to `^3.25.76 || ^4.0.0` & migrated to `/v3` or `/v4` imports.
+- 634eded: Fixed a foreign key constraint violation when issuing refresh tokens for CIMD clients, and
+  prevented a failed refresh token issuance from failing the entire token exchange.
+  Fixed AWS ALB auth provider incorrectly returning HTTP 500 instead of 401 for JWT validation failures,
+  which caused retry loops and memory pressure under load.
+- 619be54: Update migrations to be reversible
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0
+  - @backstage/plugin-catalog-node@2.1.0
+  - @backstage/catalog-model@1.7.7
+  - @backstage/plugin-auth-node@0.6.14
+
+## 0.27.1-next.2
+
+### Patch Changes
+
+- d0f4cd2: Added optional client metadata document endpoint at `/.well-known/oauth-client/cli.json` relative to the auth backend base URL for CLI authentication. Enabled when `auth.experimentalClientIdMetadataDocuments.enabled` is set to `true`.
+- Updated dependencies
+  - @backstage/backend-plugin-api@1.8.0-next.1
+  - @backstage/plugin-auth-node@0.6.14-next.2
+  - @backstage/plugin-catalog-node@2.1.0-next.2
+
+## 0.27.1-next.1
+
+### Patch Changes
+
+- 1ccad86: Added `who-am-i` action to the auth backend actions registry. Returns the catalog entity and user info for the currently authenticated user.
+- Updated dependencies
+  - @backstage/plugin-auth-node@0.6.14-next.1
+  - @backstage/plugin-catalog-node@2.1.0-next.1
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+
+## 0.27.1-next.0
+
+### Patch Changes
+
+- 6738cf0: build(deps): bump `minimatch` from 9.0.5 to 10.2.1
+- 619be54: Update migrations to be reversible
+- Updated dependencies
+  - @backstage/plugin-catalog-node@2.1.0-next.0
+  - @backstage/backend-plugin-api@1.7.1-next.0
+  - @backstage/catalog-model@1.7.6
+  - @backstage/config@1.3.6
+  - @backstage/errors@1.2.7
+  - @backstage/types@1.2.2
+  - @backstage/plugin-auth-node@0.6.14-next.0
+
 ## 0.27.0
 
 ### Minor Changes

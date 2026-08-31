@@ -35,7 +35,7 @@ import { ElasticSearchCustomIndexTemplate } from './types';
 import { ElasticSearchSearchEngineIndexer } from './ElasticSearchSearchEngineIndexer';
 import { MissingIndexError } from '@backstage/plugin-search-backend-node';
 import esb from 'elastic-builder';
-import { v4 as uuid } from 'uuid';
+import { randomUUID as uuid } from 'node:crypto';
 import {
   AwsCredentialProvider,
   DefaultAwsCredentialsManager,
@@ -446,6 +446,14 @@ export class ElasticSearchSearchEngine implements SearchEngine {
         queryOptions: this.queryOptions,
       },
     );
+    if (documentTypes && documentTypes.length === 0) {
+      return {
+        results: [],
+        nextPageCursor: undefined,
+        previousPageCursor: undefined,
+        numberOfResults: undefined,
+      };
+    }
     const queryIndices = documentTypes
       ? documentTypes.map(it => this.constructSearchAlias(it))
       : this.constructSearchAlias('*');

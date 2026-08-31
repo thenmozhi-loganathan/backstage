@@ -17,7 +17,7 @@
 import { stringifyEntityRef } from '@backstage/catalog-model';
 import { Link } from '@backstage/core-components';
 import { configApiRef, useAnalytics, useApi } from '@backstage/core-plugin-api';
-import { assertError } from '@backstage/errors';
+import { toError } from '@backstage/errors';
 import { useTranslationRef } from '@backstage/frontend-plugin-api';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
 import FormHelperText from '@material-ui/core/FormHelperText';
@@ -94,26 +94,9 @@ export const StepReviewLocation = ({
         locations,
       });
     } catch (e) {
-      assertError(e);
-      // TODO: this error should be handled differently. We add it as 'optional' and
-      //       it is not uncommon that a PR has not been merged yet.
-      if (
-        prepareResult.type === 'repository' &&
-        e.message.startsWith(
-          'Location was added but has no entities specified yet',
-        )
-      ) {
-        onReview({
-          ...prepareResult,
-          locations: prepareResult.locations.map(l => ({
-            target: l.target,
-            entities: [],
-          })),
-        });
-      } else {
-        setError(e.message);
-        setSubmitted(false);
-      }
+      const caughtError = toError(e);
+      setError(caughtError.message);
+      setSubmitted(false);
     }
   }, [prepareResult, onReview, catalogApi, analytics]);
 

@@ -16,7 +16,7 @@
 
 import { CSSProperties, ReactElement, ReactNode } from 'react';
 import { Layout } from 'react-grid-layout';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
 
 const RSJFTypeSchema: z.ZodType<RJSFSchema> = z.any();
@@ -102,6 +102,11 @@ export type CustomHomepageGridProps = {
    * @defaultValue true
    */
   preventCollision?: boolean;
+  /**
+   * Controls if widgets can be added to the grid if they already exist. If true, widgets already present on the grid are excluded from the Add Widget dialog (preventing duplicates)
+   * @defaultValue false
+   */
+  preventDuplicateWidgets?: boolean;
 };
 
 export const LayoutConfigurationSchema = z.object({

@@ -16,7 +16,7 @@
 
 import { breakpoints } from '../useBreakpoint';
 import { utilityClassMap } from '../../utils/utilityClassMap';
-import type { UnwrapResponsive, UtilityStyle } from './types';
+import type { ComponentConfig, UnwrapResponsive, UtilityStyle } from './types';
 
 const namedBreakpoints = breakpoints.filter(b => b.id !== 'initial');
 
@@ -57,6 +57,42 @@ export function resolveResponsiveValue<T>(
   return value as UnwrapResponsive<T>;
 }
 
+export function resolveDefinitionProps<D extends ComponentConfig<any, any>>(
+  definition: D,
+  props: Record<string, any>,
+  breakpoint: string,
+): {
+  ownPropsResolved: Record<string, any>;
+  restProps: Record<string, any>;
+} {
+  const ownPropKeys = new Set(Object.keys(definition.propDefs));
+  const utilityPropKeys = new Set(definition.utilityProps ?? []);
+
+  const ownPropsRaw: Record<string, any> = {};
+  const restProps: Record<string, any> = {};
+
+  for (const [key, value] of Object.entries(props)) {
+    if (ownPropKeys.has(key)) {
+      ownPropsRaw[key] = value;
+    } else if (!(utilityPropKeys as Set<string>).has(key)) {
+      restProps[key] = value;
+    }
+  }
+
+  const ownPropsResolved: Record<string, any> = {};
+
+  for (const [key, config] of Object.entries(definition.propDefs)) {
+    const rawValue = ownPropsRaw[key];
+    const resolvedValue = resolveResponsiveValue(rawValue, breakpoint);
+    const finalValue = resolvedValue ?? (config as any).default;
+    if (finalValue !== undefined) {
+      ownPropsResolved[key] = finalValue;
+    }
+  }
+
+  return { ownPropsResolved, restProps };
+}
+
 export function processUtilityProps<Keys extends string>(
   props: Record<string, any>,
   utilityPropKeys: readonly Keys[],
@@ -66,7 +102,7 @@ export function processUtilityProps<Keys extends string>(
 
   const handleUtilityValue = (
     key: string,
-    val: unknown,
+    inputVal: unknown,
     prefix: string = '',
   ) => {
     // Get utility class configuration for this key
@@ -76,6 +112,11 @@ export function processUtilityProps<Keys extends string>(
       // Skip if no config found for this key
       return;
     }
+
+    const val =
+      'transform' in utilityConfig
+        ? utilityConfig.transform(inputVal)
+        : inputVal;
 
     // Check if value is in the list of valid values for this utility
     const values = utilityConfig.values as readonly (string | number)[];

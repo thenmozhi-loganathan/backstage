@@ -13,7 +13,7 @@ This documentation shows common examples that may be useful when deploying
 Backstage for the first time, or for those without established deployment
 practices.
 
-:::note Note
+:::note
 
 The _easiest_ way to explore Backstage is to visit the
 [live demo site](https://demo.backstage.io).
@@ -32,6 +32,4 @@ This method is covered in [Building a Docker image](docker.md) and
 
 There are many ways to deploy Backstage! You can find more examples in the community contributed guides found [here](https://github.com/backstage/backstage/blob/master/contrib/docs/tutorials/).
 
-If you need to run Backstage behind a corporate proxy, this
-[contributed guide](https://github.com/backstage/backstage/blob/master/contrib/docs/tutorials/help-im-behind-a-corporate-proxy.md)
-may help.
+If you need to run Backstage behind a corporate proxy, see the [corporate proxy guide](../tutorials/corporate-proxy.md).
